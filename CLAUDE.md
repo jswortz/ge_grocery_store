@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Critical Constraint
 
-**Never hardcode retail client names (e.g., "Kroger", "HEB") anywhere in source code, SQL, config, or documentation.** All retailer-specific strings are parameterized through `config/settings.yaml`. Code reads `config["retailer"]["name"]` at runtime. Tests in `tests/test_bigquery.py` enforce this with forbidden-name checks.
+**Never hardcode retail client names (e.g., "Kroger", "HEB") anywhere in source code, SQL, config, or documentation.** All retailer-specific strings are parameterized through `config/settings.yaml`. Code reads `config["retailer"]["name"]` at runtime. Tests in `tests/test_bigquery.py` and `tests/test_mcp_agent.py` enforce this with forbidden-name checks.
 
 ## Commands
 
@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pip install -e ".[dev]"
 
 # Unit tests (no GCP credentials needed)
-python -m pytest tests/test_agent.py tests/test_stream_assist.py -v
+python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py -v
 
 # All tests (requires gcloud auth + provisioned resources)
 python -m pytest tests/ -v
@@ -36,6 +36,12 @@ python -m src.docs_gen.strategy_report
 # Launch ADK agent locally
 cd src/agent && adk web
 
+# Launch MCP agent locally (requires genai-toolbox binary)
+cd src/mcp_agent && adk web
+
+# Launch frontend UI
+python -m src.frontend    # http://localhost:8080
+
 # Deploy ADK agent to Agent Engine
 cd src && adk deploy agent_engine \
   --project=wortz-project-352116 \
@@ -48,9 +54,11 @@ cd src && adk deploy agent_engine \
 
 ## Architecture
 
-This is a **workshop demo repo** demonstrating Gemini Enterprise (Discovery Engine API) for grocery retail.
+This is a **workshop demo repo** demonstrating Gemini Enterprise (Discovery Engine API) for grocery retail. Full architecture docs at `docs/architecture.md`.
 
-### Three main subsystems
+### Five subsystems
+
+**Frontend Web UI** (`src/frontend/`): Branded single-page chat app with Python proxy server. Two switchable backends: StreamAssist (Discovery Engine) and Agent Engine (full agent). Proxy routes: `/api/stream-assist/sessions`, `/api/stream-assist/query`, `/api/agent-engine/query`. Uses ADC for auth. Launch with `python -m src.frontend`.
 
 **StreamAssist Client** (`src/client/stream_assist.py`): REST client for the Discovery Engine `streamAssist` endpoint. Key class is `StreamAssistClient` with `create_session()` and `query()` methods. Uses tenacity retry logic for transient errors (429, 5xx). Parses responses into `StreamAssistResponse` dataclasses. Configured via `StreamAssistClient.from_config()` which reads `config/settings.yaml`.
 
@@ -59,15 +67,15 @@ This is a **workshop demo repo** demonstrating Gemini Enterprise (Discovery Engi
 - `analytics_agent` sub-agent with `query_grocery_data` FunctionTool (BigQuery)
 - `image_agent` sub-agent with `generate_product_image` FunctionTool (Imagen)
 
-Key design choice: Uses `DiscoveryEngineSearchTool` (a `FunctionTool` subclass) instead of `VertexAiSearchTool` because `VertexAiSearchTool` adds a built-in Gemini retrieval tool that cannot coexist with the `transfer_to_agent` function tools injected by sub-agents. The bypass check in `llm_agent.py` only counts `len(self.tools) > 1`, not including implicit transfer tools.
+Key design choice: Uses `DiscoveryEngineSearchTool` (a `FunctionTool` subclass) instead of `VertexAiSearchTool` because `VertexAiSearchTool` adds a built-in Gemini retrieval tool that cannot coexist with the `transfer_to_agent` function tools injected by sub-agents.
 
-The agent lazy-imports ADK (`create_agent()`) so the rest of the codebase works without `google-adk` installed. `root_agent` at module level is the ADK CLI entry point.
+**MCP Agent** (`src/mcp_agent/`): Alternative analytics agent using MCP Toolbox for Databases (`genai-toolbox`). Connects to BigQuery via MCP over stdio. The LLM generates arbitrary SQL (vs. pattern-matched SQL in `bq_tool.py`). Requires the `toolbox` binary. 9 BigQuery tools available: `execute_sql`, `list_table_ids`, `get_table_info`, `forecast`, `analyze_contribution`, etc.
 
 **Document Generators** (`src/docs_gen/`): ReportLab-based PDF generators. Each module has a `generate_*()` function that reads retailer name from config and outputs to `data/`. These are standalone scripts, not part of the agent runtime.
 
 ### Config-driven design
 
-Central config loader in `src/agent/agent.py:_load_config()` reads `config/settings.yaml` with env var overrides for Agent Engine deployment (`RETAILER_NAME`, `PROJECT_ID`, `ENGINE_ID`, `BQ_PROJECT`, `BQ_DATASET`). All submodules (bq_tool, image_gen_tool, system_prompts) delegate to this loader.
+Central config loader in `src/agent/agent.py:_load_config()` reads `config/settings.yaml` with env var overrides for Agent Engine deployment (`RETAILER_NAME`, `PROJECT_ID`, `ENGINE_ID`, `BQ_PROJECT`, `BQ_DATASET`). All submodules (bq_tool, image_gen_tool, system_prompts, mcp_agent) delegate to this loader or implement the same pattern.
 
 ### Deployed resources
 
@@ -87,13 +95,14 @@ Dataset `ge_grocery_demo` in `wortz-project-352116`:
 
 DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_data.sql`.
 
-### Test structure (53 tests)
+### Test structure (82 tests)
 
-- `tests/test_agent.py` and `tests/test_stream_assist.py` — **unit tests**, run without GCP access, use mocks
-- `tests/test_discovery_engine.py` — **integration**, validates Discovery Engine SearchService directly against SOP and brand data stores
-- `tests/test_agent_engine.py` — **integration**, validates deployed ADK agent via Agent Engine REST API (SOP search, analytics, brand guidelines)
-- `tests/test_bigquery.py` — **integration**, validates schema and forbidden names against live BigQuery
-- `tests/test_acceptance.py` — **integration**, validates 3 acceptance criteria (greeting, SOP retrieval, brand guidelines) via StreamAssist
+- `tests/test_agent.py` (12) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
+- `tests/test_mcp_agent.py` (29) — **unit tests**, validates MCP agent config, schema context, instructions, toolbox path resolution
+- `tests/test_discovery_engine.py` (4) — **integration**, validates Discovery Engine SearchService directly against SOP and brand data stores
+- `tests/test_agent_engine.py` (5) — **integration**, validates deployed ADK agent via Agent Engine REST API (SOP search, analytics, brand guidelines)
+- `tests/test_bigquery.py` (10) — **integration**, validates schema and forbidden names against live BigQuery
+- `tests/test_acceptance.py` (8) — **integration**, validates acceptance criteria (greeting, SOP retrieval, brand guidelines) via StreamAssist
 
 ### Infrastructure scripts
 

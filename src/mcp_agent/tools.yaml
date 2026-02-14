@@ -1,0 +1,53 @@
+# ============================================================
+# MCP Toolbox for BigQuery — Grocery Retail Star Schema
+# ============================================================
+# This file configures the MCP Toolbox for Databases (genai-toolbox)
+# to expose BigQuery tools for the grocery retail star schema.
+#
+# The toolbox binary uses the --prebuilt bigquery flag which provides
+# built-in tools (execute_sql, list_table_ids, get_table_info, etc.)
+# without needing a custom tools.yaml. This file documents the
+# schema context and is used when running the toolbox with custom
+# tool definitions instead of prebuilt mode.
+#
+# Prebuilt mode (recommended for this project):
+#   ./toolbox --prebuilt bigquery --project wortz-project-352116 --stdio
+#
+# Custom mode (using this file):
+#   ./toolbox --tools-file tools.yaml --stdio
+# ============================================================
+
+sources:
+  grocery_bq:
+    kind: bigquery
+    project: wortz-project-352116
+    location: US
+
+tools:
+  execute_grocery_sql:
+    kind: bigquery-sql
+    source: grocery_bq
+    description: |
+      Execute a read-only SQL query against the grocery retail BigQuery
+      star schema. The dataset is `wortz-project-352116.ge_grocery_demo`.
+
+      Available tables:
+      - fact_transactions: transaction_id, transaction_ts, store_id,
+        employee_id, product_id, quantity, unit_price, total_amount,
+        payment_method, customer_id
+      - dim_store: store_id, store_name, city, state, zip_code,
+        square_feet, open_date
+      - dim_product: product_id, product_name, category, subcategory,
+        brand, unit_price, unit_cost, image_uri, description
+      - dim_employee: employee_id, first_name, last_name, role,
+        store_id, hire_date
+      - dim_customer: customer_id, first_name, last_name, email, phone,
+        loyalty_tier, home_store_id, signup_date, points_balance
+    parameters:
+      - name: sql
+        type: string
+        description: The BigQuery SQL query to execute
+
+toolsets:
+  grocery_analytics:
+    - execute_grocery_sql

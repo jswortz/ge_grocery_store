@@ -40,3 +40,9 @@ deploy_to_ae.py
 
 # Scratchpad (development notes)
 scratchpad.md
+
+# PaperBanana diagram generation working files
+outputs/
+
+# Diagram generator script (diagrams committed as PNGs)
+docs/diagrams/generate_diagrams.py
