@@ -1,0 +1,30 @@
+[
+  {
+    "name": "schema_exploration",
+    "starting_prompt": "What tables are available in the dataset?",
+    "conversation_plan": "After listing tables, ask for the schema of fact_transactions. Then ask what relationships exist between tables.",
+    "expected_tool_calls": ["list_table_ids", "get_table_info"],
+    "reference_response": "The dataset contains fact_transactions, dim_store, dim_product, dim_employee, and dim_customer tables."
+  },
+  {
+    "name": "revenue_analysis",
+    "starting_prompt": "What is the total revenue by store?",
+    "conversation_plan": "Ask which store has the highest revenue per square foot. Then ask about the trend over time.",
+    "expected_tool_calls": ["execute_sql"],
+    "reference_response": "Revenue breakdown by store with total amounts from fact_transactions joined with dim_store."
+  },
+  {
+    "name": "customer_segmentation",
+    "starting_prompt": "How are customers distributed across loyalty tiers?",
+    "conversation_plan": "Ask about average spend per loyalty tier. Then ask which tier has the highest transaction frequency.",
+    "expected_tool_calls": ["execute_sql"],
+    "reference_response": "Customer distribution across Gold, Silver, and Bronze loyalty tiers."
+  },
+  {
+    "name": "product_performance",
+    "starting_prompt": "Which product categories have the highest profit margins?",
+    "conversation_plan": "Ask about the bottom 3 products by margin. Then suggest which products should be featured in promotions.",
+    "expected_tool_calls": ["execute_sql"],
+    "reference_response": "Product categories ranked by profit margin calculated from unit_price minus unit_cost."
+  }
+]

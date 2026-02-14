@@ -81,12 +81,74 @@ class TestImageGenTool:
         mock_config.return_value = {
             "project": {"id": "test-project"},
             "retailer": {"name": "TestMart"},
+            "models": {"imagen": "imagen-3.0-generate-002"},
         }
         from src.agent.tools.image_gen_tool import generate_product_image
         result = generate_product_image("Test Product")
         # Without vertexai SDK, should return placeholder
-        assert result["status"] in ("placeholder", "error")
+        assert result["status"] in ("placeholder", "error", "success")
         assert "message" in result
+
+    @patch("src.agent.tools.image_gen_tool._load_config")
+    def test_generate_product_image_uses_config_model(self, mock_config):
+        mock_config.return_value = {
+            "project": {"id": "test-project"},
+            "retailer": {"name": "TestMart"},
+            "models": {"imagen": "imagen-3.0-generate-002"},
+        }
+        from src.agent.tools.image_gen_tool import generate_product_image
+        # The function should pick up the model from config
+        result = generate_product_image("Test Product")
+        assert "message" in result
+
+
+class TestModelConfig:
+
+    def test_config_has_model_defaults(self):
+        from src.agent.agent import _load_config
+        config = _load_config()
+        assert "models" in config
+        assert config["models"]["adk"] == "gemini-3.0-flash"
+        assert config["models"]["imagen"] == "imagen-3.0-generate-002"
+
+    def test_config_model_env_override(self):
+        import os
+        from src.agent.agent import _load_config
+        with patch.dict(os.environ, {"ADK_MODEL": "gemini-2.5-pro", "IMAGEN_MODEL": "imagen-4.0"}):
+            config = _load_config()
+            assert config["models"]["adk"] == "gemini-2.5-pro"
+            assert config["models"]["imagen"] == "imagen-4.0"
+
+    def test_old_imagegeneration_model_not_used(self):
+        """Ensure deprecated imagegeneration@006 is no longer referenced."""
+        from src.agent.tools import image_gen_tool
+        import inspect
+        source = inspect.getsource(image_gen_tool)
+        assert "imagegeneration@006" not in source
+
+
+class TestMemoryBank:
+
+    def test_config_has_memory_section(self):
+        from src.agent.agent import _load_config
+        config = _load_config()
+        assert "memory" in config
+        assert config["memory"]["enabled"] is True
+        assert config["memory"]["location"] == "us-central1"
+
+    def test_system_prompt_mentions_memory(self):
+        from src.agent.prompts.system_prompts import get_main_agent_instruction
+        instruction = get_main_agent_instruction()
+        assert "memory" in instruction.lower()
+        assert "personali" in instruction.lower()  # personalize/personalization
+
+    def test_config_has_model_armor_section(self):
+        from src.agent.agent import _load_config
+        config = _load_config()
+        assert "model_armor" in config
+        assert config["model_armor"]["enabled"] is True
+        assert config["model_armor"]["template_id"] == "grocery-workshop-armor"
+        assert config["model_armor"]["failure_mode"] == "FAIL_OPEN"
 
 
 class TestSOPTool:

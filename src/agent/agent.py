@@ -47,6 +47,15 @@ def _load_config():
         config.setdefault("bigquery", {})["project"] = os.environ["BQ_PROJECT"]
     if os.environ.get("BQ_DATASET"):
         config.setdefault("bigquery", {})["dataset"] = os.environ["BQ_DATASET"]
+    if os.environ.get("ADK_MODEL"):
+        config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
+    if os.environ.get("IMAGEN_MODEL"):
+        config.setdefault("models", {})["imagen"] = os.environ["IMAGEN_MODEL"]
+
+    # Defaults for models if not set
+    config.setdefault("models", {})
+    config["models"].setdefault("adk", "gemini-3.0-flash")
+    config["models"].setdefault("imagen", "imagen-3.0-generate-002")
 
     return config
 
@@ -77,6 +86,7 @@ def create_agent():
 
     config = _load_config()
     retailer = config["retailer"]["name"]
+    adk_model = config["models"]["adk"]
 
     # DiscoveryEngineSearchTool wraps the Discovery Engine SearchService API
     # as a regular FunctionTool, so it can coexist with transfer_to_agent tools.
@@ -111,13 +121,20 @@ def create_agent():
     except Exception as e:
         print(f"Warning: Could not create search tool: {e}")
 
+    # Add PreloadMemoryTool for cross-session memory
+    try:
+        from google.adk.tools.preload_memory_tool import PreloadMemoryTool
+        root_tools.append(PreloadMemoryTool())
+    except ImportError:
+        print("Warning: PreloadMemoryTool not available")
+
     # Sub-agents for function tools
     sub_agents = []
 
     # Analytics sub-agent
     analytics_agent = LlmAgent(
         name="analytics_agent",
-        model="gemini-2.0-flash",
+        model=adk_model,
         instruction=(
             f"You are the data analytics specialist for {retailer}. "
             "Use the query_grocery_data tool to answer questions about sales, "
@@ -135,7 +152,7 @@ def create_agent():
     # Image generation sub-agent
     image_agent = LlmAgent(
         name="image_agent",
-        model="gemini-2.0-flash",
+        model=adk_model,
         instruction=(
             f"You are the product imagery specialist for {retailer}. "
             "Use the generate_product_image tool to create product photos. "
@@ -152,7 +169,7 @@ def create_agent():
     # Root orchestrator with search tools + sub-agents for function tools
     agent = LlmAgent(
         name="grocery_assistant",
-        model="gemini-2.0-flash",
+        model=adk_model,
         instruction=get_main_agent_instruction(),
         description=(
             "AI assistant for grocery retail operations. Searches SOPs and "

@@ -43,7 +43,7 @@ The system is organized into four layers, each interfacing with Google Cloud ser
 │   ┌──────────────────────────────────────────────────────────────┐  │
 │   │                    ADK Root Agent                             │  │
 │   │                 "grocery_assistant"                            │  │
-│   │              (gemini-2.0-flash)                               │  │
+│   │              (gemini-3.0-flash)                               │  │
 │   │                                                               │  │
 │   │  DiscoveryEngineSearchTool  ──────┐                           │  │
 │   │  (FunctionTool subclass)         │                           │  │
@@ -185,7 +185,7 @@ The primary agent uses Google's [Agent Development Kit (ADK)](https://google.git
 ┌────────────────────────────────────────────────────────┐
 │                Root Agent                                │
 │             "grocery_assistant"                           │
-│          model: gemini-2.0-flash                         │
+│          model: gemini-3.0-flash                         │
 │                                                          │
 │  Tools:                                                  │
 │  ├── DiscoveryEngineSearchTool (FunctionTool subclass)   │
@@ -200,7 +200,7 @@ The primary agent uses Google's [Agent Development Kit (ADK)](https://google.git
 │  │                                                       │
 │  └── image_agent                                         │
 │       └── generate_product_image (Imagen FunctionTool)   │
-│           Vertex AI imagegeneration@006                   │
+│           Vertex AI imagen-3.0-generate-002                   │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -442,6 +442,91 @@ All configuration flows through `config/settings.yaml` with environment variable
 - `tests/test_bigquery.py` checks for forbidden names in BigQuery data
 - `tests/test_agent.py` checks for forbidden names in system prompts
 - `tests/test_mcp_agent.py` checks for forbidden names in MCP agent config
+
+---
+
+## Memory Bank
+
+Memory Bank provides shared memory across agent sessions so the agent remembers user preferences, past interactions, and context across conversations.
+
+### How It Works
+
+```
+┌──────────────┐     ┌──────────────────────────────────────┐
+│ User (browser)│     │     Agent Engine                      │
+│               │     │                                       │
+│  localStorage │     │  ┌─────────────────────────────────┐  │
+│  vf_user_id   │────▶│  │  ADK Agent                       │  │
+│               │     │  │  ├── PreloadMemoryTool            │  │
+│               │     │  │  │   (auto-loads memories per     │  │
+│               │     │  │  │    user_id at each turn)       │  │
+│               │     │  │  └── ...other tools               │  │
+│               │     │  └─────────────┬───────────────────┘  │
+│               │     │                │                       │
+│               │     │  ┌─────────────▼───────────────────┐  │
+│               │     │  │  VertexAiMemoryBankService       │  │
+│               │     │  │  (scoped to agent_engine_id)     │  │
+│               │     │  │                                   │  │
+│               │     │  │  GenerateMemories: auto-extract   │  │
+│               │     │  │  CreateMemory: agent-controlled   │  │
+│               │     │  └─────────────────────────────────┘  │
+│               │     │                                       │
+└──────────────┘     └──────────────────────────────────────┘
+```
+
+**Key points:**
+- `PreloadMemoryTool` is added to the root agent's tool list
+- Memories are scoped per `user_id` — each browser gets a unique persistent ID via `localStorage`
+- `VertexAiMemoryBankService` is configured at the Runner/deployment level, using the reasoning engine ID
+- No separate resource provisioning needed — Memory Bank is a built-in feature of Agent Engine
+
+**Configuration** (`config/settings.yaml`):
+```yaml
+memory:
+  enabled: true
+  location: "us-central1"   # Must match Agent Engine region
+```
+
+---
+
+## Model Armor
+
+Model Armor provides content safety screening on the Discovery Engine `grocery-workshop-engine` to filter prompts and responses for harmful content.
+
+### Filters Enabled
+
+| Filter | Purpose |
+|--------|---------|
+| RAI Harm Filter | Hate speech, violence, sexual content, dangerous content |
+| PI & Jailbreak Filter | Prompt injection and jailbreak attempts |
+| SDP Basic Filter | Sensitive Data Protection (PII detection) |
+| Malicious URI Filter | Blocks malicious URLs in prompts/responses |
+
+### Architecture
+
+```
+┌──────────┐     ┌──────────────────────┐     ┌─────────────────┐
+│  User    │────▶│  Model Armor         │────▶│ Discovery Engine │
+│  Query   │     │  Template            │     │ grocery-workshop │
+│          │     │  grocery-workshop-   │     │ -engine          │
+│          │     │  armor               │     │                  │
+│          │◀────│                      │◀────│  StreamAssist    │
+│ Response │     │  Screens both        │     │  SearchService   │
+│          │     │  input and output    │     │                  │
+└──────────┘     └──────────────────────┘     └─────────────────┘
+```
+
+**Failure mode:** `FAIL_OPEN` — if Model Armor is unavailable, queries pass through to avoid blocking production traffic.
+
+**Provisioning:** `bash infra/provision_model_armor.sh`
+
+**Configuration** (`config/settings.yaml`):
+```yaml
+model_armor:
+  enabled: true
+  template_id: "grocery-workshop-armor"
+  failure_mode: "FAIL_OPEN"
+```
 
 ---
 

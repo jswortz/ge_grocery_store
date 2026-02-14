@@ -153,6 +153,39 @@ python -m pytest tests/test_discovery_engine.py -v
 
 ---
 
+## 4b. Model Armor Provisioning
+
+Set up content safety screening on the Discovery Engine assistant.
+
+```bash
+bash infra/provision_model_armor.sh
+```
+
+This creates a Model Armor template (`grocery-workshop-armor`) with:
+- **RAI Harm Filter** — Blocks hate speech, violence, sexual content (medium+ confidence)
+- **Prompt Injection & Jailbreak Filter** — Detects and blocks injection attempts
+- **SDP Basic Filter** — Sensitive Data Protection for PII
+- **Malicious URI Filter** — Blocks malicious URLs
+
+The template is applied to both user prompts and model responses on the `grocery-workshop-engine` assistant with `FAIL_OPEN` failure mode.
+
+### Verify
+
+Test with a harmful query via StreamAssist — it should be filtered:
+
+```python
+from src.client.stream_assist import StreamAssistClient
+client = StreamAssistClient.from_config()
+session = client.create_session()
+# A harmful query should be blocked or filtered
+response = client.query(session.name, "<harmful content>")
+```
+
+**Key files:**
+- [`infra/provision_model_armor.sh`](../infra/provision_model_armor.sh) — Template creation + engine configuration
+
+---
+
 ## 5. ADK Agent (Local)
 
 Run the multi-agent ADK agent locally for development and testing.
@@ -225,6 +258,35 @@ for line in resp.text.strip().split("\n"):
 
 ```bash
 python -m pytest tests/test_agent_engine.py -v
+```
+
+---
+
+## 6b. Memory Bank
+
+Memory Bank is automatically available on Agent Engine deployments. The `PreloadMemoryTool` in the root agent handles memory loading per user.
+
+No separate provisioning is needed — `VertexAiMemoryBankService` connects to the deployed reasoning engine's memory bank using the `agent_engine_id`.
+
+### How it works
+
+1. The frontend generates a unique `user_id` per browser (stored in `localStorage`)
+2. Each Agent Engine query includes this `user_id`
+3. `PreloadMemoryTool` loads relevant memories at the start of each turn
+4. The agent uses memory context to personalize responses
+
+### Verify
+
+```python
+# Send a query with a user_id
+resp = requests.post(url, headers=headers,
+    json={"input": {"message": "I usually work at the Downtown Market store",
+                     "user_id": "test-user-123"}})
+
+# In a new session with the same user_id, the agent should recall this preference
+resp = requests.post(url, headers=headers,
+    json={"input": {"message": "Which store do I work at?",
+                     "user_id": "test-user-123"}})
 ```
 
 ---

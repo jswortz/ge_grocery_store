@@ -1,0 +1,37 @@
+[
+  {
+    "name": "sop_closing_procedures",
+    "starting_prompt": "What are the closing procedures for frontline associates?",
+    "conversation_plan": "After receiving the SOP, ask about any safety checks that need to be performed during closing. Then ask who is responsible for signing off on the closing checklist.",
+    "expected_tool_calls": ["discovery_engine_search"],
+    "reference_response": "The closing procedures include cash register reconciliation, floor cleaning, restocking, and security checks."
+  },
+  {
+    "name": "brand_guidelines",
+    "starting_prompt": "What are our brand color guidelines?",
+    "conversation_plan": "After getting the colors, ask about the typography standards. Then ask about the tone of voice guidelines for marketing materials.",
+    "expected_tool_calls": ["discovery_engine_search"],
+    "reference_response": "The primary brand colors are green (#2e7d32) and gold (#f9a825) with white as the background."
+  },
+  {
+    "name": "analytics_top_products",
+    "starting_prompt": "What are the top 5 products by revenue?",
+    "conversation_plan": "After seeing the results, ask which store has the highest sales. Then ask about the loyalty tier distribution of customers.",
+    "expected_tool_calls": ["transfer_to_agent"],
+    "reference_response": "The top products by revenue from the BigQuery analytics include product names and total revenue amounts."
+  },
+  {
+    "name": "image_generation",
+    "starting_prompt": "Generate a product image for Nano Banana Pro",
+    "conversation_plan": "Ask the agent to apply brand guidelines to the image. Then ask for a version with a white background suitable for the website.",
+    "expected_tool_calls": ["transfer_to_agent"],
+    "reference_response": "A product image has been generated for Nano Banana Pro following brand guidelines."
+  },
+  {
+    "name": "greeting_and_capabilities",
+    "starting_prompt": "Hello, what can you help me with?",
+    "conversation_plan": "Ask about each capability one by one. Start with SOPs, then analytics, then image generation.",
+    "expected_tool_calls": [],
+    "reference_response": "I can help with SOPs, brand guidelines, analytics, and product image generation."
+  }
+]

@@ -30,11 +30,15 @@ retailer:
       square_feet: 74000
       open_date: "2019-11-15"
 
+models:
+  adk: "gemini-3.0-flash"              # LLM for all ADK agents
+  imagen: "imagen-3.0-generate-002"     # Image generation model
+
 project:
   id: "wortz-project-352116"
   location: "global"
   engine_id: "grocery-workshop-engine"
-  agent_id: ""  # Not used for search engines with streamAssist
+  agent_id: "4127847317548975868"  # ADK agent registered on Discovery Engine (no auth)
   agent_engine_id: "3323818153208709120"  # ADK agent deployed to Agent Engine (with telemetry)
   data_agent_id: "14793816534468506603"  # Data Insights Agent for BQ analytics
   authorization_id: "grocery-data-agent-auth"  # OAuth auth resource for data agent
@@ -48,6 +52,15 @@ gcs:
   bucket: "wortz-project-352116-ge-workshop"
   brand_guidelines_prefix: "brand_guidelines/"
   sop_prefix: "sops/"
+
+memory:
+  enabled: true
+  location: "us-central1"   # Must match Agent Engine region
+
+model_armor:
+  enabled: true
+  template_id: "grocery-workshop-armor"
+  failure_mode: "FAIL_OPEN"
 
 drive:
   folder_id: ""      # Populated after uploading assets

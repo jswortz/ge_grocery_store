@@ -925,10 +925,21 @@ body {
 // ================================================================
 // STATE
 // ================================================================
+// Generate or retrieve a persistent user ID for Memory Bank
+function getUserId() {
+  let uid = localStorage.getItem('vf_user_id');
+  if (!uid) {
+    uid = 'user-' + crypto.randomUUID();
+    localStorage.setItem('vf_user_id', uid);
+  }
+  return uid;
+}
+
 const State = {
   backend: 'stream-assist',       // 'stream-assist' | 'agent-engine'
   authMode: 'proxy',              // 'proxy' | 'token'
   sessionName: null,              // StreamAssist session resource name
+  userId: getUserId(),             // Persistent user ID for Memory Bank
   isLoading: false,
   messages: [],                   // { role: 'user'|'assistant', text: string, ts: Date }
 };
@@ -1118,7 +1129,7 @@ async function callAgentEngine(text) {
   const payload = {
     input: {
       message: text,
-      user_id: 'frontend-user',
+      user_id: State.userId,
     },
   };
 

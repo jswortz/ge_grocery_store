@@ -1,0 +1,14 @@
+[
+  {
+    "starting_prompt": "Run a shopping simulation at the Downtown Market with the seasonal produce endcap scenario.",
+    "conversation_plan": "After the simulation completes, ask for a detailed breakdown of endcap conversion rates. Then ask which persona was most influenced by the endcap displays and why. Finally, ask for recommendations on optimizing the endcap placement."
+  },
+  {
+    "starting_prompt": "Compare the baseline scenario vs the snack impulse buy scenario at the Westside Market.",
+    "conversation_plan": "Ask the agent to run both scenarios and compare total revenue. Then ask about the incremental revenue from endcap placements. Finally, request a recommendation for which scenario management should adopt."
+  },
+  {
+    "starting_prompt": "Simulate 5 shoppers at the Lakefront Market with the health and wellness endcap scenario.",
+    "conversation_plan": "After simulation, ask which products from the endcap had the highest pickup rate. Then ask whether the health-conscious shopper persona behaved differently from the budget-conscious family. Request a final ROI analysis."
+  }
+]

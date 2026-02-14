@@ -3,8 +3,10 @@
 A customer-facing workshop demonstrating **Gemini Enterprise** (Discovery Engine) capabilities, advanced reasoning, and platform extensibility for grocery retail. This repo is a reusable, retailer-agnostic resource — no client names are hardcoded anywhere.
 
 **Documentation:**
+- [Workshop Guide](docs/workshop_guide.md) — Hands-on walkthrough for potential Gemini Enterprise buyers
 - [Setup Guide](docs/setup.md) — Step-by-step provisioning instructions
 - [Architecture](docs/architecture.md) — System design, data flow, component details, and [diagrams](docs/diagrams/)
+- [Evaluation Guide](docs/evaluation_guide.md) — Agent evaluation best practices and configuration
 
 ---
 
@@ -41,7 +43,12 @@ This workshop integrates Google Cloud AI surfaces across four layers. See [docs/
 | **Image Gen Tool** | [`src/agent/tools/image_gen_tool.py`](src/agent/tools/image_gen_tool.py) | Vertex AI Imagen for brand-compliant product images |
 | **System Prompts** | [`src/agent/prompts/system_prompts.py`](src/agent/prompts/system_prompts.py) | Config-driven, retailer-agnostic agent instructions |
 | **Document Generators** | [`src/docs_gen/`](src/docs_gen/) | ReportLab PDF generators for SOPs, brand guides, reports |
-| **Infrastructure** | [`infra/`](infra/) | Shell scripts for Discovery Engine and BigQuery provisioning |
+| **Memory Bank** | Agent Engine built-in | Cross-session memory via `PreloadMemoryTool` (per-user preferences) |
+| **Model Armor** | Discovery Engine config | Content safety screening (hate speech, PII, prompt injection) |
+| **A2A Agent** | [`src/a2a_agent/`](src/a2a_agent/) | A2A-enabled agent for Cloud Run + Agent Engine deployment |
+| **Shopper Simulator** | [`src/simulator_agent/`](src/simulator_agent/) | World-model shopper simulation for endcap merchandising A/B testing |
+| **Evaluations** | [`evals/`](evals/) | ADK evaluation suites with user simulation for all agents |
+| **Infrastructure** | [`infra/`](infra/) | Shell scripts for Discovery Engine, BigQuery, and Model Armor provisioning |
 
 ---
 
@@ -138,7 +145,7 @@ The agent uses a **multi-agent architecture** with Google's [Agent Development K
 ┌─────────────────────────────────────────────────────────┐
 │                    Root Agent                            │
 │                 "grocery_assistant"                       │
-│              (gemini-2.0-flash)                          │
+│              (gemini-3.0-flash)                          │
 │                                                          │
 │  Tools:                                                  │
 │  ├─ DiscoveryEngineSearchTool                            │
@@ -184,6 +191,77 @@ Key files:
 - [`src/mcp_agent/agent.py`](src/mcp_agent/agent.py) — Agent with `McpToolset` + `StdioServerParameters`
 - [`src/mcp_agent/tools.yaml`](src/mcp_agent/tools.yaml) — Toolbox configuration
 - [`tests/test_mcp_agent.py`](tests/test_mcp_agent.py) — 29 unit tests
+
+---
+
+## Memory Bank
+
+Memory Bank enables cross-session memory so the agent remembers user preferences and past interactions. See [Architecture: Memory Bank](docs/architecture.md#memory-bank).
+
+- `PreloadMemoryTool` automatically loads relevant memories at the start of each turn
+- Memories are scoped per `user_id` — each browser gets a unique persistent ID via `localStorage`
+- No separate provisioning needed — Memory Bank is built into Agent Engine
+
+## Model Armor
+
+Model Armor screens prompts and responses for harmful content on the Discovery Engine. See [Architecture: Model Armor](docs/architecture.md#model-armor).
+
+Filters: RAI harm, prompt injection/jailbreak, PII (SDP), malicious URIs.
+
+```bash
+# Provision Model Armor template and enable on engine
+bash infra/provision_model_armor.sh
+```
+
+---
+
+## A2A Agent (Cloud Run)
+
+An A2A-enabled version of the grocery agent for inter-agent communication and Cloud Run deployment. See [Architecture: A2A](docs/architecture.md#memory-bank).
+
+```bash
+# Local development
+python -m src.a2a_agent
+
+# Deploy to Cloud Run
+bash src/a2a_agent/deploy_to_cloud_run.sh
+
+# Deploy to Agent Engine
+python -m src.a2a_agent.deploy_to_agent_engine
+```
+
+The agent exposes:
+- `GET /.well-known/agent.json` — AgentCard with capabilities
+- `POST /a2a` — A2A task execution endpoint
+
+Key files:
+- [`src/a2a_agent/agent.py`](src/a2a_agent/agent.py) — Agent definition + AgentCard
+- [`src/a2a_agent/server.py`](src/a2a_agent/server.py) — A2A server (uvicorn)
+- [`src/a2a_agent/Dockerfile`](src/a2a_agent/Dockerfile) — Cloud Run container
+- [`src/a2a_agent/deploy_to_cloud_run.sh`](src/a2a_agent/deploy_to_cloud_run.sh) — Deployment script
+
+---
+
+## Shopper Simulator
+
+A world-model simulation agent that simulates shoppers walking store aisles and building carts. Evaluates endcap merchandising placement strategies.
+
+```bash
+# Local development
+cd src/simulator_agent && adk web
+```
+
+**Features:**
+- 5 shopper personas (budget family, health enthusiast, quick-stop, weekend cook, elderly regular)
+- 3 store layouts (Downtown, Westside, Lakefront Market)
+- 4 merchandising scenarios (baseline, seasonal produce, snack impulse, health wellness)
+- Concurrent sub-agent simulation
+- Aggregate metrics: endcap conversion rate, incremental revenue, ROI
+
+Key files:
+- [`src/simulator_agent/agent.py`](src/simulator_agent/agent.py) — Orchestrator + shopper agents
+- [`src/simulator_agent/scenarios/`](src/simulator_agent/scenarios/) — User simulation scenarios
+- [`evals/simulator/`](evals/simulator/) — Evaluation config
 
 ---
 
@@ -303,6 +381,7 @@ ge_grocery_store/
 ├── infra/
 │   ├── provision_engine.sh        # Create Discovery Engine app
 │   ├── provision_datastore.sh     # Create + populate data stores
+│   ├── provision_model_armor.sh   # Create Model Armor template + enable on engine
 │   ├── upload_assets.sh           # Upload PDFs to GCS
 │   └── bigquery/
 │       ├── create_schema.sql      # Star schema DDL
@@ -322,9 +401,20 @@ ge_grocery_store/
 │   │       └── system_prompts.py  # Retailer-agnostic instructions
 │   ├── mcp_agent/
 │   │   ├── agent.py               # MCP-based BigQuery agent
+│   │   ├── deploy_to_agent_engine.py  # Agent Engine deployment
 │   │   ├── tools.yaml             # MCP Toolbox configuration
 │   │   ├── .env                   # MCP agent env vars
-│   │   └── requirements.txt      # MCP agent dependencies
+│   │   └── requirements.txt       # MCP agent dependencies
+│   ├── a2a_agent/
+│   │   ├── agent.py               # A2A-enabled grocery agent
+│   │   ├── server.py              # A2A server (uvicorn)
+│   │   ├── Dockerfile             # Cloud Run container
+│   │   ├── deploy_to_cloud_run.sh # Cloud Run deployment
+│   │   ├── deploy_to_agent_engine.py  # Agent Engine deployment
+│   │   └── requirements.txt       # A2A agent dependencies
+│   ├── simulator_agent/
+│   │   ├── agent.py               # Shopper simulator orchestrator
+│   │   └── scenarios/             # User simulation scenarios
 │   ├── frontend/
 │   │   ├── index.html             # Branded chat UI
 │   │   ├── server.py              # Python proxy server
@@ -340,7 +430,13 @@ ge_grocery_store/
 │   ├── brand_guidelines/          # Generated brand guide PDFs
 │   ├── sops/                      # Generated SOP PDFs
 │   └── templates/                 # Report template PDFs
-├── tests/                         # 82 tests (see Testing)
+├── evals/                         # ADK evaluation suites
+│   ├── grocery_assistant/         # Root agent evals
+│   ├── mcp_analyst/               # MCP agent evals
+│   └── simulator/                 # Simulator evals
+├── tests/                         # 85+ tests (see Testing)
+├── .github/workflows/
+│   └── unit-tests.yml             # GitHub Actions CI
 ├── pyproject.toml                 # Python project config
 └── README.md                      # This file
 ```
