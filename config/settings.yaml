@@ -1,0 +1,53 @@
+# ============================================================
+# Workshop Configuration — Retailer-Agnostic Settings
+# ============================================================
+# IMPORTANT: Never hardcode client/retailer names in source code.
+# All retailer-specific strings are defined here and loaded at runtime.
+
+retailer:
+  name: "ValueFresh Market"
+  tagline: "Fresh choices, every day."
+  stores:
+    - store_id: 1
+      store_name: "Downtown Market"
+      city: "Austin"
+      state: "TX"
+      zip_code: "78701"
+      square_feet: 85000
+      open_date: "2015-03-12"
+    - store_id: 2
+      store_name: "Westside Market"
+      city: "San Antonio"
+      state: "TX"
+      zip_code: "78204"
+      square_feet: 62000
+      open_date: "2008-07-01"
+    - store_id: 3
+      store_name: "Lakefront Market"
+      city: "Houston"
+      state: "TX"
+      zip_code: "77006"
+      square_feet: 74000
+      open_date: "2019-11-15"
+
+project:
+  id: "wortz-project-352116"
+  location: "global"
+  engine_id: "grocery-workshop-engine"
+  agent_id: ""  # Not used for search engines with streamAssist
+  agent_engine_id: "3323818153208709120"  # ADK agent deployed to Agent Engine (with telemetry)
+  data_agent_id: "14793816534468506603"  # Data Insights Agent for BQ analytics
+  authorization_id: "grocery-data-agent-auth"  # OAuth auth resource for data agent
+
+bigquery:
+  project: "wortz-project-352116"
+  dataset: "ge_grocery_demo"
+  location: "US"
+
+gcs:
+  bucket: "wortz-project-352116-ge-workshop"
+  brand_guidelines_prefix: "brand_guidelines/"
+  sop_prefix: "sops/"
+
+drive:
+  folder_id: ""      # Populated after uploading assets

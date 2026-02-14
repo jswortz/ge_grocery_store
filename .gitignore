@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+
+# Environment
+.env
+
+# Generated PDFs (re-generate with src/docs_gen/)
+*.pdf
+!data/templates/*.pdf
+
+# IDE
+.vscode/
+.idea/
+
+# MCP config (may contain secrets)
+.mcp.json
+
+# pytest
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deployment artifacts
+deploy_to_ae.py
+
+# Claude session data
+.claude/plans/
+.claude/projects/
+.claude/skills/
+
+# Scratchpad (development notes)
+scratchpad.md
