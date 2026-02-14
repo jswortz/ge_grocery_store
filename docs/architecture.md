@@ -24,107 +24,6 @@ The system is organized into four layers, each interfacing with Google Cloud ser
 
 ![System Architecture](diagrams/01_system_architecture.png)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                      PRESENTATION LAYER                             │
-│                                                                     │
-│   ┌──────────────────────────┐     ┌─────────────────────────────┐  │
-│   │   Frontend Web UI        │     │  StreamAssist Python Client  │  │
-│   │   src/frontend/          │     │  src/client/stream_assist.py │  │
-│   │   index.html + server.py │     │  REST client + retry logic   │  │
-│   └──────────┬───────────────┘     └──────────────┬──────────────┘  │
-│              │                                    │                  │
-└──────────────┼────────────────────────────────────┼──────────────────┘
-               │                                    │
-               ▼                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                         AGENT LAYER                                 │
-│                                                                     │
-│   ┌──────────────────────────────────────────────────────────────┐  │
-│   │                    ADK Root Agent                             │  │
-│   │                 "grocery_assistant"                            │  │
-│   │              (gemini-3.0-flash)                               │  │
-│   │                                                               │  │
-│   │  DiscoveryEngineSearchTool  ──────┐                           │  │
-│   │  (FunctionTool subclass)         │                           │  │
-│   │                                   │                           │  │
-│   │  ┌──────────────┐  ┌────────────────────┐                    │  │
-│   │  │analytics_agent│  │   image_agent      │                    │  │
-│   │  │  (sub-agent)  │  │   (sub-agent)      │                    │  │
-│   │  │               │  │                    │                    │  │
-│   │  │ BigQuery SQL  │  │  Imagen API        │                    │  │
-│   │  │ FunctionTool  │  │  FunctionTool      │                    │  │
-│   │  └──────┬───────┘  └────────┬───────────┘                    │  │
-│   └─────────┼───────────────────┼────────────────────────────────┘  │
-│             │                   │                                    │
-│   ┌─────────────────────────────────────────────────────────────┐   │
-│   │              MCP Agent (Alternative)                         │   │
-│   │           "mcp_grocery_analyst"                              │   │
-│   │           src/mcp_agent/agent.py                             │   │
-│   │                                                              │   │
-│   │   ADK Agent --(MCP stdio)--> genai-toolbox --(API)--> BQ    │   │
-│   └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└──────────────┬──────────────────┬────────────────────────────────────┘
-               │                  │
-               ▼                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                   SEARCH & RETRIEVAL LAYER                          │
-│                                                                     │
-│   ┌────────────────────────────────────────────────────────────┐    │
-│   │              Gemini Enterprise                              │    │
-│   │         (Discovery Engine App)                              │    │
-│   │       "grocery-workshop-engine"                             │    │
-│   │                                                             │    │
-│   │  ┌─────────────────┐  ┌──────────────────────────────┐     │    │
-│   │  │   sop-store      │  │  brand-guidelines-store      │     │    │
-│   │  │   (GCS PDFs)     │  │  (GCS PDFs)                  │     │    │
-│   │  │                  │  │                               │     │    │
-│   │  │  Closing procs   │  │  Colors, typography,         │     │    │
-│   │  │  Opening procs   │  │  tone, logo usage            │     │    │
-│   │  │  Safety checks   │  │                               │     │    │
-│   │  └─────────────────┘  └──────────────────────────────┘     │    │
-│   │                                                             │    │
-│   │  Endpoints:                                                 │    │
-│   │  - SearchService (direct search)                            │    │
-│   │  - StreamAssist (conversational AI)                         │    │
-│   └────────────────────────────────────────────────────────────┘    │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                         DATA LAYER                                  │
-│                                                                     │
-│   ┌────────────────────────────────────────────────────────────┐    │
-│   │              BigQuery Star Schema                           │    │
-│   │           wortz-project-352116.ge_grocery_demo              │    │
-│   │                                                             │    │
-│   │  ┌──────────────────┐                                      │    │
-│   │  │ fact_transactions │  12K+ rows                           │    │
-│   │  │  transaction_id   │  transaction_ts, store_id,          │    │
-│   │  │  employee_id      │  product_id, quantity,              │    │
-│   │  │  total_amount     │  payment_method, customer_id        │    │
-│   │  └────────┬─────────┘                                      │    │
-│   │           │                                                 │    │
-│   │     ┌─────┼─────────┬──────────────┬───────────────┐       │    │
-│   │     ▼     ▼         ▼              ▼               │       │    │
-│   │  dim_store  dim_product  dim_employee  dim_customer │       │    │
-│   │  (3 rows)   (20 rows)    (15 rows)     (40 rows)   │       │    │
-│   │                                                     │       │    │
-│   │  Store Manager > Dept Manager > Cashier > Stock Clerk       │    │
-│   │  Loyalty: Gold / Silver / Bronze                            │    │
-│   └────────────────────────────────────────────────────────────┘    │
-│                                                                     │
-│   ┌────────────────────────────────────────────────────────────┐    │
-│   │                  GCS Bucket                                 │    │
-│   │     gs://wortz-project-352116-ge-workshop/                  │    │
-│   │     SOP PDFs + Brand guideline PDFs                         │    │
-│   └────────────────────────────────────────────────────────────┘    │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
 ---
 
 ## Presentation Layer
@@ -181,29 +80,6 @@ The primary agent uses Google's [Agent Development Kit (ADK)](https://google.git
 
 ![Agent Architecture](diagrams/02_agent_architecture.png)
 
-```
-┌────────────────────────────────────────────────────────┐
-│                Root Agent                                │
-│             "grocery_assistant"                           │
-│          model: gemini-3.0-flash                         │
-│                                                          │
-│  Tools:                                                  │
-│  ├── DiscoveryEngineSearchTool (FunctionTool subclass)   │
-│  │    Searches: sop-store, brand-guidelines-store        │
-│  │    Restricted via data_store_specs (excludes          │
-│  │    workspace stores: Gmail, Calendar, Jira)           │
-│  │                                                       │
-│  Sub-agents (via transfer_to_agent):                     │
-│  ├── analytics_agent                                     │
-│  │    └── query_grocery_data (BigQuery FunctionTool)     │
-│  │        Pattern-matched SQL generation                 │
-│  │                                                       │
-│  └── image_agent                                         │
-│       └── generate_product_image (Imagen FunctionTool)   │
-│           Vertex AI imagen-3.0-generate-002                   │
-└────────────────────────────────────────────────────────┘
-```
-
 **Key design decision**: `DiscoveryEngineSearchTool` vs `VertexAiSearchTool`
 
 `VertexAiSearchTool` adds a built-in Gemini retrieval tool that conflicts with the `transfer_to_agent` function tools injected by sub-agents. The ADK's `llm_agent.py` bypass check (`len(self.tools) > 1`) doesn't account for implicit transfer tools. `DiscoveryEngineSearchTool` is a `FunctionTool` subclass that wraps the SearchService REST API directly, avoiding this conflict entirely.
@@ -257,19 +133,7 @@ The Discovery Engine app `grocery-workshop-engine` provides enterprise search an
 
 Dataset: `wortz-project-352116.ge_grocery_demo`
 
-```
-                    ┌──────────────────┐
-                    │ fact_transactions │
-                    │   (12,000+ rows) │
-                    └───────┬──────────┘
-                            │
-          ┌─────────┬───────┼───────┬──────────┐
-          ▼         ▼       ▼       ▼          ▼
-    ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-    │ dim_store│ │dim_product│ │dim_employ│ │dim_custom│
-    │  3 rows  │ │  20 rows  │ │  15 rows │ │  40 rows │
-    └──────────┘ └──────────┘ └──────────┘ └──────────┘
-```
+![Star Schema](diagrams/04_star_schema.png)
 
 **Relationships:**
 - `fact_transactions.store_id` → `dim_store.store_id`
@@ -282,15 +146,6 @@ Dataset: `wortz-project-352116.ge_grocery_demo`
 **Schema files:**
 - DDL: [`infra/bigquery/create_schema.sql`](../infra/bigquery/create_schema.sql)
 - Seed data: [`infra/bigquery/seed_data.sql`](../infra/bigquery/seed_data.sql)
-
-### Employee Role Hierarchy
-
-```
-Store Manager
-  └── Department Manager
-        ├── Cashier
-        └── Stock Clerk
-```
 
 ### Customer Loyalty Tiers
 
@@ -308,14 +163,7 @@ An alternative analytics approach using the [MCP Toolbox for Databases](https://
 
 ### Architecture
 
-```
-┌──────────────────┐     ┌─────────────────┐     ┌──────────┐
-│   ADK Agent      │     │  genai-toolbox   │     │ BigQuery │
-│ mcp_grocery_     │────▶│  (subprocess)    │────▶│   API    │
-│ analyst          │ MCP │  --prebuilt bq   │REST │          │
-│                  │stdio│                  │     │          │
-└──────────────────┘     └─────────────────┘     └──────────┘
-```
+![MCP Integration](diagrams/05_mcp_integration.png)
 
 **How it works:**
 1. The ADK agent spawns the `genai-toolbox` binary as a subprocess
@@ -365,30 +213,7 @@ The following diagram shows how a user query flows through the system from entry
 
 ### Agent Engine (Production)
 
-```
-┌─────────────┐     ┌──────────────────────────────────────────┐
-│ Client      │     │     Vertex AI Agent Engine                │
-│ (REST API)  │────▶│     us-central1                           │
-│             │     │                                           │
-│ streamQuery │     │  ┌─────────────────────────────────────┐  │
-│             │     │  │  ReasoningEngine                     │  │
-│             │     │  │  ID: 3323818153208709120              │  │
-│             │     │  │                                       │  │
-│             │     │  │  ADK Agent (grocery_assistant)        │  │
-│             │     │  │  ├── DiscoveryEngineSearchTool        │  │
-│             │     │  │  ├── analytics_agent (BigQuery)       │  │
-│             │     │  │  └── image_agent (Imagen)             │  │
-│             │     │  │                                       │  │
-│             │     │  │  OpenTelemetry: Enabled               │  │
-│             │     │  └─────────────────────────────────────┘  │
-│             │     │                                           │
-└─────────────┘     └──────────────────────────────────────────┘
-                                    │
-                    ┌───────────────┼───────────────┐
-                    ▼               ▼               ▼
-            Discovery Engine   BigQuery        Vertex AI
-            (Search)           (Analytics)     (Imagen)
-```
+![Deployment Architecture](diagrams/06_deployment.png)
 
 **Resource:** `projects/679926387543/locations/us-central1/reasoningEngines/3323818153208709120`
 
@@ -409,34 +234,7 @@ cd src && adk deploy agent_engine \
 
 All configuration flows through `config/settings.yaml` with environment variable overrides for deployment.
 
-```
-┌────────────────────┐     ┌──────────────────────────────┐
-│ config/             │     │ Environment Variables         │
-│ settings.yaml       │     │ (Agent Engine deployment)     │
-│                     │     │                               │
-│ retailer.name       │◀───│ RETAILER_NAME                 │
-│ project.id          │◀───│ PROJECT_ID                    │
-│ project.engine_id   │◀───│ ENGINE_ID                     │
-│ bigquery.project    │◀───│ BQ_PROJECT                    │
-│ bigquery.dataset    │◀───│ BQ_DATASET                    │
-└─────────┬──────────┘     └──────────────────────────────┘
-          │
-          ▼
-┌─────────────────────────────────────────────────────┐
-│              _load_config()                          │
-│  (src/agent/agent.py, src/mcp_agent/agent.py)       │
-│                                                      │
-│  1. Read settings.yaml                               │
-│  2. Apply env var overrides                          │
-│  3. Return merged config dict                        │
-└──────────┬──────────────────────────────┬────────────┘
-           │                              │
-     ┌─────▼──────┐              ┌────────▼───────┐
-     │ bq_tool.py │              │ system_prompts │
-     │ image_gen  │              │ stream_assist  │
-     │ sop_tool   │              │ mcp_agent      │
-     └────────────┘              └────────────────┘
-```
+![Configuration System](diagrams/07_config_system.png)
 
 **No client names are hardcoded in source code.** Tests enforce this:
 - `tests/test_bigquery.py` checks for forbidden names in BigQuery data
@@ -451,28 +249,7 @@ Memory Bank provides shared memory across agent sessions so the agent remembers 
 
 ### How It Works
 
-```
-┌──────────────┐     ┌──────────────────────────────────────┐
-│ User (browser)│     │     Agent Engine                      │
-│               │     │                                       │
-│  localStorage │     │  ┌─────────────────────────────────┐  │
-│  vf_user_id   │────▶│  │  ADK Agent                       │  │
-│               │     │  │  ├── PreloadMemoryTool            │  │
-│               │     │  │  │   (auto-loads memories per     │  │
-│               │     │  │  │    user_id at each turn)       │  │
-│               │     │  │  └── ...other tools               │  │
-│               │     │  └─────────────┬───────────────────┘  │
-│               │     │                │                       │
-│               │     │  ┌─────────────▼───────────────────┐  │
-│               │     │  │  VertexAiMemoryBankService       │  │
-│               │     │  │  (scoped to agent_engine_id)     │  │
-│               │     │  │                                   │  │
-│               │     │  │  GenerateMemories: auto-extract   │  │
-│               │     │  │  CreateMemory: agent-controlled   │  │
-│               │     │  └─────────────────────────────────┘  │
-│               │     │                                       │
-└──────────────┘     └──────────────────────────────────────┘
-```
+![Memory Bank & Model Armor](diagrams/08_memory_model_armor.png)
 
 **Key points:**
 - `PreloadMemoryTool` is added to the root agent's tool list
@@ -504,17 +281,7 @@ Model Armor provides content safety screening on the Discovery Engine `grocery-w
 
 ### Architecture
 
-```
-┌──────────┐     ┌──────────────────────┐     ┌─────────────────┐
-│  User    │────▶│  Model Armor         │────▶│ Discovery Engine │
-│  Query   │     │  Template            │     │ grocery-workshop │
-│          │     │  grocery-workshop-   │     │ -engine          │
-│          │     │  armor               │     │                  │
-│          │◀────│                      │◀────│  StreamAssist    │
-│ Response │     │  Screens both        │     │  SearchService   │
-│          │     │  input and output    │     │                  │
-└──────────┘     └──────────────────────┘     └─────────────────┘
-```
+See the [Memory Bank & Model Armor diagram](diagrams/08_memory_model_armor.png) above for the full architecture.
 
 **Failure mode:** `FAIL_OPEN` — if Model Armor is unavailable, queries pass through to avoid blocking production traffic.
 

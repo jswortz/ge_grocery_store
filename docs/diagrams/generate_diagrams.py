@@ -903,9 +903,496 @@ def diagram_3_data_flow():
     print(f"Diagram 3 saved to {output_path}.png")
 
 
+def _common_attrs(label, dpi="600"):
+    """Shared graph attributes for consistent style across diagrams."""
+    return {
+        "rankdir": "TB",
+        "bgcolor": "#f8f9fa",
+        "fontname": "Helvetica",
+        "pad": "0.5",
+        "nodesep": "0.6",
+        "ranksep": "0.8",
+        "label": label,
+        "labelloc": "t",
+        "labeljust": "c",
+        "fontsize": "24",
+        "fontcolor": "#1a1a2e",
+        "dpi": dpi,
+        "size": "20,15",
+    }
+
+
+def diagram_4_star_schema():
+    """Generate the BigQuery star schema diagram."""
+    dot = graphviz.Digraph(
+        "star_schema",
+        format="png",
+        engine="dot",
+        graph_attr={
+            **_common_attrs("BigQuery Star Schema\nwortz-project-352116.ge_grocery_demo"),
+            "ranksep": "1.0",
+        },
+        node_attr={
+            "fontname": "Helvetica",
+            "fontsize": "13",
+            "style": "filled",
+            "shape": "box",
+            "margin": "0.3,0.2",
+        },
+        edge_attr={
+            "fontname": "Helvetica",
+            "fontsize": "11",
+            "color": "#555555",
+        },
+    )
+
+    # Fact table
+    dot.node(
+        "fact",
+        "fact_transactions\n12,000+ rows\n\ntransaction_id | transaction_ts\nstore_id | employee_id | product_id\nquantity | unit_price | total_amount\npayment_method | customer_id",
+        fillcolor="#ffcc80",
+        color="#e65100",
+        shape="box3d",
+        penwidth="2.5",
+    )
+
+    # Dimension tables
+    for name, rows, cols, extra in [
+        ("dim_store", "3 rows", "store_name | city | state\nzip_code | square_feet | open_date", ""),
+        ("dim_product", "20 rows", "product_name | category | brand\nunit_price | unit_cost\nimage_uri | description", ""),
+        ("dim_employee", "15 rows", "first_name | last_name | role\nstore_id | hire_date", "\n\nRole Hierarchy:\nStore Mgr > Dept Mgr >\nCashier > Stock Clerk"),
+        ("dim_customer", "40 rows", "first_name | last_name | email\nloyalty_tier | home_store_id\npoints_balance | signup_date", "\n\nLoyalty Tiers:\nGold | Silver | Bronze"),
+    ]:
+        dot.node(
+            name,
+            f"{name}\n{rows}\n\n{cols}{extra}",
+            fillcolor="#ffe0b2",
+            color="#e65100",
+            shape="cylinder",
+            penwidth="1.5",
+        )
+
+    # FK edges
+    for dim, fk in [
+        ("dim_store", "store_id"),
+        ("dim_product", "product_id"),
+        ("dim_employee", "employee_id"),
+        ("dim_customer", "customer_id"),
+    ]:
+        dot.edge("fact", dim, label=fk, color="#e65100", penwidth="2", style="bold")
+
+    # Cross-dimension edges
+    dot.edge("dim_employee", "dim_store", label="store_id (FK)", color="#bf360c", style="dashed")
+    dot.edge("dim_customer", "dim_store", label="home_store_id (FK)", color="#bf360c", style="dashed")
+
+    output_path = os.path.join(OUTPUT_DIR, "04_star_schema")
+    dot.render(output_path, cleanup=True)
+    print(f"Diagram 4 saved to {output_path}.png")
+
+
+def diagram_5_mcp_integration():
+    """Generate the MCP integration architecture diagram."""
+    dot = graphviz.Digraph(
+        "mcp_integration",
+        format="png",
+        engine="dot",
+        graph_attr={
+            **_common_attrs("MCP Integration Architecture\ngenai-toolbox for BigQuery"),
+            "rankdir": "LR",
+            "size": "20,8",
+        },
+        node_attr={
+            "fontname": "Helvetica",
+            "fontsize": "14",
+            "style": "filled",
+            "shape": "box",
+            "margin": "0.3,0.2",
+        },
+        edge_attr={
+            "fontname": "Helvetica",
+            "fontsize": "12",
+            "color": "#555555",
+        },
+    )
+
+    # ADK Agent
+    with dot.subgraph(name="cluster_adk") as c:
+        c.attr(
+            label="ADK Agent",
+            style="filled,rounded",
+            color="#2e7d32",
+            fillcolor="#e8f5e9",
+            fontsize="14",
+            penwidth="2",
+        )
+        c.node(
+            "agent",
+            "mcp_grocery_analyst\ngemini-3.0-flash\n\nLLM generates\narbitrary SQL",
+            fillcolor="#c8e6c9",
+            color="#2e7d32",
+            penwidth="2",
+        )
+        c.node(
+            "mcp_toolset",
+            "McpToolset\n\nStdioConnectionParams\nStdioServerParameters",
+            fillcolor="#a5d6a7",
+            color="#2e7d32",
+            shape="component",
+        )
+        c.edge("agent", "mcp_toolset", color="#2e7d32", penwidth="2")
+
+    # genai-toolbox
+    with dot.subgraph(name="cluster_toolbox") as c:
+        c.attr(
+            label="genai-toolbox (subprocess)",
+            style="filled,rounded",
+            color="#1565c0",
+            fillcolor="#e3f2fd",
+            fontsize="14",
+            penwidth="2",
+        )
+        c.node(
+            "toolbox",
+            "genai-toolbox binary\n--prebuilt bigquery\n--stdio",
+            fillcolor="#bbdefb",
+            color="#1565c0",
+            shape="box3d",
+            penwidth="2",
+        )
+        c.node(
+            "tools",
+            "9 BigQuery Tools\n\nexecute_sql | list_table_ids\nget_table_info | get_dataset_info\nlist_dataset_ids | search_catalog\nask_data_insights | forecast\nanalyze_contribution",
+            fillcolor="#90caf9",
+            color="#1565c0",
+        )
+        c.edge("toolbox", "tools", color="#1565c0")
+
+    # BigQuery
+    dot.node(
+        "bq",
+        "BigQuery API\n\nge_grocery_demo\n12K+ transactions\n5 tables",
+        fillcolor="#ffcc80",
+        color="#e65100",
+        shape="cylinder",
+        penwidth="2",
+    )
+
+    # Edges
+    dot.edge("mcp_toolset", "toolbox", label="MCP over stdio", color="#1565c0", penwidth="2.5", style="bold")
+    dot.edge("tools", "bq", label="REST API", color="#e65100", penwidth="2.5", style="bold")
+
+    output_path = os.path.join(OUTPUT_DIR, "05_mcp_integration")
+    dot.render(output_path, cleanup=True)
+    print(f"Diagram 5 saved to {output_path}.png")
+
+
+def diagram_6_deployment():
+    """Generate the deployment architecture diagram."""
+    dot = graphviz.Digraph(
+        "deployment",
+        format="png",
+        engine="dot",
+        graph_attr={
+            **_common_attrs("Deployment Architecture\nAgent Engine + Cloud Run + Discovery Engine"),
+        },
+        node_attr={
+            "fontname": "Helvetica",
+            "fontsize": "13",
+            "style": "filled",
+            "shape": "box",
+            "margin": "0.3,0.2",
+        },
+        edge_attr={
+            "fontname": "Helvetica",
+            "fontsize": "11",
+            "color": "#555555",
+        },
+    )
+
+    # Client
+    dot.node(
+        "client",
+        "Client\n(Frontend UI / REST API / A2A Agent)",
+        fillcolor="#fce4ec",
+        color="#c62828",
+        shape="ellipse",
+        penwidth="2",
+    )
+
+    # Agent Engine
+    with dot.subgraph(name="cluster_ae") as c:
+        c.attr(
+            label="Vertex AI Agent Engine (us-central1)",
+            style="filled,rounded",
+            color="#2e7d32",
+            fillcolor="#e8f5e9",
+            fontsize="16",
+            penwidth="2",
+        )
+        c.node(
+            "re",
+            "ReasoningEngine\nID: 3323818153208709120\n\nADK Agent (grocery_assistant)\n+ PreloadMemoryTool\n+ DiscoveryEngineSearchTool\n+ analytics_agent (BigQuery)\n+ image_agent (Imagen)\n\nOpenTelemetry: Enabled",
+            fillcolor="#c8e6c9",
+            color="#2e7d32",
+            shape="box3d",
+            penwidth="2",
+        )
+        c.node(
+            "memory",
+            "Memory Bank\n(VertexAiMemoryBankService)\nPer-user cross-session memory",
+            fillcolor="#e8eaf6",
+            color="#3f51b5",
+            shape="box3d",
+        )
+        c.edge("re", "memory", label="per user_id", color="#3f51b5", style="dashed")
+
+    # Cloud Run
+    with dot.subgraph(name="cluster_cr") as c:
+        c.attr(
+            label="Cloud Run (us-central1)",
+            style="filled,rounded",
+            color="#00695c",
+            fillcolor="#e0f2f1",
+            fontsize="16",
+            penwidth="2",
+        )
+        c.node(
+            "a2a",
+            "A2A Agent\ngrocery-a2a-agent\n\n/.well-known/agent.json\n/a2a endpoint\nuvicorn + Starlette",
+            fillcolor="#b2dfdb",
+            color="#00695c",
+            shape="box3d",
+            penwidth="2",
+        )
+
+    # Backend services
+    dot.node("de", "Discovery Engine\n(global)\ngrocery-workshop-engine", fillcolor="#bbdefb", color="#1565c0", shape="box3d")
+    dot.node("ma", "Model Armor\ngrocery-workshop-armor\n(us-central1)", fillcolor="#fce4ec", color="#c62828", shape="octagon")
+    dot.node("bq", "BigQuery\nge_grocery_demo", fillcolor="#ffcc80", color="#e65100", shape="cylinder")
+    dot.node("imagen", "Vertex AI Imagen\nimagen-3.0-generate-002", fillcolor="#e1bee7", color="#6a1b9a", shape="cylinder")
+
+    # Edges
+    dot.edge("client", "re", label="streamQuery API", color="#2e7d32", penwidth="2")
+    dot.edge("client", "a2a", label="A2A protocol", color="#00695c", penwidth="2")
+    dot.edge("re", "de", label="search", color="#1565c0", penwidth="1.5")
+    dot.edge("de", "ma", label="screens I/O", color="#c62828", style="dashed", penwidth="1.5")
+    dot.edge("re", "bq", label="SQL", color="#e65100", penwidth="1.5")
+    dot.edge("re", "imagen", label="generate", color="#6a1b9a", penwidth="1.5")
+    dot.edge("a2a", "re", label="delegates to\nAgent Engine", color="#2e7d32", style="dashed")
+
+    output_path = os.path.join(OUTPUT_DIR, "06_deployment")
+    dot.render(output_path, cleanup=True)
+    print(f"Diagram 6 saved to {output_path}.png")
+
+
+def diagram_7_config_system():
+    """Generate the configuration system diagram."""
+    dot = graphviz.Digraph(
+        "config_system",
+        format="png",
+        engine="dot",
+        graph_attr={
+            **_common_attrs("Configuration System\nconfig/settings.yaml + Environment Variable Overrides"),
+            "size": "18,12",
+        },
+        node_attr={
+            "fontname": "Helvetica",
+            "fontsize": "13",
+            "style": "filled",
+            "shape": "box",
+            "margin": "0.3,0.2",
+        },
+        edge_attr={
+            "fontname": "Helvetica",
+            "fontsize": "11",
+            "color": "#555555",
+        },
+    )
+
+    # Config file
+    dot.node(
+        "yaml",
+        "config/settings.yaml\n\nretailer.name\nproject.id | project.engine_id\nbigquery.project | bigquery.dataset\nmemory.enabled | memory.location\nmodel_armor.enabled | model_armor.template_id",
+        fillcolor="#eceff1",
+        color="#455a64",
+        shape="note",
+        penwidth="2",
+    )
+
+    # Env vars
+    dot.node(
+        "env",
+        "Environment Variables\n(Agent Engine deployment)\n\nRETAILER_NAME\nPROJECT_ID | ENGINE_ID\nBQ_PROJECT | BQ_DATASET\nADK_MODEL",
+        fillcolor="#fff9c4",
+        color="#f57f17",
+        shape="parallelogram",
+        penwidth="2",
+    )
+
+    # _load_config()
+    dot.node(
+        "loader",
+        "_load_config()\n\n1. Read settings.yaml\n2. Apply env var overrides\n3. Return merged config dict",
+        fillcolor="#dcedc8",
+        color="#33691e",
+        shape="box3d",
+        penwidth="2.5",
+    )
+
+    # Consumers
+    consumers = [
+        ("bq_tool", "bq_tool.py\nBigQuery SQL", "#ffe0b2", "#e65100"),
+        ("image_gen", "image_gen_tool.py\nImagen prompts", "#e1bee7", "#6a1b9a"),
+        ("system_prompts", "system_prompts.py\nRetailer name\nin instructions", "#bbdefb", "#1565c0"),
+        ("stream_assist", "stream_assist.py\nAPI endpoints\nProject config", "#e8eaf6", "#283593"),
+        ("mcp_agent", "mcp_agent/agent.py\nBQ project\nSchema context", "#c8e6c9", "#2e7d32"),
+        ("a2a_agent", "a2a_agent/agent.py\nAll config\nfor A2A serving", "#b2dfdb", "#00695c"),
+    ]
+    for name, label, fill, border in consumers:
+        dot.node(name, label, fillcolor=fill, color=border, shape="component")
+
+    # Edges
+    dot.edge("yaml", "loader", label="file read", color="#455a64", penwidth="2")
+    dot.edge("env", "loader", label="overrides", color="#f57f17", penwidth="2", style="dashed")
+    for name, _, _, _ in consumers:
+        dot.edge("loader", name, color="#33691e", penwidth="1.5")
+
+    output_path = os.path.join(OUTPUT_DIR, "07_config_system")
+    dot.render(output_path, cleanup=True)
+    print(f"Diagram 7 saved to {output_path}.png")
+
+
+def diagram_8_memory_model_armor():
+    """Generate the Memory Bank + Model Armor diagram."""
+    dot = graphviz.Digraph(
+        "memory_model_armor",
+        format="png",
+        engine="dot",
+        graph_attr={
+            **_common_attrs("Memory Bank & Model Armor\nCross-Session Personalization + Content Safety"),
+            "size": "20,12",
+        },
+        node_attr={
+            "fontname": "Helvetica",
+            "fontsize": "13",
+            "style": "filled",
+            "shape": "box",
+            "margin": "0.3,0.2",
+        },
+        edge_attr={
+            "fontname": "Helvetica",
+            "fontsize": "11",
+            "color": "#555555",
+        },
+    )
+
+    # User
+    dot.node(
+        "user",
+        "User (Browser)\n\nlocalStorage: vf_user_id\ncrypto.randomUUID()",
+        fillcolor="#fce4ec",
+        color="#c62828",
+        shape="ellipse",
+        penwidth="2",
+    )
+
+    # Memory Bank
+    with dot.subgraph(name="cluster_memory") as c:
+        c.attr(
+            label="Memory Bank (Agent Engine)",
+            style="filled,rounded",
+            color="#3f51b5",
+            fillcolor="#e8eaf6",
+            fontsize="14",
+            penwidth="2",
+        )
+        c.node(
+            "preload",
+            "PreloadMemoryTool\n\nAuto-loads memories\nat start of each turn\nbased on user_id",
+            fillcolor="#c5cae9",
+            color="#3f51b5",
+            shape="component",
+        )
+        c.node(
+            "mem_service",
+            "VertexAiMemoryBankService\n(scoped to agent_engine_id)\n\nGenerateMemories: auto-extract facts\nCreateMemory: agent-controlled writes",
+            fillcolor="#9fa8da",
+            color="#283593",
+            shape="box3d",
+        )
+        c.edge("preload", "mem_service", color="#3f51b5", penwidth="2")
+
+    # Model Armor
+    with dot.subgraph(name="cluster_armor") as c:
+        c.attr(
+            label="Model Armor (Discovery Engine)",
+            style="filled,rounded",
+            color="#c62828",
+            fillcolor="#fce4ec",
+            fontsize="14",
+            penwidth="2",
+        )
+        c.node(
+            "template",
+            "Template: grocery-workshop-armor\n\nApplied to both:\n- User prompt (input)\n- Model response (output)",
+            fillcolor="#ef9a9a",
+            color="#c62828",
+            shape="component",
+        )
+        c.node(
+            "filters",
+            "Filters (MEDIUM_AND_ABOVE):\n\nRAI Harm (hate, violence, sexual)\nPrompt Injection & Jailbreak\nSensitive Data Protection (PII)\nMalicious URI Detection",
+            fillcolor="#ffcdd2",
+            color="#c62828",
+        )
+        c.node(
+            "fail_mode",
+            "Failure Mode: FAIL_OPEN\n(pass through if unavailable)",
+            fillcolor="#ffebee",
+            color="#c62828",
+            shape="note",
+        )
+        c.edge("template", "filters", color="#c62828")
+        c.edge("template", "fail_mode", style="dotted", color="#c62828")
+
+    # ADK Agent
+    dot.node(
+        "agent",
+        "ADK Agent\ngrocery_assistant\n\nPersonalized responses\nusing recalled memories",
+        fillcolor="#c8e6c9",
+        color="#2e7d32",
+        shape="box3d",
+        penwidth="2",
+    )
+
+    # Discovery Engine
+    dot.node(
+        "de",
+        "Discovery Engine\ngrocery-workshop-engine\n\nStreamAssist | SearchService",
+        fillcolor="#bbdefb",
+        color="#1565c0",
+        shape="box3d",
+    )
+
+    # Edges
+    dot.edge("user", "agent", label="user_id +\nmessage", color="#c62828", penwidth="2")
+    dot.edge("agent", "preload", label="load memories\nfor user_id", color="#3f51b5", penwidth="2")
+    dot.edge("user", "de", label="StreamAssist\nquery", color="#1565c0", penwidth="2")
+    dot.edge("de", "template", label="screens\nI/O", color="#c62828", penwidth="2", style="dashed")
+
+    output_path = os.path.join(OUTPUT_DIR, "08_memory_model_armor")
+    dot.render(output_path, cleanup=True)
+    print(f"Diagram 8 saved to {output_path}.png")
+
+
 if __name__ == "__main__":
     print(f"Generating diagrams in {OUTPUT_DIR}/\n")
     diagram_1_overall_architecture()
     diagram_2_agent_architecture()
     diagram_3_data_flow()
+    diagram_4_star_schema()
+    diagram_5_mcp_integration()
+    diagram_6_deployment()
+    diagram_7_config_system()
+    diagram_8_memory_model_armor()
     print(f"\nAll diagrams generated successfully.")

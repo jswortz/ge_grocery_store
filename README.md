@@ -12,24 +12,9 @@ A customer-facing workshop demonstrating **Gemini Enterprise** (Discovery Engine
 
 ## Architecture Overview
 
-This workshop integrates Google Cloud AI surfaces across four layers. See [docs/architecture.md](docs/architecture.md) for detailed diagrams.
+This workshop integrates Google Cloud AI surfaces across multiple layers. See [docs/architecture.md](docs/architecture.md) for detailed diagrams.
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  PRESENTATION        Frontend Web UI  ◄──►  StreamAssist Client │
-│                      src/frontend/          src/client/          │
-├──────────────────────────────────────────────────────────────────┤
-│  AGENTS              ADK Agent              MCP Agent            │
-│                      src/agent/             src/mcp_agent/       │
-│                      (Agent Engine)         (genai-toolbox)      │
-├──────────────────────────────────────────────────────────────────┤
-│  SEARCH              Gemini Enterprise (Discovery Engine)        │
-│                      sop-store  ◄──►  brand-guidelines-store     │
-├──────────────────────────────────────────────────────────────────┤
-│  DATA                BigQuery Star Schema   GCS Document Bucket  │
-│                      ge_grocery_demo        PDFs (SOPs, brand)   │
-└──────────────────────────────────────────────────────────────────┘
-```
+![System Architecture](docs/diagrams/01_system_architecture.png)
 
 ### Key Components
 
@@ -141,24 +126,7 @@ The proxy server routes requests:
 
 The agent uses a **multi-agent architecture** with Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/). See [Architecture: Agent Layer](docs/architecture.md#agent-layer) for full details.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Root Agent                            │
-│                 "grocery_assistant"                       │
-│              (gemini-3.0-flash)                          │
-│                                                          │
-│  Tools:                                                  │
-│  ├─ DiscoveryEngineSearchTool                            │
-│  │   ├─ sop-store (closing/opening procedures)           │
-│  │   └─ brand-guidelines-store (colors, tone, typography)│
-│  │                                                       │
-│  Sub-agents:                                             │
-│  ├─ analytics_agent                                      │
-│  │   └─ query_grocery_data (BigQuery FunctionTool)       │
-│  └─ image_agent                                          │
-│      └─ generate_product_image (Imagen FunctionTool)     │
-└─────────────────────────────────────────────────────────┘
-```
+![Agent Architecture](docs/diagrams/02_agent_architecture.png)
 
 **Why `DiscoveryEngineSearchTool` instead of `VertexAiSearchTool`?**
 
@@ -170,9 +138,7 @@ The agent uses a **multi-agent architecture** with Google's [Agent Development K
 
 An alternative analytics agent using the [MCP Toolbox for Databases](https://github.com/googleapis/genai-toolbox). See [Architecture: MCP Integration](docs/architecture.md#mcp-integration).
 
-```
-ADK Agent  --(MCP stdio)-->  genai-toolbox  --(BigQuery API)-->  BigQuery
-```
+![MCP Integration](docs/diagrams/05_mcp_integration.png)
 
 Unlike the main agent's `bq_tool.py` (pattern-matched SQL), the MCP agent lets the LLM generate arbitrary SQL through 9 BigQuery tools (`execute_sql`, `list_table_ids`, `get_table_info`, `forecast`, etc.).
 

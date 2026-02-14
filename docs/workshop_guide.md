@@ -114,25 +114,9 @@ python -m src.frontend    # Open http://localhost:8080
 
 ## Architecture at a Glance
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  SAFETY        Model Armor (RAI, PII, Jailbreak, URI)              │
-├─────────────────────────────────────────────────────────────────────┤
-│  PRESENTATION  Frontend UI  ◄──►  StreamAssist Client              │
-├─────────────────────────────────────────────────────────────────────┤
-│  AGENTS        ADK Agent  ◄──►  MCP Agent  ◄──►  A2A Agent        │
-│                (Agent Engine)   (BigQuery)       (Cloud Run)       │
-│                ├─ PreloadMemoryTool (Memory Bank)                   │
-│                ├─ analytics_agent (BigQuery)                        │
-│                └─ image_agent (Imagen)                              │
-├─────────────────────────────────────────────────────────────────────┤
-│  SIMULATION    Shopper Simulator (endcap A/B testing)              │
-├─────────────────────────────────────────────────────────────────────┤
-│  SEARCH        Discovery Engine (SOP + Brand Guidelines stores)    │
-├─────────────────────────────────────────────────────────────────────┤
-│  DATA          BigQuery Star Schema  ◄──►  GCS Document Bucket     │
-└─────────────────────────────────────────────────────────────────────┘
-```
+![System Architecture](diagrams/01_system_architecture.png)
+
+See the [full architecture documentation](architecture.md) for detailed diagrams of each layer.
 
 ---
 
