@@ -108,7 +108,7 @@ class TestModelConfig:
         from src.agent.agent import _load_config
         config = _load_config()
         assert "models" in config
-        assert config["models"]["adk"] == "gemini-3.0-flash"
+        assert config["models"]["adk"] == "gemini-2.5-flash"
         assert config["models"]["imagen"] == "imagen-3.0-generate-002"
 
     def test_config_model_env_override(self):
@@ -147,7 +147,7 @@ class TestMemoryBank:
         config = _load_config()
         assert "model_armor" in config
         assert config["model_armor"]["enabled"] is True
-        assert config["model_armor"]["template_id"] == "grocery-workshop-armor"
+        assert config["model_armor"]["template_id"] == "grocery-workshop-armor-us"
         assert config["model_armor"]["failure_mode"] == "FAIL_OPEN"
 
 

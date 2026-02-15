@@ -38,6 +38,7 @@ def generate_product_image(
     config = _load_config()
     project_id = config["project"]["id"]
     retailer = config["retailer"]["name"]
+    imagen_model = config.get("models", {}).get("imagen", "imagen-3.0-generate-002")
 
     prompt = (
         f"Professional product photo of '{product_name}' for {retailer} grocery store. "
@@ -52,7 +53,7 @@ def generate_product_image(
         from vertexai.preview.vision_models import ImageGenerationModel
 
         aiplatform.init(project=project_id, location="us-central1")
-        model = ImageGenerationModel.from_pretrained("imagegeneration@006")
+        model = ImageGenerationModel.from_pretrained(imagen_model)
         response = model.generate_images(
             prompt=prompt,
             number_of_images=1,
@@ -63,12 +64,41 @@ def generate_product_image(
         if response.images:
             image = response.images[0]
             image_bytes = image._image_bytes
-            return {
-                "status": "success",
-                "message": f"Generated product image for '{product_name}'",
-                "image_base64": base64.b64encode(image_bytes).decode("utf-8"),
-                "mime_type": "image/png",
-            }
+
+            # Save to GCS instead of returning base64 inline to avoid
+            # bloating session history (a single image is ~400K-1.5M tokens
+            # as base64, which causes context overflow on subsequent turns).
+            import hashlib
+            from google.cloud import storage
+
+            blob_name = (
+                f"generated_images/{product_name.lower().replace(' ', '_')}_"
+                f"{hashlib.md5(image_bytes[:1024]).hexdigest()[:8]}.png"
+            )
+            gcs_bucket = config.get("gcs", {}).get(
+                "bucket", f"{project_id}-ge-workshop"
+            )
+            try:
+                storage_client = storage.Client(project=project_id)
+                bucket = storage_client.bucket(gcs_bucket)
+                blob = bucket.blob(blob_name)
+                blob.upload_from_string(image_bytes, content_type="image/png")
+                image_uri = f"gs://{gcs_bucket}/{blob_name}"
+                return {
+                    "status": "success",
+                    "message": f"Generated product image for '{product_name}'",
+                    "image_uri": image_uri,
+                    "mime_type": "image/png",
+                    "size_bytes": len(image_bytes),
+                }
+            except Exception as gcs_err:
+                logger.warning("GCS upload failed (%s), returning base64", gcs_err)
+                return {
+                    "status": "success",
+                    "message": f"Generated product image for '{product_name}'",
+                    "image_base64": base64.b64encode(image_bytes).decode("utf-8"),
+                    "mime_type": "image/png",
+                }
         else:
             return {
                 "status": "no_images",

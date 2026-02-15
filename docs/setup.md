@@ -157,36 +157,81 @@ python -m pytest tests/test_discovery_engine.py -v
 
 Set up content safety screening on the Discovery Engine assistant.
 
+### Prerequisites
+
+1. **Model Armor API enabled:**
+   ```bash
+   gcloud services enable modelarmor.googleapis.com --project=wortz-project-352116
+   ```
+
+2. **IAM role** `roles/modelarmor.admin` granted to your user:
+   ```bash
+   gcloud projects add-iam-policy-binding wortz-project-352116 \
+     --member="user:YOUR_EMAIL" --role="roles/modelarmor.admin"
+   ```
+
+3. **Org policy** must allow `us-central1` in `constraints/gcp.resourceLocations`.
+   Model Armor requires a regional endpoint (not `global`). If your org restricts
+   resource locations to `global` only, you'll need to update the constraint.
+
+### Provision
+
 ```bash
 bash infra/provision_model_armor.sh
 ```
 
 This creates a Model Armor template (`grocery-workshop-armor`) with:
-- **RAI Harm Filter** — Blocks hate speech, violence, sexual content (medium+ confidence)
+- **RAI Harm Filter** — Blocks hate speech, violence, sexual content, dangerous content (medium+ confidence)
 - **Prompt Injection & Jailbreak Filter** — Detects and blocks injection attempts
-- **SDP Basic Filter** — Sensitive Data Protection for PII
+- **SDP Basic Filter** — Sensitive Data Protection for PII detection
 - **Malicious URI Filter** — Blocks malicious URLs
 
 The template is applied to both user prompts and model responses on the `grocery-workshop-engine` assistant with `FAIL_OPEN` failure mode.
 
 ### Verify
 
-Test with a harmful query via StreamAssist — it should be filtered:
+```bash
+# Unit tests (validate config + script schema)
+python -m pytest tests/test_model_armor.py -k "not Live" -v
 
-```python
-from src.client.stream_assist import StreamAssistClient
-client = StreamAssistClient.from_config()
-session = client.create_session()
-# A harmful query should be blocked or filtered
-response = client.query(session.name, "<harmful content>")
+# Integration tests (validate live resources)
+python -m pytest tests/test_model_armor.py -v
 ```
 
 **Key files:**
 - [`infra/provision_model_armor.sh`](../infra/provision_model_armor.sh) — Template creation + engine configuration
+- [`tests/test_model_armor.py`](../tests/test_model_armor.py) — Unit + integration tests
 
 ---
 
-## 5. ADK Agent (Local)
+## 5. Environment Variables (.env)
+
+Each agent module has a `.env` file that configures runtime behavior for both local development and Agent Engine deployment.
+
+```bash
+# src/agent/.env, src/a2a_agent/.env, src/mcp_agent/.env, src/simulator_agent/.env
+GOOGLE_CLOUD_PROJECT=wortz-project-352116
+GOOGLE_CLOUD_LOCATION=us-central1
+GOOGLE_GENAI_USE_VERTEXAI=TRUE
+GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY=true     # OpenTelemetry tracing
+OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+RETAILER_NAME=ValueFresh Market
+PROJECT_ID=wortz-project-352116
+ENGINE_ID=grocery-workshop-engine
+BQ_PROJECT=wortz-project-352116
+BQ_DATASET=ge_grocery_demo
+```
+
+Key variables:
+- `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY=true` — Enables trace export to Cloud Trace when deployed to Agent Engine
+- `RETAILER_NAME` — Overrides the retailer name from `config/settings.yaml` (used in Agent Engine where the config file may not be present)
+- `BQ_PROJECT` / `BQ_DATASET` — BigQuery coordinates for analytics tools
+
+The `.env` files are loaded automatically by `adk web` during local development and by Agent Engine during deployment.
+
+---
+
+## 6. ADK Agent (Local)
 
 Run the multi-agent ADK agent locally for development and testing.
 
@@ -361,7 +406,8 @@ python -m pytest tests/test_mcp_agent.py -v
 ### Unit tests (no GCP needed)
 
 ```bash
-python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py -v
+python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py \
+  tests/test_a2a_agent.py "tests/test_model_armor.py::TestModelArmorConfig" -v
 ```
 
 ### Integration tests (requires provisioned resources)

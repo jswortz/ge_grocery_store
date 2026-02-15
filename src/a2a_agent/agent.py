@@ -52,7 +52,7 @@ def _load_config() -> dict:
         config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
 
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3.0-flash")
+    config["models"].setdefault("adk", "gemini-2.5-flash")
 
     return config
 
@@ -159,6 +159,14 @@ Guidelines:
     )
 
     return agent
+
+
+# For ADK CLI: `adk deploy agent_engine` expects `root_agent` at module level
+try:
+    root_agent = create_agent()
+except Exception as e:
+    root_agent = None
+    print(f"Warning: Could not create root_agent: {e}")
 
 
 def get_agent_card() -> dict:

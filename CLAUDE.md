@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pip install -e ".[dev]"
 
 # Unit tests (no GCP credentials needed)
-python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py -v
+python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py tests/test_a2a_agent.py "tests/test_model_armor.py::TestModelArmorConfig" -v
 
 # All tests (requires gcloud auth + provisioned resources)
 python -m pytest tests/ -v
@@ -79,8 +79,12 @@ Central config loader in `src/agent/agent.py:_load_config()` reads `config/setti
 
 ### Deployed resources
 
-- **Agent Engine**: `projects/679926387543/locations/us-central1/reasoningEngines/3323818153208709120` (with OpenTelemetry enabled)
+- **Agent Engine (Main)**: `reasoningEngines/3323818153208709120` — Grocery Retail Assistant (OTel enabled)
+- **Agent Engine (MCP)**: `reasoningEngines/8287066417547706368` — MCP Grocery Analyst (BigQuery analytics)
+- **Agent Engine (Simulator)**: `reasoningEngines/2103624129168015360` — Shopper Simulator
+- **Cloud Run (A2A)**: `https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app` — A2A protocol agent
 - **Discovery Engine**: `grocery-workshop-engine` (global, SEARCH_TIER_ENTERPRISE)
+- **Model Armor**: `grocery-workshop-armor-us` template (us multi-region, applied to Discovery Engine assistant)
 - **Data stores**: `sop-store` (GCS), `brand-guidelines-store` (GCS), plus workspace stores (Gmail, Calendar, Jira — excluded from agent search)
 - **BigQuery**: `wortz-project-352116.ge_grocery_demo` (star schema with 12K+ transactions)
 
@@ -95,10 +99,12 @@ Dataset `ge_grocery_demo` in `wortz-project-352116`:
 
 DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_data.sql`.
 
-### Test structure (82 tests)
+### Test structure (121 tests)
 
-- `tests/test_agent.py` (12) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
+- `tests/test_agent.py` (15) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
 - `tests/test_mcp_agent.py` (29) — **unit tests**, validates MCP agent config, schema context, instructions, toolbox path resolution
+- `tests/test_a2a_agent.py` (24) — **unit tests**, validates A2A agent config, AgentCard, skills, Cloud Run files, simulator agent
+- `tests/test_model_armor.py` (10 unit + 5 integration) — validates Model Armor config, API schema, live template and assistant
 - `tests/test_discovery_engine.py` (4) — **integration**, validates Discovery Engine SearchService directly against SOP and brand data stores
 - `tests/test_agent_engine.py` (5) — **integration**, validates deployed ADK agent via Agent Engine REST API (SOP search, analytics, brand guidelines)
 - `tests/test_bigquery.py` (10) — **integration**, validates schema and forbidden names against live BigQuery
@@ -106,4 +112,4 @@ DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_dat
 
 ### Infrastructure scripts
 
-`infra/provision_engine.sh` creates a Discovery Engine chat app. `infra/provision_datastore.sh` creates data stores, uploads PDFs to GCS, and imports documents. `infra/upload_assets.sh` handles GCS/Drive uploads. All scripts read project config from `config/settings.yaml`.
+`infra/provision_engine.sh` creates a Discovery Engine chat app. `infra/provision_datastore.sh` creates data stores, uploads PDFs to GCS, and imports documents. `infra/upload_assets.sh` handles GCS/Drive uploads. `infra/provision_model_armor.sh` creates a Model Armor template and enables it on the Discovery Engine assistant (requires `modelarmor.googleapis.com` API and `roles/modelarmor.admin`). All scripts read project config from `config/settings.yaml`.

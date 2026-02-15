@@ -1,0 +1,28 @@
+{
+  "eval_set_id": "simulator_eval",
+  "name": "Shopper Simulator Evaluation",
+  "description": "Evaluates the shopper simulator orchestrator on running realistic shopping simulations with endcap merchandising scenarios.",
+  "eval_cases": [
+    {
+      "eval_id": "baseline_simulation",
+      "conversation_scenario": {
+        "starting_prompt": "Run a simulation of 3 shoppers at the Downtown Market with no special endcap promotions (baseline scenario).",
+        "conversation_plan": "After receiving the simulation results, ask for a breakdown of what each shopper persona purchased. Then ask for recommendations on which aisles would benefit most from endcap promotions."
+      }
+    },
+    {
+      "eval_id": "seasonal_produce_simulation",
+      "conversation_scenario": {
+        "starting_prompt": "Run a simulation of 3 shoppers at the Downtown Market with the seasonal produce endcap promotion (Nano Banana Pro at 20% off and Fresh Mango Slices Buy 2 Get 1 Free).",
+        "conversation_plan": "Ask about the endcap conversion rate - how many shoppers picked up the promoted items. Then ask to compare the total revenue against the baseline scenario and estimate the ROI of the endcap investment."
+      }
+    },
+    {
+      "eval_id": "cross_scenario_comparison",
+      "conversation_scenario": {
+        "starting_prompt": "Compare the effectiveness of the snack impulse buy strategy versus the health and wellness endcap promotion at the Westside Market with 3 shoppers each.",
+        "conversation_plan": "Ask which strategy generated more incremental revenue. Then ask which shopper persona was most influenced by endcap displays across both scenarios."
+      }
+    }
+  ]
+}

@@ -42,6 +42,17 @@ class TestConfigLoading:
         assert CONFIG_PATH.name == "settings.yaml"
         assert CONFIG_PATH.parent.name == "config"
 
+    def test_config_has_model_defaults(self):
+        from src.mcp_agent.agent import _load_config
+        config = _load_config()
+        assert config["models"]["adk"] == "gemini-2.5-flash"
+
+    def test_config_model_env_override(self):
+        from src.mcp_agent.agent import _load_config
+        with patch.dict(os.environ, {"ADK_MODEL": "gemini-2.5-pro"}):
+            config = _load_config()
+            assert config["models"]["adk"] == "gemini-2.5-pro"
+
 
 # ---------------------------------------------------------------------------
 # Schema context
@@ -229,9 +240,11 @@ class TestMCPToolsetCreation:
                 conn = toolset._connection_params
                 if hasattr(conn, 'server_params'):
                     args = conn.server_params.args
-                    assert "--project" in args
-                    proj_idx = args.index("--project")
-                    assert args[proj_idx + 1] == "test-proj-123"
+                    # --project is NOT a valid genai-toolbox flag;
+                    # project is passed via BIGQUERY_PROJECT env var
+                    assert "--project" not in args
+                    env = conn.server_params.env or {}
+                    assert env.get("BIGQUERY_PROJECT") == "test-proj-123"
         except ImportError:
             pytest.skip("google-adk or mcp not installed")
 
@@ -283,7 +296,7 @@ class TestAgentCreation:
         try:
             from src.mcp_agent.agent import create_agent
             agent = create_agent()
-            assert agent.model == "gemini-2.0-flash"
+            assert agent.model == "gemini-2.5-flash"
         except ImportError:
             pytest.skip("google-adk not installed")
 

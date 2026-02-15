@@ -140,19 +140,19 @@ def diagram_1_overall_architecture():
         )
         c.node(
             "root_agent",
-            "Root Agent: grocery_assistant\ngemini-3.0-flash\nDiscoveryEngineSearchTool",
+            "Root Agent: grocery_assistant\ngemini-2.5-flash\nDiscoveryEngineSearchTool",
             fillcolor="#c8e6c9",
             color="#2e7d32",
         )
         c.node(
             "analytics_agent",
-            "analytics_agent\ngemini-3.0-flash\nquery_grocery_data\nFunctionTool",
+            "analytics_agent\ngemini-2.5-flash\nquery_grocery_data\nFunctionTool",
             fillcolor="#dcedc8",
             color="#558b2f",
         )
         c.node(
             "image_agent",
-            "image_agent\ngemini-3.0-flash\ngenerate_product_image\nFunctionTool",
+            "image_agent\ngemini-2.5-flash\ngenerate_product_image\nFunctionTool",
             fillcolor="#dcedc8",
             color="#558b2f",
         )
@@ -424,7 +424,7 @@ def diagram_2_agent_architecture():
         )
         c.node(
             "root",
-            'grocery_assistant\nModel: gemini-3.0-flash\nType: LlmAgent (root orchestrator)\n\nInstruction: get_main_agent_instruction()\n"AI assistant for grocery retail operations"',
+            'grocery_assistant\nModel: gemini-2.5-flash\nType: LlmAgent (root orchestrator)\n\nInstruction: get_main_agent_instruction()\n"AI assistant for grocery retail operations"',
             fillcolor="#bbdefb",
             color="#1565c0",
             shape="box",
@@ -487,7 +487,7 @@ def diagram_2_agent_architecture():
         )
         c.node(
             "analytics",
-            'analytics_agent\nModel: gemini-3.0-flash\nType: LlmAgent (sub-agent)\n\n"Data analytics specialist"\n"Answers data questions by querying\nthe BigQuery star schema"',
+            'analytics_agent\nModel: gemini-2.5-flash\nType: LlmAgent (sub-agent)\n\n"Data analytics specialist"\n"Answers data questions by querying\nthe BigQuery star schema"',
             fillcolor="#ffe0b2",
             color="#e65100",
             shape="box",
@@ -523,7 +523,7 @@ def diagram_2_agent_architecture():
         )
         c.node(
             "image",
-            'image_agent\nModel: gemini-3.0-flash\nType: LlmAgent (sub-agent)\n\n"Product imagery specialist"\n"Generates product images following\nbrand guidelines"',
+            'image_agent\nModel: gemini-2.5-flash\nType: LlmAgent (sub-agent)\n\n"Product imagery specialist"\n"Generates product images following\nbrand guidelines"',
             fillcolor="#e1bee7",
             color="#6a1b9a",
             shape="box",
@@ -696,7 +696,7 @@ def diagram_3_data_flow():
     # Step 3: Root Agent
     dot.node(
         "root_agent",
-        "Step 3: Root Agent Orchestration\n\ngrocery_assistant (gemini-3.0-flash)\nAnalyzes intent and decides routing:\n\n  SOP/Brand query -> DiscoveryEngineSearchTool\n  Data/Analytics query -> transfer_to_agent -> analytics_agent\n  Image query -> transfer_to_agent -> image_agent",
+        "Step 3: Root Agent Orchestration\n\ngrocery_assistant (gemini-2.5-flash)\nAnalyzes intent and decides routing:\n\n  SOP/Brand query -> DiscoveryEngineSearchTool\n  Data/Analytics query -> transfer_to_agent -> analytics_agent\n  Image query -> transfer_to_agent -> image_agent",
         fillcolor="#dcedc8",
         color="#33691e",
         shape="box",
@@ -1027,7 +1027,7 @@ def diagram_5_mcp_integration():
         )
         c.node(
             "agent",
-            "mcp_grocery_analyst\ngemini-3.0-flash\n\nLLM generates\narbitrary SQL",
+            "mcp_grocery_analyst\ngemini-2.5-flash\n\nLLM generates\narbitrary SQL",
             fillcolor="#c8e6c9",
             color="#2e7d32",
             penwidth="2",

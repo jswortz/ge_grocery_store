@@ -163,6 +163,8 @@ See the [full architecture documentation](architecture.md) for detailed diagrams
 | `test_agent.py` | 15 | Unit | System prompts, SQL gen, tool configs, memory, model armor |
 | `test_stream_assist.py` | 14 | Unit | StreamAssist client, parsing, error handling |
 | `test_mcp_agent.py` | 29 | Unit | MCP agent config, schema, instructions |
+| `test_a2a_agent.py` | 24 | Unit | A2A agent config, AgentCard, skills, simulator |
+| `test_model_armor.py` | 15 | Unit + Integration | Model Armor config, API schema, live validation |
 | `test_discovery_engine.py` | 4 | Integration | Discovery Engine search against live stores |
 | `test_agent_engine.py` | 5 | Integration | Deployed agent via Agent Engine REST API |
 | `test_bigquery.py` | 10 | Integration | BigQuery schema, data quality |

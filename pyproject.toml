@@ -8,10 +8,13 @@ dependencies = [
     "google-auth>=2.0.0",
     "google-cloud-bigquery>=3.0.0",
     "google-cloud-aiplatform>=1.60.0",
+    "google-cloud-storage>=2.0.0",
     "requests>=2.31.0",
     "tenacity>=8.0.0",
     "pyyaml>=6.0",
     "reportlab>=4.0.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
 ]
 
 [project.optional-dependencies]

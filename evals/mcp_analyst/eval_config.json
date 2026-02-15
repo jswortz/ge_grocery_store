@@ -1,20 +1,24 @@
 {
   "criteria": {
     "tool_trajectory_avg_score": {
-      "tool_trajectory_match_type": "ANY_ORDER"
+      "threshold": 0.5,
+      "match_type": 2
     },
     "final_response_match_v2": {
       "threshold": 0.6,
       "judge_model_options": {
-        "judge_model": "gemini-3.0-flash",
-        "num_samples": 3
+        "judge_model": "gemini-2.5-flash"
       }
     },
-    "hallucinations_v1": {},
-    "safety_v1": {}
+    "hallucinations_v1": {
+      "threshold": 0.5
+    },
+    "safety_v1": {
+      "threshold": 0.5
+    }
   },
   "user_simulator_config": {
-    "model": "gemini-3.0-flash",
+    "model": "gemini-2.5-flash",
     "max_allowed_invocations": 8
   }
 }

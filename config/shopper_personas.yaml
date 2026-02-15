@@ -1,0 +1,255 @@
+# ============================================================
+# Pre-Researched Shopper Personas
+# ============================================================
+# Based on grocery retail industry research (FMI, IRI/Circana,
+# Nielsen, Hartman Group). Distribution weights sum to 1.0 and
+# reflect approximate share of grocery traffic by segment.
+
+personas:
+  - id: budget_family
+    name: "Budget-Conscious Family Shopper"
+    description: "Parent shopping for a family of 4, focused on value, weekly staples, and stretching every dollar."
+    distribution_weight: 0.25
+    demographics:
+      age_range: "30-45"
+      household_size: 4
+      income_bracket: "$45K-$65K"
+    shopping_behavior:
+      avg_basket_items: 35
+      avg_spend: 127.00
+      budget: 140.00
+      visit_frequency: "weekly"
+      time_in_store_min: 45
+      list_adherence: 0.75
+      impulse_tendency: 0.30
+    category_preferences:
+      produce: 0.8
+      dairy: 0.9
+      bakery: 0.6
+      meat: 0.7
+      frozen: 0.5
+      snacks: 0.4
+      beverages: 0.3
+      pantry: 0.8
+    endcap_sensitivity:
+      discount_threshold: 0.15
+      brand_loyalty: 0.6
+      novelty_seeking: 0.3
+    loyalty_tier: "Silver"
+
+  - id: health_enthusiast
+    name: "Health-Conscious Professional"
+    description: "Single professional focused on organic, fresh, and nutrient-dense options. Reads labels carefully."
+    distribution_weight: 0.15
+    demographics:
+      age_range: "25-40"
+      household_size: 1
+      income_bracket: "$75K-$110K"
+    shopping_behavior:
+      avg_basket_items: 18
+      avg_spend: 82.00
+      budget: 100.00
+      visit_frequency: "2-3x per week"
+      time_in_store_min: 25
+      list_adherence: 0.60
+      impulse_tendency: 0.50
+    category_preferences:
+      produce: 1.0
+      dairy: 0.6
+      bakery: 0.3
+      meat: 0.5
+      frozen: 0.2
+      snacks: 0.3
+      beverages: 0.7
+      health: 0.9
+    endcap_sensitivity:
+      discount_threshold: 0.10
+      brand_loyalty: 0.4
+      novelty_seeking: 0.7
+    loyalty_tier: "Gold"
+
+  - id: quick_stop
+    name: "Quick-Stop Convenience Shopper"
+    description: "Time-pressed shopper grabbing a few items on the way home. Prioritizes speed and ready-to-eat options."
+    distribution_weight: 0.20
+    demographics:
+      age_range: "22-55"
+      household_size: 1-2
+      income_bracket: "$50K-$85K"
+    shopping_behavior:
+      avg_basket_items: 6
+      avg_spend: 28.00
+      budget: 35.00
+      visit_frequency: "3-4x per week"
+      time_in_store_min: 10
+      list_adherence: 0.30
+      impulse_tendency: 0.70
+    category_preferences:
+      produce: 0.3
+      dairy: 0.5
+      bakery: 0.6
+      meat: 0.2
+      frozen: 0.7
+      snacks: 0.8
+      beverages: 0.9
+      pantry: 0.2
+    endcap_sensitivity:
+      discount_threshold: 0.05
+      brand_loyalty: 0.3
+      novelty_seeking: 0.6
+    loyalty_tier: "Bronze"
+
+  - id: weekend_cook
+    name: "Weekend Meal Prep Cook"
+    description: "Enthusiastic home cook buying ingredients for elaborate weekend meals. Recipe-driven, quality-focused."
+    distribution_weight: 0.10
+    demographics:
+      age_range: "28-50"
+      household_size: 2-3
+      income_bracket: "$65K-$100K"
+    shopping_behavior:
+      avg_basket_items: 25
+      avg_spend: 145.00
+      budget: 170.00
+      visit_frequency: "weekly"
+      time_in_store_min: 55
+      list_adherence: 0.85
+      impulse_tendency: 0.40
+    category_preferences:
+      produce: 0.9
+      dairy: 0.7
+      bakery: 0.8
+      meat: 0.9
+      frozen: 0.2
+      snacks: 0.3
+      beverages: 0.5
+      international: 0.7
+    endcap_sensitivity:
+      discount_threshold: 0.10
+      brand_loyalty: 0.5
+      novelty_seeking: 0.8
+    loyalty_tier: "Gold"
+
+  - id: elderly_regular
+    name: "Senior Regular Customer"
+    description: "Retiree who shops the same store weekly. Knows the layout, prefers familiar brands, values consistency."
+    distribution_weight: 0.10
+    demographics:
+      age_range: "65-80"
+      household_size: 1-2
+      income_bracket: "$30K-$50K"
+    shopping_behavior:
+      avg_basket_items: 20
+      avg_spend: 62.00
+      budget: 70.00
+      visit_frequency: "weekly"
+      time_in_store_min: 40
+      list_adherence: 0.90
+      impulse_tendency: 0.15
+    category_preferences:
+      produce: 0.7
+      dairy: 0.9
+      bakery: 0.8
+      meat: 0.6
+      frozen: 0.4
+      snacks: 0.3
+      beverages: 0.5
+      pantry: 0.7
+    endcap_sensitivity:
+      discount_threshold: 0.20
+      brand_loyalty: 0.9
+      novelty_seeking: 0.1
+    loyalty_tier: "Gold"
+
+  - id: young_professional
+    name: "Young Urban Professional"
+    description: "Gen-Z or young millennial, trend-aware, socially conscious. Willing to pay more for sustainable/trendy products."
+    distribution_weight: 0.08
+    demographics:
+      age_range: "22-30"
+      household_size: 1
+      income_bracket: "$55K-$80K"
+    shopping_behavior:
+      avg_basket_items: 12
+      avg_spend: 55.00
+      budget: 65.00
+      visit_frequency: "2x per week"
+      time_in_store_min: 20
+      list_adherence: 0.40
+      impulse_tendency: 0.65
+    category_preferences:
+      produce: 0.7
+      dairy: 0.5
+      bakery: 0.6
+      meat: 0.3
+      frozen: 0.5
+      snacks: 0.7
+      beverages: 0.9
+      health: 0.6
+    endcap_sensitivity:
+      discount_threshold: 0.08
+      brand_loyalty: 0.2
+      novelty_seeking: 0.9
+    loyalty_tier: "Bronze"
+
+  - id: parent_with_kids
+    name: "Parent Shopping with Children"
+    description: "Parent navigating the store with 1-2 young children. Kids influence purchases; speed matters but kid-friendly items are a must."
+    distribution_weight: 0.07
+    demographics:
+      age_range: "28-42"
+      household_size: 3-4
+      income_bracket: "$55K-$85K"
+    shopping_behavior:
+      avg_basket_items: 30
+      avg_spend: 110.00
+      budget: 130.00
+      visit_frequency: "weekly"
+      time_in_store_min: 35
+      list_adherence: 0.55
+      impulse_tendency: 0.60
+    category_preferences:
+      produce: 0.6
+      dairy: 0.8
+      bakery: 0.7
+      meat: 0.5
+      frozen: 0.6
+      snacks: 0.9
+      beverages: 0.7
+      pantry: 0.6
+    endcap_sensitivity:
+      discount_threshold: 0.10
+      brand_loyalty: 0.5
+      novelty_seeking: 0.5
+    loyalty_tier: "Silver"
+
+  - id: bargain_hunter
+    name: "Extreme Bargain Hunter"
+    description: "Coupon clipper who plans trips around sales circulars. Will visit multiple stores for the best deals."
+    distribution_weight: 0.05
+    demographics:
+      age_range: "35-60"
+      household_size: 2-4
+      income_bracket: "$35K-$55K"
+    shopping_behavior:
+      avg_basket_items: 28
+      avg_spend: 75.00
+      budget: 80.00
+      visit_frequency: "weekly"
+      time_in_store_min: 60
+      list_adherence: 0.70
+      impulse_tendency: 0.45
+    category_preferences:
+      produce: 0.6
+      dairy: 0.7
+      bakery: 0.5
+      meat: 0.8
+      frozen: 0.7
+      snacks: 0.5
+      beverages: 0.4
+      pantry: 0.8
+    endcap_sensitivity:
+      discount_threshold: 0.20
+      brand_loyalty: 0.2
+      novelty_seeking: 0.4
+    loyalty_tier: "Silver"

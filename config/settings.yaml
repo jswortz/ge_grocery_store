@@ -31,7 +31,7 @@ retailer:
       open_date: "2019-11-15"
 
 models:
-  adk: "gemini-3.0-flash"              # LLM for all ADK agents
+  adk: "gemini-2.5-flash"              # LLM for all ADK agents
   imagen: "imagen-3.0-generate-002"     # Image generation model
 
 project:
@@ -40,6 +40,10 @@ project:
   engine_id: "grocery-workshop-engine"
   agent_id: "4127847317548975868"  # ADK agent registered on Discovery Engine (no auth)
   agent_engine_id: "3323818153208709120"  # ADK agent deployed to Agent Engine (with telemetry)
+  mcp_agent_engine_id: "8287066417547706368"  # MCP BigQuery analyst on Agent Engine
+  simulator_agent_engine_id: "2103624129168015360"  # Shopper simulator on Agent Engine
+  a2a_cloud_run_url: "https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app"  # A2A agent on Cloud Run
+  a2a_agent_id: "1302067298490321373"  # A2A agent registered on Discovery Engine (streaming)
   data_agent_id: "14793816534468506603"  # Data Insights Agent for BQ analytics
   authorization_id: "grocery-data-agent-auth"  # OAuth auth resource for data agent
 
@@ -59,7 +63,8 @@ memory:
 
 model_armor:
   enabled: true
-  template_id: "grocery-workshop-armor"
+  template_id: "grocery-workshop-armor-us"
+  location: "us"   # Must be 'us' multi-region to match global Discovery Engine
   failure_mode: "FAIL_OPEN"
 
 drive:

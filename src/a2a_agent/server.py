@@ -19,15 +19,44 @@ import os
 import uvicorn
 
 
+def _build_agent_card(agent, host, port):
+    """Build an AgentCard with streaming enabled.
+
+    Discovery Engine sends message/stream requests, so the agent card
+    must advertise streaming capability.
+    """
+    from a2a.types import AgentCapabilities
+    from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
+
+    import asyncio
+
+    builder = AgentCardBuilder(
+        agent=agent,
+        rpc_url=f"http://{host}:{port}/",
+        capabilities=AgentCapabilities(streaming=True),
+    )
+
+    # Build is async; run in event loop
+    loop = asyncio.new_event_loop()
+    try:
+        card = loop.run_until_complete(builder.build())
+    finally:
+        loop.close()
+
+    return card
+
+
 def create_app():
     """Create the ASGI application with A2A endpoints."""
-    from google.adk.agents import LlmAgent
-    from google.adk.a2a import to_a2a
+    from google.adk.a2a.utils.agent_to_a2a import to_a2a
 
-    from .agent import create_agent, get_agent_card
+    from .agent import create_agent
+
+    port = int(os.environ.get("PORT", "8080"))
+    host = os.environ.get("HOST", "0.0.0.0")
 
     agent = create_agent()
-    agent_card = get_agent_card()
+    agent_card = _build_agent_card(agent, host, port)
 
     # Wrap the ADK agent with A2A protocol support
     # to_a2a() creates a Starlette/ASGI app with:
@@ -35,6 +64,8 @@ def create_app():
     #   - /a2a (task endpoint)
     app = to_a2a(
         agent=agent,
+        host=host,
+        port=port,
         agent_card=agent_card,
     )
 

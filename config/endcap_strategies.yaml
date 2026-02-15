@@ -1,0 +1,133 @@
+# ============================================================
+# Endcap Merchandising Strategies
+# ============================================================
+# Configurable scenarios for the shopper simulator.
+# Each strategy defines endcap placements, discounts, display
+# types, and estimated costs/lift for ROI calculation.
+
+strategies:
+  baseline:
+    name: "Baseline - No Special Endcaps"
+    description: "Standard store layout with no promotional endcaps"
+    endcaps: []
+    cost_to_implement: 0.00
+    expected_lift_pct: 0
+
+  seasonal_produce:
+    name: "Seasonal Produce Push"
+    description: "Endcaps at Produce aisle exits featuring seasonal fruits at 20% off"
+    endcaps:
+      - location: Produce
+        position: exit
+        product: "Nano Banana Pro"
+        discount: "20% off"
+        display_type: "pyramid stack with tasting station"
+        unit_price: 3.99
+        cost_per_unit: 1.20
+      - location: Bakery
+        position: entrance
+        product: "Fresh Mango Slices"
+        discount: "Buy 2 Get 1 Free"
+        display_type: "refrigerated endcap with recipe cards"
+        unit_price: 5.49
+        cost_per_unit: 2.10
+    cost_to_implement: 450.00
+    expected_lift_pct: 15
+
+  snack_impulse:
+    name: "Snack Impulse Buy Strategy"
+    description: "High-visibility endcaps near checkout and beverage aisles targeting impulse purchases"
+    endcaps:
+      - location: Beverages
+        position: exit
+        product: "ValueFresh Trail Mix"
+        discount: "2 for $5"
+        display_type: "clip strip + floor display"
+        unit_price: 3.49
+        cost_per_unit: 0.95
+      - location: Snacks
+        position: entrance
+        product: "Artisan Kettle Chips"
+        discount: "$1 off"
+        display_type: "power wing with shelf talker"
+        unit_price: 4.29
+        cost_per_unit: 1.30
+    cost_to_implement: 280.00
+    expected_lift_pct: 22
+
+  health_wellness:
+    name: "Health & Wellness Focus"
+    description: "Endcaps promoting organic and health-conscious products with nutritional messaging"
+    endcaps:
+      - location: Dairy
+        position: exit
+        product: "Organic Greek Yogurt"
+        discount: "15% off"
+        display_type: "refrigerated endcap with nutritional info"
+        unit_price: 6.99
+        cost_per_unit: 2.80
+      - location: Beverages
+        position: entrance
+        product: "Cold-Pressed Green Juice"
+        discount: "Buy 1 Get 1 50% off"
+        display_type: "chiller display with sampling"
+        unit_price: 7.99
+        cost_per_unit: 3.50
+    cost_to_implement: 520.00
+    expected_lift_pct: 12
+
+  premium_cross_merch:
+    name: "Premium Cross-Merchandising"
+    description: "Strategic pairing of complementary premium products across aisles"
+    endcaps:
+      - location: Meat & Seafood
+        position: exit
+        product: "Artisan Steak Seasoning Kit"
+        discount: "15% off with meat purchase"
+        display_type: "branded wooden display with recipe booklet"
+        unit_price: 12.99
+        cost_per_unit: 4.50
+      - location: Produce
+        position: entrance
+        product: "Premium Salad Kit"
+        discount: "Pair with protein, save $2"
+        display_type: "refrigerated island display"
+        unit_price: 8.99
+        cost_per_unit: 3.20
+      - location: Bakery
+        position: exit
+        product: "Imported Olive Oil & Vinegar Set"
+        discount: "$3 off"
+        display_type: "end-of-aisle wooden crate display"
+        unit_price: 15.99
+        cost_per_unit: 6.00
+    cost_to_implement: 750.00
+    expected_lift_pct: 18
+
+  back_to_school:
+    name: "Back-to-School Lunch Packs"
+    description: "Family-oriented endcaps with lunch box essentials and snack multipacks"
+    endcaps:
+      - location: Snacks
+        position: exit
+        product: "Variety Snack Pack (30ct)"
+        discount: "25% off"
+        display_type: "pallet display with school-themed signage"
+        unit_price: 12.99
+        cost_per_unit: 5.50
+      - location: Beverages
+        position: exit
+        product: "Juice Box 10-Pack"
+        discount: "2 for $8"
+        display_type: "floor stack with clip strip add-ons"
+        unit_price: 5.49
+        cost_per_unit: 2.00
+      - location: Dairy
+        position: entrance
+        product: "String Cheese 24-Pack"
+        discount: "Buy 2 Save $3"
+        display_type: "refrigerated endcap with lunch ideas"
+        unit_price: 9.99
+        cost_per_unit: 4.20
+    cost_to_implement: 380.00
+    expected_lift_pct: 20

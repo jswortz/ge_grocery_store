@@ -66,6 +66,12 @@ def _load_config() -> dict:
         config.setdefault("bigquery", {})["project"] = os.environ["BQ_PROJECT"]
     if os.environ.get("BQ_DATASET"):
         config.setdefault("bigquery", {})["dataset"] = os.environ["BQ_DATASET"]
+    if os.environ.get("ADK_MODEL"):
+        config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
+
+    # Defaults for models if not set
+    config.setdefault("models", {})
+    config["models"].setdefault("adk", "gemini-2.5-flash")
 
     return config
 
@@ -195,12 +201,11 @@ def get_mcp_toolset():
                 command=toolbox_path,
                 args=[
                     "--prebuilt", "bigquery",
-                    "--project", project_id,
                     "--stdio",
                 ],
                 env={
                     **os.environ,
-                    "GOOGLE_CLOUD_PROJECT": project_id,
+                    "BIGQUERY_PROJECT": project_id,
                 },
             ),
             timeout=30.0,
@@ -220,12 +225,13 @@ def create_agent():
     from google.adk.agents import LlmAgent
 
     config = _load_config()
+    adk_model = config["models"]["adk"]
 
     mcp_toolset = get_mcp_toolset()
 
     agent = LlmAgent(
         name="mcp_grocery_analyst",
-        model="gemini-2.0-flash",
+        model=adk_model,
         instruction=_get_agent_instruction(config),
         description=(
             "AI analytics assistant for grocery retail that uses MCP Toolbox "

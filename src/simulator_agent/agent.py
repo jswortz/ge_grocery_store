@@ -10,7 +10,7 @@ Architecture:
     ├── shopper_agent_2 (sub-agent: different persona/store)
     └── ...N concurrent shoppers
 
-Uses gemini-3.0-flash for all agents. Leverages ADK user simulation
+Uses gemini-2.5-flash for all agents. Leverages ADK user simulation
 evaluation to validate shopper behavior across merchandising scenarios.
 
 Usage:
@@ -27,7 +27,10 @@ from pathlib import Path
 
 import yaml
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "settings.yaml"
+CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
+CONFIG_PATH = CONFIG_DIR / "settings.yaml"
+STRATEGIES_PATH = CONFIG_DIR / "endcap_strategies.yaml"
+PERSONAS_PATH = CONFIG_DIR / "shopper_personas.yaml"
 
 
 def _load_config() -> dict:
@@ -40,9 +43,27 @@ def _load_config() -> dict:
     if os.environ.get("ADK_MODEL"):
         config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3.0-flash")
+    config["models"].setdefault("adk", "gemini-2.5-flash")
 
     return config
+
+
+def _load_strategies() -> dict:
+    """Load endcap strategies from YAML config."""
+    if STRATEGIES_PATH.exists():
+        with open(STRATEGIES_PATH) as f:
+            data = yaml.safe_load(f)
+        return data.get("strategies", {})
+    return ENDCAP_SCENARIOS_FALLBACK
+
+
+def _load_personas() -> list[dict]:
+    """Load shopper personas from YAML config."""
+    if PERSONAS_PATH.exists():
+        with open(PERSONAS_PATH) as f:
+            data = yaml.safe_load(f)
+        return data.get("personas", [])
+    return SHOPPER_PERSONAS_FALLBACK
 
 
 # ─── Store Layout Model ──────────────────────────────────────────────────────
@@ -60,7 +81,7 @@ STORE_LAYOUTS = {
             {"name": "Snacks", "sections": ["Chips", "Crackers", "Nuts", "Candy"]},
             {"name": "Pantry", "sections": ["Canned Goods", "Pasta", "Rice", "Sauces"]},
         ],
-        "endcaps": [],  # Populated per scenario
+        "endcaps": [],
     },
     "Westside Market": {
         "store_id": 2,
@@ -92,9 +113,9 @@ STORE_LAYOUTS = {
     },
 }
 
-# ─── Endcap Merchandising Scenarios ──────────────────────────────────────────
+# ─── Fallback data (used when YAML configs are not available) ────────────────
 
-ENDCAP_SCENARIOS = {
+ENDCAP_SCENARIOS_FALLBACK = {
     "baseline": {
         "name": "Baseline - No Special Endcaps",
         "description": "Standard store layout with no promotional endcaps",
@@ -104,119 +125,38 @@ ENDCAP_SCENARIOS = {
         "name": "Seasonal Produce Push",
         "description": "Endcaps at Produce aisle exits featuring seasonal fruits at 20% off",
         "endcaps": [
-            {
-                "location": "Produce",
-                "position": "exit",
-                "product": "Nano Banana Pro",
-                "discount": "20% off",
-                "display_type": "pyramid stack with tasting station",
-            },
-            {
-                "location": "Bakery",
-                "position": "entrance",
-                "product": "Fresh Mango Slices",
-                "discount": "Buy 2 Get 1 Free",
-                "display_type": "refrigerated endcap with recipe cards",
-            },
-        ],
-    },
-    "snack_impulse": {
-        "name": "Snack Impulse Buy Strategy",
-        "description": "High-visibility endcaps near checkout and beverage aisles",
-        "endcaps": [
-            {
-                "location": "Beverages",
-                "position": "exit",
-                "product": "ValueFresh Trail Mix",
-                "discount": "2 for $5",
-                "display_type": "clip strip + floor display",
-            },
-            {
-                "location": "Snacks",
-                "position": "entrance",
-                "product": "Artisan Kettle Chips",
-                "discount": "$1 off",
-                "display_type": "power wing with shelf talker",
-            },
-        ],
-    },
-    "health_wellness": {
-        "name": "Health & Wellness Focus",
-        "description": "Endcaps promoting organic and health-conscious products",
-        "endcaps": [
-            {
-                "location": "Dairy",
-                "position": "exit",
-                "product": "Organic Greek Yogurt",
-                "discount": "15% off",
-                "display_type": "refrigerated endcap with nutritional info",
-            },
-            {
-                "location": "Beverages",
-                "position": "entrance",
-                "product": "Cold-Pressed Green Juice",
-                "discount": "Buy 1 Get 1 50% off",
-                "display_type": "chiller display with sampling",
-            },
+            {"location": "Produce", "position": "exit", "product": "Nano Banana Pro",
+             "discount": "20% off", "display_type": "pyramid stack with tasting station"},
+            {"location": "Bakery", "position": "entrance", "product": "Fresh Mango Slices",
+             "discount": "Buy 2 Get 1 Free", "display_type": "refrigerated endcap with recipe cards"},
         ],
     },
 }
 
-# ─── Shopper Personas ────────────────────────────────────────────────────────
-
-SHOPPER_PERSONAS = [
-    {
-        "id": "budget_family",
-        "name": "Budget-Conscious Family Shopper",
-        "description": "Parent shopping for a family of 4, focused on value and weekly staples",
-        "budget": 120.00,
-        "preferences": ["bulk items", "store brands", "meal ingredients", "kid snacks"],
-        "impulse_tendency": 0.3,  # 30% chance of picking up endcap items
-        "loyalty_tier": "Silver",
-    },
-    {
-        "id": "health_enthusiast",
-        "name": "Health-Conscious Professional",
-        "description": "Single professional focused on organic, fresh, and healthy options",
-        "budget": 80.00,
-        "preferences": ["organic", "fresh produce", "lean proteins", "plant-based"],
-        "impulse_tendency": 0.5,
-        "loyalty_tier": "Gold",
-    },
-    {
-        "id": "quick_stop",
-        "name": "Quick-Stop Shopper",
-        "description": "Person grabbing a few items on the way home, time-constrained",
-        "budget": 30.00,
-        "preferences": ["ready-made meals", "beverages", "snacks"],
-        "impulse_tendency": 0.7,  # High impulse tendency for quick shoppers
-        "loyalty_tier": "Bronze",
-    },
-    {
-        "id": "weekend_cook",
-        "name": "Weekend Meal Prep Cook",
-        "description": "Enthusiastic home cook buying ingredients for elaborate weekend meals",
-        "budget": 150.00,
-        "preferences": ["specialty ingredients", "fresh herbs", "quality meats", "artisan bread"],
-        "impulse_tendency": 0.4,
-        "loyalty_tier": "Gold",
-    },
-    {
-        "id": "elderly_regular",
-        "name": "Elderly Regular Customer",
-        "description": "Senior citizen who shops the same store weekly, knows the layout well",
-        "budget": 60.00,
-        "preferences": ["familiar brands", "easy-open packaging", "dairy", "bread"],
-        "impulse_tendency": 0.2,
-        "loyalty_tier": "Gold",
-    },
+SHOPPER_PERSONAS_FALLBACK = [
+    {"id": "budget_family", "name": "Budget-Conscious Family Shopper",
+     "description": "Parent shopping for a family of 4, focused on value and weekly staples",
+     "shopping_behavior": {"budget": 120.00, "impulse_tendency": 0.30},
+     "category_preferences": {"produce": 0.8, "dairy": 0.9, "bakery": 0.6, "meat": 0.7},
+     "loyalty_tier": "Silver", "distribution_weight": 0.30},
+    {"id": "health_enthusiast", "name": "Health-Conscious Professional",
+     "description": "Single professional focused on organic, fresh, and healthy options",
+     "shopping_behavior": {"budget": 80.00, "impulse_tendency": 0.50},
+     "category_preferences": {"produce": 1.0, "dairy": 0.6, "bakery": 0.3},
+     "loyalty_tier": "Gold", "distribution_weight": 0.20},
+    {"id": "quick_stop", "name": "Quick-Stop Shopper",
+     "description": "Person grabbing a few items on the way home, time-constrained",
+     "shopping_behavior": {"budget": 30.00, "impulse_tendency": 0.70},
+     "category_preferences": {"snacks": 0.8, "beverages": 0.9, "frozen": 0.7},
+     "loyalty_tier": "Bronze", "distribution_weight": 0.20},
 ]
 
 
 def _build_store_context(store_name: str, scenario_key: str) -> str:
     """Build a textual description of the store layout for the agent."""
     layout = STORE_LAYOUTS.get(store_name, STORE_LAYOUTS["Downtown Market"])
-    scenario = ENDCAP_SCENARIOS.get(scenario_key, ENDCAP_SCENARIOS["baseline"])
+    strategies = _load_strategies()
+    scenario = strategies.get(scenario_key, strategies.get("baseline", {"name": "Baseline", "description": "", "endcaps": []}))
 
     aisle_desc = ""
     for aisle in layout["aisles"]:
@@ -224,7 +164,7 @@ def _build_store_context(store_name: str, scenario_key: str) -> str:
         aisle_desc += f"  - {aisle['name']}: {sections}\n"
 
     endcap_desc = "  None (standard layout)\n"
-    if scenario["endcaps"]:
+    if scenario.get("endcaps"):
         endcap_desc = ""
         for ec in scenario["endcaps"]:
             endcap_desc += (
@@ -235,7 +175,7 @@ def _build_store_context(store_name: str, scenario_key: str) -> str:
 
     return f"""Store: {store_name} (Store ID: {layout['store_id']})
 Merchandising Scenario: {scenario['name']}
-{scenario['description']}
+{scenario.get('description', '')}
 
 Aisles:
 {aisle_desc}
@@ -248,16 +188,41 @@ def _build_shopper_instruction(persona: dict, store_name: str, scenario_key: str
     config = _load_config()
     retailer = config["retailer"]["name"]
     store_context = _build_store_context(store_name, scenario_key)
-    prefs = ", ".join(persona["preferences"])
+
+    # Handle both flat and nested persona formats
+    behavior = persona.get("shopping_behavior", {})
+    budget = behavior.get("budget", persona.get("budget", 100.00))
+    impulse = behavior.get("impulse_tendency", persona.get("impulse_tendency", 0.5))
+    loyalty = persona.get("loyalty_tier", "Bronze")
+
+    cat_prefs = persona.get("category_preferences", {})
+    if isinstance(cat_prefs, dict):
+        prefs = ", ".join(f"{k} ({v:.0%})" for k, v in cat_prefs.items() if v >= 0.5)
+    else:
+        prefs = ", ".join(persona.get("preferences", []))
+
+    demographics = persona.get("demographics", {})
+    demo_line = ""
+    if demographics:
+        demo_line = f"\nDemographics: Age {demographics.get('age_range', 'N/A')}, Household size {demographics.get('household_size', 'N/A')}, Income {demographics.get('income_bracket', 'N/A')}"
+
+    endcap_sens = persona.get("endcap_sensitivity", {})
+    endcap_line = ""
+    if endcap_sens:
+        endcap_line = (
+            f"\nEndcap Sensitivity: Needs {endcap_sens.get('discount_threshold', 0.1):.0%}+ discount, "
+            f"Brand loyalty {endcap_sens.get('brand_loyalty', 0.5):.0%}, "
+            f"Novelty seeking {endcap_sens.get('novelty_seeking', 0.5):.0%}"
+        )
 
     return f"""You are simulating a shopper at {retailer}'s {store_name}.
 
 Your Persona: {persona['name']}
-{persona['description']}
-Budget: ${persona['budget']:.2f}
-Preferences: {prefs}
-Loyalty Tier: {persona['loyalty_tier']}
-Impulse Buy Tendency: {int(persona['impulse_tendency'] * 100)}%
+{persona.get('description', '')}
+Budget: ${budget:.2f}
+Preferred Categories: {prefs}
+Loyalty Tier: {loyalty}
+Impulse Buy Tendency: {int(impulse * 100)}%{demo_line}{endcap_line}
 
 {store_context}
 
@@ -269,19 +234,50 @@ SIMULATION INSTRUCTIONS:
 4. Track your running total and stay within budget.
 5. After visiting all relevant aisles, report your final cart.
 
-OUTPUT FORMAT:
-For each aisle visited, report:
-- Aisle name
-- Items picked up (product, quantity, estimated price)
-- Whether you interacted with any endcap display
-- Running total
+OUTPUT FORMAT — STRUCTURED JSON:
+Respond with valid JSON matching this schema:
+{{
+  "persona": "{persona['name']}",
+  "aisles_visited": [
+    {{
+      "aisle": "Produce",
+      "items": [{{"product": "Bananas", "quantity": 1, "price": 1.29}}],
+      "endcap_interaction": {{"product": "Nano Banana Pro", "picked_up": true, "reason": "good deal"}}
+    }}
+  ],
+  "cart": [{{"product": "Bananas", "quantity": 1, "price": 1.29}}],
+  "total_spend": 45.67,
+  "endcap_items": ["Nano Banana Pro"],
+  "experience_rating": 4,
+  "endcap_influenced": true
+}}"""
 
-Final report should include:
-- Complete cart contents
-- Total spend
-- Items picked up from endcap displays (if any)
-- Overall shopping experience rating (1-5)
-- Whether endcap merchandising influenced your purchases"""
+
+def _select_personas_by_distribution(num_shoppers: int) -> list[dict]:
+    """Select personas proportionally based on distribution_weight."""
+    personas = _load_personas()
+
+    if num_shoppers >= len(personas):
+        return personas[:num_shoppers]
+
+    weights = [p.get("distribution_weight", 1.0 / len(personas)) for p in personas]
+    total_weight = sum(weights)
+    weights = [w / total_weight for w in weights]
+
+    # Weighted selection without replacement
+    selected = []
+    available = list(range(len(personas)))
+    for _ in range(min(num_shoppers, len(personas))):
+        available_weights = [weights[i] for i in available]
+        total_w = sum(available_weights)
+        if total_w == 0:
+            break
+        norm_weights = [w / total_w for w in available_weights]
+        chosen_idx = random.choices(available, weights=norm_weights, k=1)[0]
+        selected.append(personas[chosen_idx])
+        available.remove(chosen_idx)
+
+    return selected
 
 
 def create_shopper_agent(
@@ -312,25 +308,39 @@ def create_agent(
 
     Args:
         store_name: Which store to simulate (Downtown/Westside/Lakefront Market)
-        scenario_key: Endcap merchandising scenario (baseline/seasonal_produce/
-                      snack_impulse/health_wellness)
-        num_shoppers: Number of concurrent shoppers to simulate (1-5)
+        scenario_key: Endcap merchandising scenario (see config/endcap_strategies.yaml)
+        num_shoppers: Number of concurrent shoppers to simulate (1-8)
     """
     from google.adk.agents import LlmAgent
+    from google.adk.tools import FunctionTool
 
     config = _load_config()
     retailer = config["retailer"]["name"]
     adk_model = config["models"]["adk"]
-    scenario = ENDCAP_SCENARIOS.get(scenario_key, ENDCAP_SCENARIOS["baseline"])
+    strategies = _load_strategies()
+    scenario = strategies.get(scenario_key, strategies.get("baseline", {"name": "Baseline", "description": ""}))
 
-    # Select shoppers
-    selected_personas = SHOPPER_PERSONAS[:min(num_shoppers, len(SHOPPER_PERSONAS))]
+    # Select shoppers weighted by distribution
+    selected_personas = _select_personas_by_distribution(num_shoppers)
 
     # Create shopper sub-agents
     shopper_agents = [
         create_shopper_agent(persona, store_name, scenario_key)
         for persona in selected_personas
     ]
+
+    # Available strategies list for the orchestrator
+    strategy_list = "\n".join(
+        f"  - {key}: {s['name']}" for key, s in strategies.items()
+    )
+
+    # Report generation tool
+    try:
+        from .tools.report_generator import generate_simulation_report
+        report_tool = FunctionTool(func=generate_simulation_report)
+        tools = [report_tool]
+    except ImportError:
+        tools = []
 
     orchestrator = LlmAgent(
         name="simulator_orchestrator",
@@ -339,7 +349,10 @@ def create_agent(
 You manage a world-model simulation of shoppers in {store_name}.
 
 Current Scenario: {scenario['name']}
-{scenario['description']}
+{scenario.get('description', '')}
+
+Available Strategies:
+{strategy_list}
 
 You have {len(shopper_agents)} shopper agents available. Each represents a
 different customer persona walking the store aisles concurrently.
@@ -354,6 +367,8 @@ When asked to run a simulation:
    - Average cart size and spend
    - Endcap ROI estimate (incremental revenue from endcap placements)
    - Recommendations for merchandising optimization
+4. Use the generate_simulation_report tool to create a visual HTML report
+   with BCG/McKinsey-style charts. Pass the collected results as JSON.
 
 Compare results across scenarios when asked to evaluate merchandising strategies.""",
         description=(
@@ -361,6 +376,7 @@ Compare results across scenarios when asked to evaluate merchandising strategies
             "strategies and endcap placement effectiveness."
         ),
         sub_agents=shopper_agents,
+        tools=tools,
     )
 
     return orchestrator
