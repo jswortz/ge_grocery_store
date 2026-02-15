@@ -128,6 +128,13 @@ def create_agent():
     except ImportError:
         print("Warning: PreloadMemoryTool not available")
 
+    # Add Google Search grounding for real-time market data
+    try:
+        from google.adk.tools import google_search
+        root_tools.append(google_search)
+    except ImportError:
+        print("Warning: GoogleSearchTool not available")
+
     # Sub-agents for function tools
     sub_agents = []
 

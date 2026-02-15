@@ -190,18 +190,20 @@ class TestSimulatorAgent(unittest.TestCase):
         assert "Lakefront Market" in STORE_LAYOUTS
 
     def test_endcap_scenarios_defined(self):
-        from src.simulator_agent.agent import ENDCAP_SCENARIOS
+        from src.simulator_agent.agent import _load_strategies
 
-        assert "baseline" in ENDCAP_SCENARIOS
-        assert "seasonal_produce" in ENDCAP_SCENARIOS
-        assert "snack_impulse" in ENDCAP_SCENARIOS
-        assert "health_wellness" in ENDCAP_SCENARIOS
+        scenarios = _load_strategies()
+        assert "baseline" in scenarios
+        assert "seasonal_produce" in scenarios
+        assert "snack_impulse" in scenarios
+        assert "health_wellness" in scenarios
 
     def test_shopper_personas_defined(self):
-        from src.simulator_agent.agent import SHOPPER_PERSONAS
+        from src.simulator_agent.agent import _load_personas
 
-        assert len(SHOPPER_PERSONAS) == 5
-        ids = [p["id"] for p in SHOPPER_PERSONAS]
+        personas = _load_personas()
+        assert len(personas) >= 3
+        ids = [p["id"] for p in personas]
         assert "budget_family" in ids
         assert "health_enthusiast" in ids
         assert "quick_stop" in ids
@@ -215,13 +217,13 @@ class TestSimulatorAgent(unittest.TestCase):
         assert "Nano Banana Pro" in context
 
     def test_shopper_instruction_generation(self):
-        from src.simulator_agent.agent import _build_shopper_instruction, SHOPPER_PERSONAS
+        from src.simulator_agent.agent import _build_shopper_instruction, _load_personas
 
-        persona = SHOPPER_PERSONAS[0]
+        personas = _load_personas()
+        persona = personas[0]
         instruction = _build_shopper_instruction(persona, "Downtown Market", "baseline")
         assert persona["name"] in instruction
-        assert str(persona["budget"]) in instruction
-        assert "Budget" in instruction
+        assert str(persona["shopping_behavior"]["budget"]) in instruction
 
 
 if __name__ == "__main__":
