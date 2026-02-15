@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ValueFresh Market &mdash; AI Assistant</title>
+<title id="page-title">AI Assistant</title>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -235,6 +235,11 @@ body {
   border-radius: 2px 2px 0 0;
 }
 
+.tab-btn:focus {
+  outline: 2px solid var(--vf-gold-500);
+  outline-offset: -2px;
+}
+
 .tab-icon {
   font-size: 16px;
 }
@@ -343,7 +348,17 @@ body {
   border-color: var(--vf-green-600);
   background: var(--vf-green-50);
   box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+}
+
+.sample-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.sample-btn:focus {
+  outline: 2px solid var(--vf-green-600);
+  outline-offset: 2px;
 }
 
 .sample-btn .sq-icon {
@@ -773,8 +788,8 @@ body {
           </svg>
         </div>
         <div class="brand-text">
-          <h1>ValueFresh Market</h1>
-          <div class="tagline">Fresh choices, every day.</div>
+          <h1 id="brand-name">Loading...</h1>
+          <div class="tagline" id="brand-tagline"></div>
         </div>
       </div>
 
@@ -923,6 +938,33 @@ body {
      ================================================================ -->
 <script>
 // ================================================================
+// CONFIG LOADING
+// ================================================================
+let AppConfig = null;
+
+async function loadConfig() {
+  try {
+    const resp = await fetch('/api/config');
+    if (resp.ok) {
+      AppConfig = await resp.json();
+      // Update UI with config values
+      const retailerName = AppConfig?.retailer?.name || 'Grocery Retail';
+      const tagline = AppConfig?.retailer?.tagline || '';
+
+      document.getElementById('page-title').textContent = `${retailerName} — AI Assistant`;
+      document.getElementById('brand-name').textContent = retailerName;
+      document.getElementById('brand-tagline').textContent = tagline;
+    } else {
+      // Fallback to defaults
+      document.getElementById('brand-name').textContent = 'Grocery Retail';
+    }
+  } catch (err) {
+    console.error('Failed to load config:', err);
+    document.getElementById('brand-name').textContent = 'Grocery Retail';
+  }
+}
+
+// ================================================================
 // STATE
 // ================================================================
 // Generate or retrieve a persistent user ID for Memory Bank
@@ -978,6 +1020,17 @@ function renderMarkdown(text) {
 // BACKEND SWITCHING
 // ================================================================
 function switchBackend(backend) {
+  // If already on this backend, do nothing
+  if (State.backend === backend) return;
+
+  // Confirm if there are existing messages
+  if (State.messages.length > 0) {
+    const backendName = backend === 'stream-assist' ? 'StreamAssist' : 'Agent Engine';
+    if (!confirm(`Switching to ${backendName} will clear the current conversation. Continue?`)) {
+      return;
+    }
+  }
+
   State.backend = backend;
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1235,6 +1288,7 @@ function addErrorMessage(errorText) {
 
 function showLoading() {
   hideWelcome();
+  const backendLabel = State.backend === 'stream-assist' ? 'StreamAssist' : 'Agent Engine';
   const el = document.createElement('div');
   el.className = 'message assistant';
   el.id = 'loading-msg';
@@ -1246,6 +1300,7 @@ function showLoading() {
       <div class="msg-bubble" style="background:var(--vf-gray-100);">
         <div class="typing-indicator"><span></span><span></span><span></span></div>
       </div>
+      <div class="msg-meta">${backendLabel} is thinking...</div>
     </div>
   `;
   $chatArea.appendChild(el);
@@ -1293,7 +1348,20 @@ async function sendMessage() {
     addMessage('assistant', response);
   } catch (err) {
     hideLoading();
-    addErrorMessage(`Error: ${err.message}`);
+    let friendlyMessage = err.message;
+
+    // Make errors more user-friendly
+    if (err.message.includes('NetworkError') || err.message.includes('Failed to fetch')) {
+      friendlyMessage = 'Unable to connect to the backend. Please check your connection and try again.';
+    } else if (err.message.includes('401') || err.message.includes('403')) {
+      friendlyMessage = 'Authentication error. Please check your credentials in Settings.';
+    } else if (err.message.includes('429')) {
+      friendlyMessage = 'Too many requests. Please wait a moment and try again.';
+    } else if (err.message.includes('500') || err.message.includes('502') || err.message.includes('503')) {
+      friendlyMessage = 'The backend service is temporarily unavailable. Please try again in a moment.';
+    }
+
+    addErrorMessage(`Error: ${friendlyMessage}`);
     console.error('Query error:', err);
   } finally {
     State.isLoading = false;
@@ -1327,6 +1395,7 @@ $input.addEventListener('keydown', (e) => {
 // ================================================================
 // INIT
 // ================================================================
+loadConfig();
 $input.focus();
 </script>
 

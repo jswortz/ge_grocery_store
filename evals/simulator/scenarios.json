@@ -1,27 +1,62 @@
 {
-  "eval_set_id": "simulator_eval",
-  "name": "Shopper Simulator Evaluation",
-  "description": "Evaluates the shopper simulator orchestrator on running realistic shopping simulations with endcap merchandising scenarios.",
+  "eval_set_id": "simulator_planogram_eval",
+  "name": "Shopper Simulator — Planogram & Persona Evaluation",
+  "description": "Evaluates 12 shopper personas across planogram layouts and endcap strategies. Tests realistic shopping behavior, budget adherence, endcap conversion, and planogram effectiveness.",
   "eval_cases": [
     {
-      "eval_id": "baseline_simulation",
+      "eval_id": "planogram_a_full_distribution",
       "conversation_scenario": {
-        "starting_prompt": "Run a simulation of 3 shoppers at the Downtown Market with no special endcap promotions (baseline scenario).",
-        "conversation_plan": "After receiving the simulation results, ask for a breakdown of what each shopper persona purchased. Then ask for recommendations on which aisles would benefit most from endcap promotions."
+        "starting_prompt": "Run a full simulation with all 12 shopper personas at the Downtown Market using the Produce-Forward Layout (planogram_produce_forward). Report individual cart results and aggregate metrics.",
+        "conversation_plan": "After seeing results, ask which personas had the highest endcap conversion rate in this layout. Then ask how the produce-forward layout affected the Budget-Conscious Family and Senior Regular personas specifically — did placing produce first increase their produce spending compared to baseline? Finally, ask for a recommendation on whether this planogram should be adopted store-wide."
       }
     },
     {
-      "eval_id": "seasonal_produce_simulation",
+      "eval_id": "planogram_b_perimeter_flow",
       "conversation_scenario": {
-        "starting_prompt": "Run a simulation of 3 shoppers at the Downtown Market with the seasonal produce endcap promotion (Nano Banana Pro at 20% off and Fresh Mango Slices Buy 2 Get 1 Free).",
-        "conversation_plan": "Ask about the endcap conversion rate - how many shoppers picked up the promoted items. Then ask to compare the total revenue against the baseline scenario and estimate the ROI of the endcap investment."
+        "starting_prompt": "Simulate 12 shoppers at the Westside Market using the Perimeter Power Loop planogram (planogram_perimeter_flow). I want to understand how the perimeter-to-center transition endcaps perform.",
+        "conversation_plan": "Ask which center-aisle endcaps performed best at pulling shoppers from the perimeter. Then ask about the Extreme Bargain Hunter and New-to-Area Explorer personas — did the perimeter flow layout help or hinder their shopping patterns? Ask for the total incremental revenue from the transition endcaps."
       }
     },
     {
-      "eval_id": "cross_scenario_comparison",
+      "eval_id": "planogram_c_impulse_corridor",
       "conversation_scenario": {
-        "starting_prompt": "Compare the effectiveness of the snack impulse buy strategy versus the health and wellness endcap promotion at the Westside Market with 3 shoppers each.",
-        "conversation_plan": "Ask which strategy generated more incremental revenue. Then ask which shopper persona was most influenced by endcap displays across both scenarios."
+        "starting_prompt": "Run a simulation at the Lakefront Market with the Impulse Corridor planogram (planogram_impulse_corridor) using all 12 personas. Focus on which personas are most affected by the impulse corridor.",
+        "conversation_plan": "After results, ask specifically about the Quick-Stop Convenience Shopper, Young Urban Professional, and Parent Shopping with Children — these should be the most impulse-susceptible. Compare their endcap pickup rates against the Senior Regular and Budget-Conscious Family. Then ask for the overall ROI of the impulse corridor layout."
+      }
+    },
+    {
+      "eval_id": "planogram_ab_comparison",
+      "conversation_scenario": {
+        "starting_prompt": "Compare Planogram A (Produce-Forward) vs Planogram B (Perimeter Power Loop) at the Downtown Market with all 12 personas. Which layout generates more total revenue and higher endcap conversion?",
+        "conversation_plan": "Ask which planogram works better for high-value personas (Weekend Meal Prep Cook, Party Host, International Cuisine Enthusiast). Then ask which works better for the high-frequency, low-basket personas (Quick-Stop, Young Urban Professional). Finally, ask for a recommendation matrix: which planogram to use for which store type."
+      }
+    },
+    {
+      "eval_id": "baseline_vs_best_planogram",
+      "conversation_scenario": {
+        "starting_prompt": "Run the baseline scenario (no endcaps) and the Impulse Corridor planogram at Downtown Market with 12 shoppers each. Calculate the lift from the planogram.",
+        "conversation_plan": "Ask for the per-persona lift in spending between baseline and impulse corridor. Then ask which 3 personas showed the biggest lift and which 3 showed the smallest. Ask whether the cost to implement ($350) is justified by the incremental revenue."
+      }
+    },
+    {
+      "eval_id": "seasonal_produce_12_personas",
+      "conversation_scenario": {
+        "starting_prompt": "Simulate all 12 shopper personas at the Downtown Market with the seasonal produce endcap promotion. Report detailed endcap interactions for each persona.",
+        "conversation_plan": "Ask about the 4 new personas specifically — International Cuisine Enthusiast, Pet-First Shopper, Party Host, and New-to-Area Explorer. How did each react to the Nano Banana Pro endcap? Then ask for the overall endcap conversion rate across all 12 and compare to what 3 shoppers would show."
+      }
+    },
+    {
+      "eval_id": "cross_store_planogram",
+      "conversation_scenario": {
+        "starting_prompt": "Compare the Impulse Corridor planogram across all 3 stores (Downtown Market, Westside Market, Lakefront Market) with 12 shoppers each. Which store benefits most from this layout?",
+        "conversation_plan": "Ask why certain stores benefit more — is it the store layout differences or the persona distribution? Then ask for specific product recommendations that should go in the impulse corridor for each store based on the customer profiles in that area."
+      }
+    },
+    {
+      "eval_id": "premium_cross_merch_high_value",
+      "conversation_scenario": {
+        "starting_prompt": "Run the Premium Cross-Merchandising strategy with all 12 personas at the Lakefront Market. This pairs complementary premium products across aisles.",
+        "conversation_plan": "Focus on the Weekend Meal Prep Cook, Party Host, and Health-Conscious Professional — these should be the target personas for premium cross-merch. Ask how the Artisan Steak Seasoning Kit + Premium Salad Kit pairing performed. Then ask whether the $750 implementation cost is justified."
       }
     }
   ]

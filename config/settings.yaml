@@ -41,7 +41,7 @@ project:
   agent_id: "4127847317548975868"  # ADK agent registered on Discovery Engine (no auth)
   agent_engine_id: "3323818153208709120"  # ADK agent deployed to Agent Engine (with telemetry)
   mcp_agent_engine_id: "8287066417547706368"  # MCP BigQuery analyst on Agent Engine
-  simulator_agent_engine_id: "2103624129168015360"  # Shopper simulator on Agent Engine
+  simulator_agent_engine_id: "256585331992690688"  # Shopper simulator on Agent Engine
   a2a_cloud_run_url: "https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app"  # A2A agent on Cloud Run
   a2a_agent_id: "1302067298490321373"  # A2A agent registered on Discovery Engine (streaming)
   data_agent_id: "14793816534468506603"  # Data Insights Agent for BQ analytics

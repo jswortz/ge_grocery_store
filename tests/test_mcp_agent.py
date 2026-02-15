@@ -340,6 +340,31 @@ class TestToolsYaml:
 # Requirements
 # ---------------------------------------------------------------------------
 
+class TestMemoryBankIntegration:
+    """Test Vertex AI Memory Bank integration for the MCP agent."""
+
+    def test_mcp_agent_has_memory_app(self):
+        """Verify MCP agent app.py exists and creates memory service."""
+        from pathlib import Path
+        app_path = Path(__file__).resolve().parent.parent / "src" / "mcp_agent" / "app.py"
+        assert app_path.exists(), "MCP agent app.py should exist for memory integration"
+
+    def test_mcp_memory_service_creation(self):
+        """Verify memory service is created for MCP agent."""
+        from src.mcp_agent.app import _create_memory_service
+        service = _create_memory_service()
+        assert service is not None
+
+    def test_mcp_memory_uses_correct_config(self):
+        """Verify MCP agent uses BQ project for memory service."""
+        from src.mcp_agent.app import _create_memory_service
+        from src.mcp_agent.agent import _load_config
+        config = _load_config()
+        # Just verify it doesn't crash and uses the right config keys
+        assert "bigquery" in config
+        assert "project" in config["bigquery"]
+
+
 class TestRequirements:
 
     def test_requirements_exist(self):

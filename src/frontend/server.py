@@ -1,4 +1,4 @@
-"""Lightweight proxy server for the ValueFresh Market frontend.
+"""Lightweight proxy server for the grocery retail frontend.
 
 Serves static files and proxies API calls to Discovery Engine (StreamAssist)
 and Agent Engine so the browser never needs raw GCP credentials.
@@ -21,12 +21,29 @@ from urllib.parse import urlparse, parse_qs
 
 import google.auth
 import google.auth.transport.requests
+import yaml
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Config loader
+# ---------------------------------------------------------------------------
+CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "settings.yaml"
+
+
+def _load_config():
+    """Load config from settings.yaml."""
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH) as f:
+            return yaml.safe_load(f)
+    return {}
+
+
+CONFIG = _load_config()
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -99,6 +116,16 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/api/health":
             self._json_response({"status": "ok"})
+            return
+        if path == "/api/config":
+            # Return only safe, public config fields for frontend
+            safe_config = {
+                "retailer": {
+                    "name": CONFIG.get("retailer", {}).get("name", "Grocery Retail"),
+                    "tagline": CONFIG.get("retailer", {}).get("tagline", ""),
+                }
+            }
+            self._json_response(safe_config)
             return
         # Fall through to static file serving
         super().do_GET()
@@ -214,8 +241,9 @@ class FrontendHandler(SimpleHTTPRequestHandler):
 # Entrypoint
 # ---------------------------------------------------------------------------
 def main():
+    retailer_name = CONFIG.get("retailer", {}).get("name", "Grocery Retail")
     server = HTTPServer(("0.0.0.0", PORT), FrontendHandler)
-    logger.info("ValueFresh Market frontend serving on http://localhost:%d", PORT)
+    logger.info("%s frontend serving on http://localhost:%d", retailer_name, PORT)
     logger.info("Static files from %s", STATIC_DIR)
     try:
         server.serve_forever()

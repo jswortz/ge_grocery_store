@@ -66,8 +66,11 @@ This is a **workshop demo repo** demonstrating Gemini Enterprise (Discovery Engi
 - Root agent `grocery_assistant` with `DiscoveryEngineSearchTool` (searches sop-store and brand-guidelines-store via the engine, restricted with `data_store_specs` to exclude workspace data stores)
 - `analytics_agent` sub-agent with `query_grocery_data` FunctionTool (BigQuery)
 - `image_agent` sub-agent with `generate_product_image` FunctionTool (Imagen)
+- `PreloadMemoryTool` for cross-session user-scoped memory via Vertex AI Memory Bank
 
-Key design choice: Uses `DiscoveryEngineSearchTool` (a `FunctionTool` subclass) instead of `VertexAiSearchTool` because `VertexAiSearchTool` adds a built-in Gemini retrieval tool that cannot coexist with the `transfer_to_agent` function tools injected by sub-agents.
+Key design choices:
+- Uses `DiscoveryEngineSearchTool` (a `FunctionTool` subclass) instead of `VertexAiSearchTool` because `VertexAiSearchTool` adds a built-in Gemini retrieval tool that cannot coexist with the `transfer_to_agent` function tools injected by sub-agents.
+- Memory Bank integration via `app.py` pattern: Each agent (main, MCP, simulator) has an `app.py` that creates a `VertexAiMemoryBankService` (or `InMemoryMemoryService` for local dev) and configures it on the ADK `App` instance. This enables shared user-scoped memories across all agents.
 
 **MCP Agent** (`src/mcp_agent/`): Alternative analytics agent using MCP Toolbox for Databases (`genai-toolbox`). Connects to BigQuery via MCP over stdio. The LLM generates arbitrary SQL (vs. pattern-matched SQL in `bq_tool.py`). Requires the `toolbox` binary. 9 BigQuery tools available: `execute_sql`, `list_table_ids`, `get_table_info`, `forecast`, `analyze_contribution`, etc.
 
@@ -81,7 +84,7 @@ Central config loader in `src/agent/agent.py:_load_config()` reads `config/setti
 
 - **Agent Engine (Main)**: `reasoningEngines/3323818153208709120` — Grocery Retail Assistant (OTel enabled)
 - **Agent Engine (MCP)**: `reasoningEngines/8287066417547706368` — MCP Grocery Analyst (BigQuery analytics)
-- **Agent Engine (Simulator)**: `reasoningEngines/2103624129168015360` — Shopper Simulator
+- **Agent Engine (Simulator)**: `reasoningEngines/256585331992690688` — Shopper Simulator
 - **Cloud Run (A2A)**: `https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app` — A2A protocol agent
 - **Discovery Engine**: `grocery-workshop-engine` (global, SEARCH_TIER_ENTERPRISE)
 - **Model Armor**: `grocery-workshop-armor-us` template (us multi-region, applied to Discovery Engine assistant)

@@ -131,3 +131,102 @@ strategies:
         cost_per_unit: 4.20
     cost_to_implement: 380.00
     expected_lift_pct: 20
+
+  # ── Planogram Layout Scenarios ─────────────────────────────────────────────
+
+  planogram_produce_forward:
+    name: "Planogram A: Produce-Forward Layout"
+    description: >
+      Store reorganized with Produce as the first department upon entry,
+      followed by Bakery and Dairy. Endcaps placed at department transitions
+      to capture traffic flow. This layout maximizes fresh-first perception
+      and encourages full-perimeter shopping.
+    endcaps:
+      - location: Produce
+        position: entrance
+        product: "Organic Berry Medley"
+        discount: "30% off"
+        display_type: "refrigerated island at store entrance"
+        unit_price: 6.99
+        cost_per_unit: 2.50
+      - location: Bakery
+        position: entrance
+        product: "Artisan Sourdough Loaf"
+        discount: "$1 off"
+        display_type: "warm-bread display with aroma diffuser"
+        unit_price: 5.49
+        cost_per_unit: 1.80
+      - location: Dairy
+        position: exit
+        product: "Premium Butter 4-Pack"
+        discount: "15% off"
+        display_type: "refrigerated endcap with recipe pairing"
+        unit_price: 8.99
+        cost_per_unit: 3.60
+    cost_to_implement: 620.00
+    expected_lift_pct: 16
+
+  planogram_perimeter_flow:
+    name: "Planogram B: Perimeter Power Loop"
+    description: >
+      Classic grocery perimeter-flow layout. Fresh departments (Produce,
+      Bakery, Deli, Meat, Dairy) ring the store perimeter. Center aisles
+      hold shelf-stable goods. Endcaps placed at perimeter-to-center
+      transition points to pull shoppers into higher-margin center aisles.
+    endcaps:
+      - location: Meat & Seafood
+        position: exit
+        product: "Gourmet BBQ Sauce Bundle"
+        discount: "Buy 2 for $9"
+        display_type: "wooden crate display at perimeter-center transition"
+        unit_price: 5.99
+        cost_per_unit: 1.80
+      - location: Frozen
+        position: entrance
+        product: "Premium Ice Cream Pint"
+        discount: "2 for $8"
+        display_type: "freezer endcap with impulse signage"
+        unit_price: 5.49
+        cost_per_unit: 2.20
+      - location: Pantry
+        position: entrance
+        product: "Imported Pasta Variety Pack"
+        discount: "20% off"
+        display_type: "gondola endcap with Italian theme"
+        unit_price: 7.99
+        cost_per_unit: 2.90
+    cost_to_implement: 480.00
+    expected_lift_pct: 19
+
+  planogram_impulse_corridor:
+    name: "Planogram C: Impulse Corridor"
+    description: >
+      Dedicated high-impulse corridor between Beverages and Checkout.
+      Narrow aisle with eye-level endcaps on both sides featuring
+      grab-and-go items, seasonal treats, and new product launches.
+      Designed to maximize impulse purchases for quick-stop and
+      young professional personas.
+    endcaps:
+      - location: Beverages
+        position: exit
+        product: "Energy Drink 4-Pack"
+        discount: "$2 off"
+        display_type: "chiller tower at corridor entrance"
+        unit_price: 9.99
+        cost_per_unit: 3.50
+      - location: Snacks
+        position: exit
+        product: "New Launch: Spicy Mango Chips"
+        discount: "Introductory $1 off"
+        display_type: "eye-level shelf with NEW! callout"
+        unit_price: 4.49
+        cost_per_unit: 1.20
+      - location: Bakery
+        position: exit
+        product: "Fresh Cookie 6-Pack"
+        discount: "Buy 1 Get 1 Free"
+        display_type: "warm cookie station with sampling"
+        unit_price: 5.99
+        cost_per_unit: 1.50
+    cost_to_implement: 350.00
+    expected_lift_pct: 25

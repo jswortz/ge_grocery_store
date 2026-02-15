@@ -1,20 +1,59 @@
 {
   "criteria": {
     "rubric_based_final_response_quality_v1": {
-      "threshold": 0.5,
+      "threshold": 0.6,
       "judge_model_options": {
         "judge_model": "gemini-2.5-flash"
-      }
+      },
+      "rubrics": [
+        {
+          "rubric_id": "realistic_shopping",
+          "rubric_content": {
+            "text_property": "Each simulated shopper follows a realistic shopping path through aisles consistent with their persona preferences and demographics"
+          }
+        },
+        {
+          "rubric_id": "budget_adherence",
+          "rubric_content": {
+            "text_property": "Shoppers stay within their stated budget. If a shopper exceeds budget, there is a clear reason related to impulse tendency or endcap interaction"
+          }
+        },
+        {
+          "rubric_id": "endcap_reporting",
+          "rubric_content": {
+            "text_property": "Endcap interactions are explicitly reported for each shopper including whether they picked up the item and why or why not"
+          }
+        },
+        {
+          "rubric_id": "aggregate_metrics",
+          "rubric_content": {
+            "text_property": "Aggregate metrics are calculated correctly: total revenue, endcap conversion rate, average basket size, and per-persona breakdown"
+          }
+        },
+        {
+          "rubric_id": "actionable_recommendations",
+          "rubric_content": {
+            "text_property": "Recommendations for merchandising optimization are specific, actionable, and grounded in the simulation data"
+          }
+        }
+      ]
     },
     "hallucinations_v1": {
-      "threshold": 0.5
+      "threshold": 0.5,
+      "evaluate_intermediate_nl_responses": true
     },
     "safety_v1": {
-      "threshold": 0.5
+      "threshold": 0.8
     }
   },
   "user_simulator_config": {
     "model": "gemini-2.5-flash",
+    "model_configuration": {
+      "thinking_config": {
+        "include_thoughts": true,
+        "thinking_budget": 8192
+      }
+    },
     "max_allowed_invocations": 15
   }
 }

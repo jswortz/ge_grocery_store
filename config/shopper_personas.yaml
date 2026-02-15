@@ -226,7 +226,7 @@ personas:
   - id: bargain_hunter
     name: "Extreme Bargain Hunter"
     description: "Coupon clipper who plans trips around sales circulars. Will visit multiple stores for the best deals."
-    distribution_weight: 0.05
+    distribution_weight: 0.03
     demographics:
       age_range: "35-60"
       household_size: 2-4
@@ -253,3 +253,127 @@ personas:
       brand_loyalty: 0.2
       novelty_seeking: 0.4
     loyalty_tier: "Silver"
+
+  - id: international_foodie
+    name: "International Cuisine Enthusiast"
+    description: "Home cook exploring global flavors. Seeks specialty ingredients, sauces, and spices from multiple cuisines."
+    distribution_weight: 0.03
+    demographics:
+      age_range: "28-55"
+      household_size: 2-3
+      income_bracket: "$60K-$95K"
+    shopping_behavior:
+      avg_basket_items: 22
+      avg_spend: 95.00
+      budget: 120.00
+      visit_frequency: "weekly"
+      time_in_store_min: 50
+      list_adherence: 0.50
+      impulse_tendency: 0.55
+    category_preferences:
+      produce: 0.8
+      dairy: 0.5
+      bakery: 0.4
+      meat: 0.7
+      frozen: 0.3
+      snacks: 0.4
+      beverages: 0.5
+      international: 1.0
+    endcap_sensitivity:
+      discount_threshold: 0.08
+      brand_loyalty: 0.3
+      novelty_seeking: 0.9
+    loyalty_tier: "Silver"
+
+  - id: pet_owner
+    name: "Pet-First Shopper"
+    description: "Pet parent who always buys pet food and treats alongside regular groceries. Loyal to specific pet brands."
+    distribution_weight: 0.03
+    demographics:
+      age_range: "25-50"
+      household_size: 1-2
+      income_bracket: "$50K-$80K"
+    shopping_behavior:
+      avg_basket_items: 20
+      avg_spend: 88.00
+      budget: 105.00
+      visit_frequency: "bi-weekly"
+      time_in_store_min: 30
+      list_adherence: 0.65
+      impulse_tendency: 0.40
+    category_preferences:
+      produce: 0.5
+      dairy: 0.6
+      bakery: 0.4
+      meat: 0.6
+      frozen: 0.5
+      snacks: 0.5
+      beverages: 0.4
+      pantry: 0.6
+    endcap_sensitivity:
+      discount_threshold: 0.12
+      brand_loyalty: 0.8
+      novelty_seeking: 0.3
+    loyalty_tier: "Gold"
+
+  - id: party_host
+    name: "Entertaining & Party Host"
+    description: "Shopping for a gathering or party. Buys large quantities of appetizers, drinks, dips, and snacks."
+    distribution_weight: 0.02
+    demographics:
+      age_range: "30-55"
+      household_size: 2-4
+      income_bracket: "$70K-$120K"
+    shopping_behavior:
+      avg_basket_items: 40
+      avg_spend: 175.00
+      budget: 220.00
+      visit_frequency: "monthly"
+      time_in_store_min: 55
+      list_adherence: 0.45
+      impulse_tendency: 0.65
+    category_preferences:
+      produce: 0.6
+      dairy: 0.7
+      bakery: 0.8
+      meat: 0.7
+      frozen: 0.5
+      snacks: 1.0
+      beverages: 1.0
+      pantry: 0.4
+    endcap_sensitivity:
+      discount_threshold: 0.05
+      brand_loyalty: 0.3
+      novelty_seeking: 0.8
+    loyalty_tier: "Gold"
+
+  - id: new_to_area
+    name: "New-to-Area Explorer"
+    description: "Recently moved to the neighborhood, unfamiliar with store layout. Explores every aisle, open to suggestions."
+    distribution_weight: 0.02
+    demographics:
+      age_range: "25-40"
+      household_size: 1-2
+      income_bracket: "$55K-$90K"
+    shopping_behavior:
+      avg_basket_items: 25
+      avg_spend: 105.00
+      budget: 130.00
+      visit_frequency: "weekly"
+      time_in_store_min: 65
+      list_adherence: 0.35
+      impulse_tendency: 0.75
+    category_preferences:
+      produce: 0.7
+      dairy: 0.7
+      bakery: 0.7
+      meat: 0.5
+      frozen: 0.6
+      snacks: 0.7
+      beverages: 0.7
+      pantry: 0.6
+    endcap_sensitivity:
+      discount_threshold: 0.05
+      brand_loyalty: 0.1
+      novelty_seeking: 1.0
+    loyalty_tier: "Bronze"

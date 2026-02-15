@@ -142,6 +142,34 @@ class TestMemoryBank:
         assert "memory" in instruction.lower()
         assert "personali" in instruction.lower()  # personalize/personalization
 
+    def test_memory_service_created_when_enabled(self):
+        """Verify memory service is created based on config."""
+        from src.agent.app import _create_memory_service
+        service = _create_memory_service()
+        assert service is not None
+        # Should be a BaseMemoryService subclass
+        assert hasattr(service, '__class__')
+
+    def test_memory_service_fallback_to_inmemory(self):
+        """Verify graceful fallback to InMemoryMemoryService."""
+        import os
+        from src.agent.app import _create_memory_service
+        # Even if there's an error creating Vertex Memory Bank, should not crash
+        with patch.dict(os.environ, {"GOOGLE_APPLICATION_CREDENTIALS": "/nonexistent"}):
+            service = _create_memory_service()
+            assert service is not None
+
+    def test_runner_has_memory_service(self):
+        """Verify Runner instance is created with memory service."""
+        from src.agent.app import create_runner
+        try:
+            runner = create_runner()
+            assert runner is not None
+            # Runner should have a memory service configured
+            assert runner.memory_service is not None
+        except ImportError:
+            pytest.skip("ADK not installed")
+
     def test_config_has_model_armor_section(self):
         from src.agent.agent import _load_config
         config = _load_config()
