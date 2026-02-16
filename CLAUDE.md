@@ -102,9 +102,9 @@ Dataset `ge_grocery_demo` in `wortz-project-352116`:
 
 DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_data.sql`.
 
-### Test structure (144 tests)
+### Test structure (177 tests)
 
-- `tests/test_agent.py` (21) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
+- `tests/test_agent.py` (48) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
 - `tests/test_mcp_agent.py` (34) — **unit tests**, validates MCP agent config, schema context, instructions, toolbox path resolution
 - `tests/test_a2a_agent.py` (24) — **unit tests**, validates A2A agent config, AgentCard, skills, Cloud Run files, simulator agent
 - `tests/test_model_armor.py` (10 unit + 5 integration) — validates Model Armor config, API schema, live template and assistant

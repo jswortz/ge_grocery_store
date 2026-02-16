@@ -12,11 +12,12 @@ Step-by-step instructions for setting up the Gemini Enterprise Grocery Workshop.
 2. [BigQuery Star Schema](#2-bigquery-star-schema)
 3. [Document Generation](#3-document-generation)
 4. [Discovery Engine Provisioning](#4-discovery-engine-provisioning)
-5. [ADK Agent (Local)](#5-adk-agent-local)
-6. [Agent Engine Deployment](#6-agent-engine-deployment)
-7. [Frontend UI](#7-frontend-ui)
-8. [MCP BigQuery Agent](#8-mcp-bigquery-agent)
-9. [Running Tests](#9-running-tests)
+5. [Environment Variables](#5-environment-variables-env)
+6. [ADK Agent (Local)](#6-adk-agent-local)
+7. [Agent Engine Deployment](#7-agent-engine-deployment)
+8. [Frontend UI](#8-frontend-ui)
+9. [MCP BigQuery Agent](#9-mcp-bigquery-agent)
+10. [Running Tests](#10-running-tests)
 
 ---
 
@@ -254,7 +255,7 @@ See [Architecture: Agent Layer](architecture.md#agent-layer) for the multi-agent
 
 ---
 
-## 6. Agent Engine Deployment
+## 7. Agent Engine Deployment
 
 Deploy the ADK agent to Vertex AI Agent Engine for production use.
 
@@ -307,7 +308,7 @@ python -m pytest tests/test_agent_engine.py -v
 
 ---
 
-## 6b. Memory Bank
+## 7b. Memory Bank
 
 Memory Bank is automatically available on Agent Engine deployments. The `PreloadMemoryTool` in the root agent handles memory loading per user.
 
@@ -336,7 +337,7 @@ resp = requests.post(url, headers=headers,
 
 ---
 
-## 7. Frontend UI
+## 8. Frontend UI
 
 A branded web interface for interacting with the deployed agents.
 
@@ -364,7 +365,7 @@ See [Architecture: Presentation Layer](architecture.md#presentation-layer) for d
 
 ---
 
-## 8. MCP BigQuery Agent
+## 9. MCP BigQuery Agent
 
 An alternative analytics agent using the MCP Toolbox for Databases.
 
@@ -401,7 +402,7 @@ python -m pytest tests/test_mcp_agent.py -v
 
 ---
 
-## 9. Running Tests
+## 10. Running Tests
 
 ### Unit tests (no GCP needed)
 

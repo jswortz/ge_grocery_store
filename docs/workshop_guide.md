@@ -123,7 +123,7 @@ python -m src.frontend    # Open http://localhost:8080
 1. Model Armor screens all prompts and responses at the Discovery Engine level
 2. Filters: RAI harm (hate/violence), prompt injection/jailbreak, PII detection (SDP), malicious URLs
 3. Failure mode: `FAIL_OPEN` -- if Model Armor is unavailable, queries pass through to avoid blocking production
-4. 144 automated tests validate agent quality across all capabilities
+4. 168 automated tests validate agent quality across all capabilities
 
 **Key takeaway:** Enterprise-grade content safety and quality assurance -- applied at the infrastructure level, not in application code.
 
@@ -140,7 +140,7 @@ python -m src.frontend    # Open http://localhost:8080
 
 ```bash
 # Run the evaluation suite
-python -m pytest tests/ --collect-only -q   # 144 tests across 10 test files
+python -m pytest tests/ --collect-only -q   # 177 tests across 10 test files
 ```
 
 ---
@@ -227,7 +227,7 @@ See the [full architecture documentation](architecture.md) for detailed diagrams
 
 | Suite | Tests | Type | What It Validates |
 |-------|-------|------|-------------------|
-| `test_agent.py` | 21 | Unit | System prompts, SQL gen, tool configs, memory |
+| `test_agent.py` | 48 | Unit | System prompts, SQL gen, tool configs, memory, voice, frontend |
 | `test_stream_assist.py` | 14 | Unit | StreamAssist client, parsing, error handling |
 | `test_mcp_agent.py` | 34 | Unit | MCP agent config, schema, instructions |
 | `test_a2a_agent.py` | 24 | Unit | A2A agent config, AgentCard, skills, simulator |
@@ -238,6 +238,6 @@ See the [full architecture documentation](architecture.md) for detailed diagrams
 | `test_memory_bank.py` | 9 | Integration | Memory Bank service, user-scoped persistence |
 | `test_acceptance.py` | 6 | Integration | End-to-end acceptance criteria |
 
-**Total: 144 tests (103 unit + 41 integration)**
+**Total: 177 tests (124 unit + 47 integration)**
 
 GitHub Actions runs unit tests on every push/PR across Python 3.10-3.12 with coverage reporting.

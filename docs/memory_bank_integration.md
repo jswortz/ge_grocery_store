@@ -29,7 +29,7 @@ All three agent subsystems use Memory Bank:
 3. **Simulator Agent** (`src/simulator_agent/`)
    - Shopper simulation orchestrator
    - Memory service configured in `src/simulator_agent/app.py`
-   - Uses agent_engine_id: `2103624129168015360`
+   - Uses agent_engine_id: `256585331992690688`
 
 ### Memory Sharing
 

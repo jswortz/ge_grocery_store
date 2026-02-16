@@ -235,7 +235,7 @@ cd src && adk deploy agent_engine \
 
 All configuration flows through `config/settings.yaml` with environment variable overrides for deployment.
 
-![Configuration System](diagrams/07_config_system.png)
+<!-- No dedicated diagram — see settings.yaml below -->
 
 **No client names are hardcoded in source code.** Tests enforce this:
 - `tests/test_bigquery.py` checks for forbidden names in BigQuery data
@@ -250,7 +250,7 @@ Memory Bank provides shared memory across agent sessions so the agent remembers 
 
 ### How It Works
 
-![Memory Bank & Model Armor](diagrams/08_memory_model_armor.png)
+![Memory Bank & Model Armor](diagrams/07_memory_model_armor.png)
 
 **Key points:**
 - `PreloadMemoryTool` is added to the root agent's tool list
@@ -282,7 +282,7 @@ Model Armor provides content safety screening on the Discovery Engine `grocery-w
 
 ### Architecture
 
-See the [Memory Bank & Model Armor diagram](diagrams/08_memory_model_armor.png) above for the full architecture.
+See the [Memory Bank & Model Armor diagram](diagrams/07_memory_model_armor.png) above for the full architecture.
 
 **Failure mode:** `FAIL_OPEN` — if Model Armor is unavailable, queries pass through to avoid blocking production traffic.
 

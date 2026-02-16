@@ -183,7 +183,7 @@ bash infra/provision_model_armor.sh
 
 ## A2A Agent (Cloud Run)
 
-An A2A-enabled version of the grocery agent for inter-agent communication and Cloud Run deployment. See [Architecture: A2A](docs/architecture.md#memory-bank).
+An A2A-enabled version of the grocery agent for inter-agent communication and Cloud Run deployment. See [`src/a2a_agent/`](src/a2a_agent/) for implementation details.
 
 ```bash
 # Local development
@@ -323,7 +323,7 @@ python -m pytest tests/test_agent.py::TestBQTool::test_generate_sql_top_products
 
 | File | Type | Tests | What it tests |
 |------|------|-------|---------------|
-| [`test_agent.py`](tests/test_agent.py) | Unit | 21 | System prompts, SQL generation, tool configs, memory |
+| [`test_agent.py`](tests/test_agent.py) | Unit | 48 | System prompts, SQL gen, tool configs, memory, voice, frontend |
 | [`test_stream_assist.py`](tests/test_stream_assist.py) | Unit + Integration | 14 | StreamAssist client, response parsing, error handling |
 | [`test_mcp_agent.py`](tests/test_mcp_agent.py) | Unit | 34 | MCP agent config, schema, instructions, toolbox path |
 | [`test_a2a_agent.py`](tests/test_a2a_agent.py) | Unit | 24 | A2A agent config, AgentCard, skills, Cloud Run files |
@@ -334,7 +334,7 @@ python -m pytest tests/test_agent.py::TestBQTool::test_generate_sql_top_products
 | [`test_memory_bank.py`](tests/test_memory_bank.py) | Integration | 9 | Memory Bank service, user-scoped memory persistence |
 | [`test_acceptance.py`](tests/test_acceptance.py) | Integration | 6 | Acceptance criteria via StreamAssist (greeting, SOP, brand) |
 
-**Current status: 144 tests (103 unit + 41 integration)**
+**Current status: 177 tests (124 unit + 47 integration)**
 
 ---
 
@@ -402,7 +402,7 @@ ge_grocery_store/
 │   ├── grocery_assistant/         # Root agent evals
 │   ├── mcp_analyst/               # MCP agent evals
 │   └── simulator/                 # Simulator evals
-├── tests/                         # 144+ tests (see Testing)
+├── tests/                         # 168+ tests (see Testing)
 ├── .github/workflows/
 │   └── unit-tests.yml             # GitHub Actions CI
 ├── pyproject.toml                 # Python project config

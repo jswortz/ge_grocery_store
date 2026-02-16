@@ -136,11 +136,22 @@ class FrontendHandler(SimpleHTTPRequestHandler):
                     "agent_engine_id": AE_RESOURCE_ID,
                     "agent_engine_location": AE_LOCATION,
                 },
+                "voice": CONFIG.get("voice", {
+                    "enabled": True,
+                    "input_lang": "en-US",
+                    "output_enabled": True,
+                    "output_voice": "Google US English",
+                    "output_rate": 1.0,
+                    "output_pitch": 1.0,
+                }),
             }
             self._json_response(safe_config)
             return
         if path == "/api/memory/status":
             self._proxy_memory_status(query_params)
+            return
+        if path.startswith("/api/images/"):
+            self._proxy_gcs_image(path)
             return
         # Fall through to static file serving
         super().do_GET()
@@ -193,6 +204,7 @@ class FrontendHandler(SimpleHTTPRequestHandler):
 
     def _proxy_agent_engine_query(self):
         """POST /api/agent-engine/query -> Agent Engine streamQuery."""
+        import time
         import requests as req
 
         url = f"{AE_BASE}:streamQuery"
@@ -204,17 +216,37 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         payload = json.loads(body) if body else {}
 
         try:
+            t0 = time.monotonic()
             resp = req.post(url, headers=headers, json=payload, timeout=120)
+            latency_ms = int((time.monotonic() - t0) * 1000)
             resp.raise_for_status()
 
             # Extract Cloud Trace context for observability deeplinks
             trace_header = resp.headers.get("x-cloud-trace-context", "")
             trace_id = trace_header.split("/")[0] if trace_header else ""
 
-            # Build response with trace metadata
+            # Count tool invocations in the response
+            tool_count = 0
+            for line in resp.text.split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                    parts = (event.get("content") or {}).get("parts") or []
+                    for part in parts:
+                        if "functionCall" in part:
+                            tool_count += 1
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            # Build response with trace and performance metadata
             response_data = {
                 "content": resp.text,
-                "metadata": {},
+                "metadata": {
+                    "latency_ms": latency_ms,
+                    "tool_count": tool_count,
+                },
             }
             if trace_id:
                 response_data["metadata"]["trace_id"] = trace_id
@@ -313,12 +345,66 @@ class FrontendHandler(SimpleHTTPRequestHandler):
             if resp.ok:
                 data = resp.json()
                 memories = data.get("memories", [])
-                self._json_response({"count": len(memories), "user_id": user_id})
+                # Extract snippet text from each memory for tooltip display
+                snippets = []
+                for m in memories[:5]:  # Limit to 5 most recent
+                    fact = m.get("fact", "")
+                    if fact:
+                        snippet = fact[:120] + "..." if len(fact) > 120 else fact
+                        snippets.append(snippet)
+                self._json_response({
+                    "count": len(memories),
+                    "user_id": user_id,
+                    "snippets": snippets,
+                })
             else:
-                self._json_response({"count": 0, "user_id": user_id})
+                self._json_response({"count": 0, "user_id": user_id, "snippets": []})
         except Exception as exc:
             logger.warning("Memory status check failed: %s", exc)
-            self._json_response({"count": 0, "user_id": user_id})
+            self._json_response({"count": 0, "user_id": user_id, "snippets": []})
+
+    # --- GCS image proxy ------------------------------------------------
+
+    def _proxy_gcs_image(self, path):
+        """GET /api/images/<blob_path> -> GCS blob content.
+
+        Serves generated images from GCS through the proxy so the frontend
+        can display them without signed URLs or CORS issues.
+        """
+        from google.cloud import storage
+
+        blob_path = path.removeprefix("/api/images/")
+        if not blob_path:
+            self._json_error(400, "No image path specified")
+            return
+
+        gcs_bucket = CONFIG.get("gcs", {}).get(
+            "bucket", f"{DE_PROJECT}-ge-workshop"
+        )
+
+        try:
+            client = storage.Client(project=DE_PROJECT)
+            bucket = client.bucket(gcs_bucket)
+            blob = bucket.blob(blob_path)
+
+            if not blob.exists():
+                self._json_error(404, "Image not found")
+                return
+
+            image_bytes = blob.download_as_bytes()
+            content_type = blob.content_type or "image/png"
+
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(image_bytes)))
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(image_bytes)
+
+        except Exception as exc:
+            logger.warning("GCS image proxy failed: %s", exc)
+            self._json_error(500, f"Failed to fetch image: {exc}")
 
     # --- Helpers --------------------------------------------------------
 
@@ -365,6 +451,16 @@ class FrontendHandler(SimpleHTTPRequestHandler):
 # ---------------------------------------------------------------------------
 def main():
     retailer_name = CONFIG.get("retailer", {}).get("name", "Grocery Retail")
+
+    # Start voice WebSocket server in background thread
+    try:
+        from src.frontend.voice_server import start_voice_server
+        voice_thread = start_voice_server()
+        if voice_thread:
+            logger.info("Voice WebSocket server started alongside HTTP server")
+    except Exception as exc:
+        logger.warning("Voice server not started: %s", exc)
+
     server = HTTPServer(("0.0.0.0", PORT), FrontendHandler)
     logger.info("%s frontend serving on http://localhost:%d", retailer_name, PORT)
     logger.info("Static files from %s", STATIC_DIR)

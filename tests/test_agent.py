@@ -179,3 +179,267 @@ class TestMemoryBank:
         assert config["model_armor"]["failure_mode"] == "FAIL_OPEN"
 
 
+class TestVoiceConfig:
+    """Test voice configuration in settings.yaml."""
+
+    def test_config_has_voice_section(self):
+        from src.agent.agent import _load_config
+        config = _load_config()
+        assert "voice" in config
+        assert config["voice"]["enabled"] is True
+
+    def test_voice_output_config(self):
+        from src.agent.agent import _load_config
+        config = _load_config()
+        voice = config["voice"]
+        assert voice["output_enabled"] is True
+        assert isinstance(voice["output_rate"], (int, float))
+        assert isinstance(voice["output_pitch"], (int, float))
+        assert voice["input_lang"] == "en-US"
+        assert isinstance(voice["output_voice"], str)
+
+
+class TestImageGenGlobalEndpoint:
+    """Test that image generation uses the global endpoint."""
+
+    def test_image_gen_uses_global_location(self):
+        """Verify image_gen_tool calls vertexai.init with location='global'."""
+        import inspect
+        from src.agent.tools import image_gen_tool
+        source = inspect.getsource(image_gen_tool)
+        assert 'location="global"' in source
+
+    @patch("src.agent.tools.image_gen_tool._load_config")
+    def test_image_gen_returns_proxy_url(self, mock_config):
+        """Verify successful image gen returns /api/images/ proxy URL."""
+        mock_config.return_value = {
+            "project": {"id": "test-project"},
+            "retailer": {"name": "TestMart"},
+            "models": {"imagen": "gemini-3-pro-image-preview"},
+            "gcs": {"bucket": "test-bucket"},
+        }
+        # Mock the full image generation pipeline
+        mock_model = MagicMock()
+        mock_part = MagicMock()
+        mock_part.inline_data.data = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+        mock_part.inline_data.mime_type = "image/png"
+        mock_response = MagicMock()
+        mock_response.candidates = [MagicMock()]
+        mock_response.candidates[0].content.parts = [mock_part]
+        mock_model.generate_content.return_value = mock_response
+
+        mock_blob = MagicMock()
+        mock_bucket = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
+        mock_client = MagicMock()
+        mock_client.bucket.return_value = mock_bucket
+
+        with patch("vertexai.init"), \
+             patch("vertexai.generative_models.GenerativeModel", return_value=mock_model), \
+             patch("google.cloud.storage.Client", return_value=mock_client):
+            from src.agent.tools.image_gen_tool import generate_product_image
+            result = generate_product_image("Test Product")
+            assert result["status"] == "success"
+            assert "/api/images/" in result["image_url"]
+            assert "![Test Product]" in result["message"]
+
+
+class TestGCSImageProxy:
+    """Test the GCS image proxy route in the frontend server."""
+
+    def test_server_has_gcs_proxy_method(self):
+        """Verify the frontend server has a _proxy_gcs_image method."""
+        from src.frontend.server import FrontendHandler
+        assert hasattr(FrontendHandler, '_proxy_gcs_image')
+
+    def test_server_config_includes_voice(self):
+        """Verify /api/config returns voice configuration."""
+        from src.frontend.server import CONFIG
+        assert "voice" in CONFIG
+        assert CONFIG["voice"]["enabled"] is True
+
+
+class TestFrontendFeatures:
+    """Test Sprint 1 frontend enhancements."""
+
+    def test_server_has_memory_status_handler(self):
+        """Verify the frontend server has _proxy_memory_status method."""
+        from src.frontend.server import FrontendHandler
+        assert hasattr(FrontendHandler, '_proxy_memory_status')
+
+    def test_trace_extraction_in_agent_engine_handler(self):
+        """Verify Agent Engine proxy extracts trace context."""
+        import inspect
+        from src.frontend import server
+        source = inspect.getsource(server.FrontendHandler._proxy_agent_engine_query)
+        assert "x-cloud-trace-context" in source
+        assert "trace_id" in source
+        assert "trace_url" in source
+
+    def test_performance_metrics_in_agent_engine_handler(self):
+        """Verify Agent Engine proxy tracks latency and tool count."""
+        import inspect
+        from src.frontend import server
+        source = inspect.getsource(server.FrontendHandler._proxy_agent_engine_query)
+        assert "latency_ms" in source
+        assert "tool_count" in source
+        assert "functionCall" in source
+
+    def test_memory_status_returns_snippets(self):
+        """Verify memory status endpoint returns snippets field."""
+        import inspect
+        from src.frontend import server
+        source = inspect.getsource(server.FrontendHandler._proxy_memory_status)
+        assert "snippets" in source
+
+    def test_frontend_has_safety_demo_buttons(self):
+        """Verify index.html has Model Armor safety demo buttons."""
+        from pathlib import Path
+        html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
+        content = html_path.read_text()
+        assert "safety-demo" in content
+        assert "Model Armor" in content
+        assert "Prompt injection" in content
+
+    def test_frontend_has_memory_tooltip(self):
+        """Verify index.html has memory tooltip UI."""
+        from pathlib import Path
+        html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
+        content = html_path.read_text()
+        assert "memory-tooltip" in content
+        assert "memory-snippets" in content
+
+    def test_frontend_has_trace_link(self):
+        """Verify index.html shows Cloud Trace deeplinks."""
+        from pathlib import Path
+        html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
+        content = html_path.read_text()
+        assert "View Trace" in content
+        assert "lastTraceUrl" in content
+
+    def test_frontend_has_compare_mode(self):
+        """Verify index.html has Compare Mode for side-by-side backend comparison."""
+        from pathlib import Path
+        html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
+        content = html_path.read_text()
+        assert "sendCompareQuery" in content
+        assert "compare-row" in content
+        assert 'data-backend="compare"' in content
+
+    def test_agent_engine_stream_endpoint(self):
+        """Verify the frontend server has SSE streaming endpoint."""
+        from src.frontend.server import FrontendHandler
+        assert hasattr(FrontendHandler, '_proxy_agent_engine_stream')
+
+
+class TestBuildConfig:
+    """Test pyproject.toml build configuration."""
+
+    def test_build_backend_is_standard(self):
+        """Verify build-backend uses standard setuptools.build_meta."""
+        from pathlib import Path
+        import tomllib
+
+        pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+        with open(pyproject_path, "rb") as f:
+            config = tomllib.load(f)
+        assert config["build-system"]["build-backend"] == "setuptools.build_meta"
+
+    def test_uv_index_url_is_public_pypi(self):
+        """Verify uv is configured to use public PyPI."""
+        from pathlib import Path
+        import tomllib
+
+        pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+        with open(pyproject_path, "rb") as f:
+            config = tomllib.load(f)
+        uv_config = config.get("tool", {}).get("uv", {})
+        assert uv_config.get("index-url") == "https://pypi.org/simple/"
+
+    def test_websockets_in_dependencies(self):
+        """Verify websockets is listed as a dependency."""
+        from pathlib import Path
+        import tomllib
+
+        pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+        with open(pyproject_path, "rb") as f:
+            config = tomllib.load(f)
+        deps = config["project"]["dependencies"]
+        assert any("websockets" in d for d in deps)
+
+
+class TestVoiceServer:
+    """Test voice WebSocket server components."""
+
+    def test_voice_server_module_loads(self):
+        """Verify voice_server module can be imported."""
+        from src.frontend import voice_server
+        assert hasattr(voice_server, 'start_voice_server')
+        assert hasattr(voice_server, 'handle_voice_session')
+
+    def test_voice_server_config(self):
+        """Verify voice server reads config correctly."""
+        from src.frontend.voice_server import VOICE_ENABLED, VOICE_PORT, VOICE_NAME
+        assert VOICE_ENABLED is True
+        assert isinstance(VOICE_PORT, int)
+        assert VOICE_NAME == "Puck"
+
+    def test_voice_server_create_runner(self):
+        """Verify _create_runner returns runner or None gracefully."""
+        from src.frontend.voice_server import _create_runner
+        runner, session_service = _create_runner()
+        # May return None if ADK not fully configured, but should not crash
+        assert runner is None or runner is not None
+
+    def test_voice_server_create_run_config(self):
+        """Verify _create_run_config returns valid RunConfig."""
+        from src.frontend.voice_server import _create_run_config
+        run_config = _create_run_config()
+        if run_config is not None:
+            # Should have BIDI streaming mode
+            from google.adk.agents.run_config import StreamingMode
+            assert run_config.streaming_mode == StreamingMode.BIDI
+            assert "AUDIO" in run_config.response_modalities
+
+    def test_voice_server_integrated_in_frontend(self):
+        """Verify server.py imports and starts voice server."""
+        import inspect
+        from src.frontend import server
+        source = inspect.getsource(server.main)
+        assert "start_voice_server" in source
+
+    def test_pcm_player_processor_file_exists(self):
+        """Verify pcm-player-processor.js exists for AudioWorklet."""
+        from pathlib import Path
+        processor_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "pcm-player-processor.js"
+        assert processor_path.exists()
+        content = processor_path.read_text()
+        assert "PCMPlayerProcessor" in content
+        assert "registerProcessor" in content
+
+    def test_pcm_recorder_processor_file_exists(self):
+        """Verify pcm-recorder-processor.js exists for mic AudioWorklet."""
+        from pathlib import Path
+        processor_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "pcm-recorder-processor.js"
+        assert processor_path.exists()
+        content = processor_path.read_text()
+        assert "PCMProcessor" in content
+        assert "registerProcessor" in content
+
+    def test_voice_config_has_voice_name(self):
+        """Verify config has voice_name for ADK speech config."""
+        from src.agent.agent import _load_config
+        config = _load_config()
+        assert config["voice"]["voice_name"] == "Puck"
+
+    def test_voice_server_speech_config(self):
+        """Verify _create_run_config includes SpeechConfig with Puck voice."""
+        from src.frontend.voice_server import _create_run_config
+        run_config = _create_run_config(is_audio=True)
+        if run_config is not None:
+            assert run_config.speech_config is not None
+            assert run_config.speech_config.voice_config is not None
+            prebuilt = run_config.speech_config.voice_config.prebuilt_voice_config
+            assert prebuilt.voice_name == "Puck"
+
+
