@@ -1,12 +1,10 @@
 """Product image generation tool.
 
-Wraps Vertex AI's Imagen API to generate product imagery grounded
-in brand guidelines. Uses a FunctionTool for ADK integration.
+Wraps Vertex AI's Gemini image generation to create product imagery
+grounded in brand guidelines. Uses a FunctionTool for ADK integration.
 
-NOTE: This tool requires the Vertex AI Imagen API to be enabled.
-Image generation capabilities depend on model availability in the
-configured region. Gemini 2.0 Flash native image generation is
-an alternative if Imagen is not available.
+Uses gemini-3-pro-image-preview for native image generation, replacing
+the legacy Imagen API (ImageGenerationModel.from_pretrained).
 """
 
 import base64
@@ -33,12 +31,12 @@ def generate_product_image(
         brand_colors: Brand color palette to incorporate.
 
     Returns:
-        Dict with 'status', 'message', and optionally 'image_base64' and 'mime_type'.
+        Dict with 'status', 'message', and optionally 'image_uri' or 'image_base64'.
     """
     config = _load_config()
     project_id = config["project"]["id"]
     retailer = config["retailer"]["name"]
-    imagen_model = config.get("models", {}).get("imagen", "imagen-3.0-generate-002")
+    imagen_model = config.get("models", {}).get("imagen", "gemini-3-pro-image-preview")
 
     prompt = (
         f"Professional product photo of '{product_name}' for {retailer} grocery store. "
@@ -49,22 +47,28 @@ def generate_product_image(
     )
 
     try:
-        from google.cloud import aiplatform
-        from vertexai.preview.vision_models import ImageGenerationModel
+        import vertexai
+        from vertexai.generative_models import GenerativeModel
 
-        aiplatform.init(project=project_id, location="us-central1")
-        model = ImageGenerationModel.from_pretrained(imagen_model)
-        response = model.generate_images(
-            prompt=prompt,
-            number_of_images=1,
-            aspect_ratio="1:1",
-            safety_filter_level="block_few",
+        vertexai.init(project=project_id, location="us-central1")
+        model = GenerativeModel(imagen_model)
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                "response_modalities": ["IMAGE", "TEXT"],
+            },
         )
 
-        if response.images:
-            image = response.images[0]
-            image_bytes = image._image_bytes
+        # Extract image from response parts
+        image_bytes = None
+        mime_type = "image/png"
+        for part in response.candidates[0].content.parts:
+            if hasattr(part, 'inline_data') and part.inline_data and part.inline_data.data:
+                image_bytes = part.inline_data.data
+                mime_type = part.inline_data.mime_type or "image/png"
+                break
 
+        if image_bytes:
             # Save to GCS instead of returning base64 inline to avoid
             # bloating session history (a single image is ~400K-1.5M tokens
             # as base64, which causes context overflow on subsequent turns).
@@ -79,16 +83,35 @@ def generate_product_image(
                 "bucket", f"{project_id}-ge-workshop"
             )
             try:
+                import datetime
                 storage_client = storage.Client(project=project_id)
                 bucket = storage_client.bucket(gcs_bucket)
                 blob = bucket.blob(blob_name)
-                blob.upload_from_string(image_bytes, content_type="image/png")
+                blob.upload_from_string(image_bytes, content_type=mime_type)
                 image_uri = f"gs://{gcs_bucket}/{blob_name}"
+
+                # Generate a signed URL for frontend inline display
+                signed_url = ""
+                try:
+                    signed_url = blob.generate_signed_url(
+                        version="v4",
+                        expiration=datetime.timedelta(hours=1),
+                        method="GET",
+                    )
+                except Exception:
+                    # Signed URLs require service account key; fall back to public URL
+                    blob.make_public()
+                    signed_url = blob.public_url
+
                 return {
                     "status": "success",
-                    "message": f"Generated product image for '{product_name}'",
+                    "message": (
+                        f"Generated product image for '{product_name}'.\n\n"
+                        f"![{product_name}]({signed_url})"
+                    ),
                     "image_uri": image_uri,
-                    "mime_type": "image/png",
+                    "image_url": signed_url,
+                    "mime_type": mime_type,
                     "size_bytes": len(image_bytes),
                 }
             except Exception as gcs_err:
@@ -97,12 +120,12 @@ def generate_product_image(
                     "status": "success",
                     "message": f"Generated product image for '{product_name}'",
                     "image_base64": base64.b64encode(image_bytes).decode("utf-8"),
-                    "mime_type": "image/png",
+                    "mime_type": mime_type,
                 }
         else:
             return {
                 "status": "no_images",
-                "message": "Image generation returned no results. Try adjusting the prompt.",
+                "message": "Image generation returned no image data. Try adjusting the prompt.",
             }
 
     except ImportError:

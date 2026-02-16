@@ -52,9 +52,9 @@ PORT = int(os.environ.get("PORT", 8080))
 STATIC_DIR = Path(__file__).resolve().parent
 
 # Discovery Engine StreamAssist
-DE_PROJECT = "wortz-project-352116"
-DE_LOCATION = "global"
-DE_ENGINE = "grocery-workshop-engine"
+DE_PROJECT = os.environ.get("PROJECT_ID", CONFIG.get("project", {}).get("id", ""))
+DE_LOCATION = os.environ.get("DE_LOCATION", CONFIG.get("project", {}).get("location", "global"))
+DE_ENGINE = os.environ.get("ENGINE_ID", CONFIG.get("project", {}).get("engine_id", ""))
 DE_BASE = (
     f"https://discoveryengine.googleapis.com/v1alpha/projects/{DE_PROJECT}"
     f"/locations/{DE_LOCATION}/collections/default_collection"
@@ -62,9 +62,9 @@ DE_BASE = (
 )
 
 # Agent Engine (ADK)
-AE_PROJECT_NUMBER = "679926387543"
-AE_LOCATION = "us-central1"
-AE_RESOURCE_ID = "3323818153208709120"
+AE_PROJECT_NUMBER = os.environ.get("AE_PROJECT_NUMBER", CONFIG.get("project", {}).get("number", ""))
+AE_LOCATION = os.environ.get("AE_LOCATION", CONFIG.get("memory", {}).get("location", "us-central1"))
+AE_RESOURCE_ID = os.environ.get("AE_RESOURCE_ID", CONFIG.get("project", {}).get("agent_engine_id", ""))
 AE_BASE = (
     f"https://{AE_LOCATION}-aiplatform.googleapis.com/v1"
     f"/projects/{AE_PROJECT_NUMBER}/locations/{AE_LOCATION}"
@@ -109,23 +109,38 @@ class FrontendHandler(SimpleHTTPRequestHandler):
             self._proxy_stream_assist_query()
         elif path == "/api/agent-engine/query":
             self._proxy_agent_engine_query()
+        elif path == "/api/agent-engine/stream":
+            self._proxy_agent_engine_stream()
         else:
             self._json_error(404, "Not found")
 
     def do_GET(self):
         path = urlparse(self.path).path
+        query_params = parse_qs(urlparse(self.path).query)
+
         if path == "/api/health":
             self._json_response({"status": "ok"})
             return
         if path == "/api/config":
-            # Return only safe, public config fields for frontend
+            # Return safe, public config fields for frontend
             safe_config = {
                 "retailer": {
                     "name": CONFIG.get("retailer", {}).get("name", "Grocery Retail"),
                     "tagline": CONFIG.get("retailer", {}).get("tagline", ""),
-                }
+                },
+                "project": {
+                    "id": DE_PROJECT,
+                    "number": AE_PROJECT_NUMBER,
+                    "location": DE_LOCATION,
+                    "engine_id": DE_ENGINE,
+                    "agent_engine_id": AE_RESOURCE_ID,
+                    "agent_engine_location": AE_LOCATION,
+                },
             }
             self._json_response(safe_config)
+            return
+        if path == "/api/memory/status":
+            self._proxy_memory_status(query_params)
             return
         # Fall through to static file serving
         super().do_GET()
@@ -191,11 +206,119 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         try:
             resp = req.post(url, headers=headers, json=payload, timeout=120)
             resp.raise_for_status()
-            # Agent Engine returns newline-delimited JSON; forward raw text
-            self._raw_response(resp.text, content_type="text/plain")
+
+            # Extract Cloud Trace context for observability deeplinks
+            trace_header = resp.headers.get("x-cloud-trace-context", "")
+            trace_id = trace_header.split("/")[0] if trace_header else ""
+
+            # Build response with trace metadata
+            response_data = {
+                "content": resp.text,
+                "metadata": {},
+            }
+            if trace_id:
+                response_data["metadata"]["trace_id"] = trace_id
+                response_data["metadata"]["trace_url"] = (
+                    f"https://console.cloud.google.com/traces/list"
+                    f"?project={DE_PROJECT}&tid={trace_id}"
+                )
+
+            self._json_response(response_data)
         except Exception as exc:
             logger.exception("Agent Engine query failed")
             self._json_error(502, str(exc))
+
+    # --- Agent Engine SSE streaming proxy --------------------------------
+
+    def _proxy_agent_engine_stream(self):
+        """POST /api/agent-engine/stream -> Agent Engine streamQuery with SSE."""
+        import requests as req
+
+        url = f"{AE_BASE}:streamQuery"
+        headers = {
+            "Authorization": f"Bearer {_get_token()}",
+            "Content-Type": "application/json",
+        }
+        body = self._read_body()
+        payload = json.loads(body) if body else {}
+
+        try:
+            resp = req.post(url, headers=headers, json=payload, timeout=120, stream=True)
+            resp.raise_for_status()
+
+            # Send as Server-Sent Events
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+
+            # Extract trace ID from response headers
+            trace_header = resp.headers.get("x-cloud-trace-context", "")
+            trace_id = trace_header.split("/")[0] if trace_header else ""
+            if trace_id:
+                event = json.dumps({"type": "trace", "trace_id": trace_id,
+                    "trace_url": f"https://console.cloud.google.com/traces/list?project={DE_PROJECT}&tid={trace_id}"})
+                self.wfile.write(f"data: {event}\n\n".encode())
+                self.wfile.flush()
+
+            # Stream each line as an SSE event
+            for line in resp.iter_lines(decode_unicode=True):
+                if line and line.strip():
+                    event = json.dumps({"type": "content", "data": line.strip()})
+                    self.wfile.write(f"data: {event}\n\n".encode())
+                    self.wfile.flush()
+
+            # Send done event
+            self.wfile.write(b"data: {\"type\": \"done\"}\n\n")
+            self.wfile.flush()
+
+        except Exception as exc:
+            logger.exception("Agent Engine stream failed")
+            try:
+                error = json.dumps({"type": "error", "message": str(exc)})
+                self.wfile.write(f"data: {error}\n\n".encode())
+                self.wfile.flush()
+            except Exception:
+                pass
+
+    # --- Memory Bank proxy ----------------------------------------------
+
+    def _proxy_memory_status(self, query_params):
+        """GET /api/memory/status?user_id=... -> Memory Bank retrieve count."""
+        import requests as req
+
+        user_id = query_params.get("user_id", [""])[0]
+        if not user_id:
+            self._json_response({"count": 0, "error": "No user_id provided"})
+            return
+
+        resource_name = (
+            f"projects/{AE_PROJECT_NUMBER}/locations/{AE_LOCATION}"
+            f"/reasoningEngines/{AE_RESOURCE_ID}"
+        )
+        url = (
+            f"https://{AE_LOCATION}-aiplatform.googleapis.com/v1beta1"
+            f"/{resource_name}/memories:retrieve"
+        )
+        headers = {
+            "Authorization": f"Bearer {_get_token()}",
+            "Content-Type": "application/json",
+        }
+        payload = {"scope": {"user_id": user_id}}
+
+        try:
+            resp = req.post(url, headers=headers, json=payload, timeout=15)
+            if resp.ok:
+                data = resp.json()
+                memories = data.get("memories", [])
+                self._json_response({"count": len(memories), "user_id": user_id})
+            else:
+                self._json_response({"count": 0, "user_id": user_id})
+        except Exception as exc:
+            logger.warning("Memory status check failed: %s", exc)
+            self._json_response({"count": 0, "user_id": user_id})
 
     # --- Helpers --------------------------------------------------------
 

@@ -72,21 +72,55 @@ except ImportError:
     logger.warning("Could not import root_agent from mcp_agent.agent")
 
 
-# Create a configured Runner with memory service
-def create_runner():
-    """Create a Runner with memory service configured.
+# Create session service
+def _create_session_service():
+    """Create the appropriate session service based on environment.
 
     Returns:
-        Runner instance with the MCP grocery analyst agent and memory service.
+        VertexAiSessionService for production,
+        InMemorySessionService for local development.
+    """
+    from .agent import _load_config
+
+    config = _load_config()
+
+    try:
+        from google.adk.sessions import VertexAiSessionService
+
+        project_id = config["bigquery"]["project"]
+        location = config.get("memory", {}).get("location", "us-central1")
+
+        logger.info(
+            f"Creating VertexAiSessionService for MCP agent: "
+            f"project={project_id}, location={location}"
+        )
+        return VertexAiSessionService(project=project_id, location=location)
+
+    except Exception as e:
+        from google.adk.sessions import InMemorySessionService
+
+        logger.warning(
+            f"Could not create VertexAiSessionService: {e}. "
+            f"Falling back to InMemorySessionService for local development."
+        )
+        return InMemorySessionService()
+
+
+# Create a configured Runner with memory and session services
+def create_runner():
+    """Create a Runner with memory and session services configured.
+
+    Returns:
+        Runner instance with the MCP grocery analyst agent, memory service,
+        and VertexAI session service (or InMemory fallback).
     """
     from google.adk import Runner
-    from google.adk.sessions import InMemorySessionService
 
     from .agent import create_agent
 
     agent = create_agent()
     memory_service = _create_memory_service()
-    session_service = InMemorySessionService()
+    session_service = _create_session_service()
 
     return Runner(
         agent=agent,

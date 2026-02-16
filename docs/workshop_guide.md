@@ -1,114 +1,202 @@
 # Gemini Enterprise Workshop Guide
 
-A hands-on walkthrough of Gemini Enterprise capabilities for grocery retail, demonstrating how Google Cloud AI surfaces work together to solve real operational challenges.
+> **Gemini Enterprise** (powered by the Discovery Engine API) is Google Cloud's enterprise AI platform for building intelligent agents with enterprise search, conversational AI, and multi-agent orchestration.
+
+A hands-on walkthrough of Gemini Enterprise capabilities for grocery retail, demonstrating how Google Cloud's agent platform solves real business problems end-to-end.
+
+---
+
+## The Business Problem
+
+**Meet Sarah, Regional Merchandising Manager at ValueFresh Market.**
+
+Sarah oversees 3 stores and is planning a seasonal endcap promotion featuring Nano Banana Pro at 20% off. Her last endcap strategy underperformed because it didn't account for shopper behavior differences across store locations. She needs to:
+
+1. **Test the strategy before rolling it out** -- simulate shopper behavior and estimate ROI
+2. **Ensure brand compliance** -- verify the promotion follows brand guidelines
+3. **Generate marketing materials** -- create product imagery that matches brand standards
+4. **Analyze historical data** -- understand which products drive revenue in each store
+5. **Protect customer data** -- ensure loyalty tier analytics don't expose PII
+6. **Share the strategy** -- let other teams discover and reuse her simulation agent
+
+This workshop shows how Google Cloud's agent platform solves **all six of Sarah's needs** through a unified, intelligent system.
 
 ---
 
 ## What This Workshop Demonstrates
 
-This workshop showcases **six Gemini Enterprise capabilities** through a realistic grocery retail scenario:
-
-| Capability | What It Does | Business Value |
-|-----------|-------------|----------------|
-| **Discovery Engine** | Enterprise search over SOPs and brand docs | Instant access to operational knowledge |
-| **Agent Engine** | Multi-agent AI orchestration | Complex task automation across systems |
-| **Memory Bank** | Cross-session user memory | Personalized experiences without re-explaining context |
-| **Model Armor** | Content safety screening | Protects against harmful content, PII leaks, prompt injection |
-| **A2A Protocol** | Agent-to-agent communication | Composable AI services across teams |
-| **ADK Evaluation** | Agent testing and simulation | Confidence in AI quality before production |
+| Capability | What It Does | Sarah's Use Case |
+|-----------|-------------|------------------|
+| **Shopper Simulator** | AI-powered A/B testing of store layouts | Test endcap strategy before deployment |
+| **Discovery Engine** | Enterprise search over SOPs and brand docs | Look up brand guidelines for promotion compliance |
+| **Agent Engine** | Multi-agent AI orchestration | Route between analytics, search, and image generation |
+| **BigQuery + MCP** | Natural language data analytics | Analyze sales trends by store and product |
+| **Imagen** | Brand-compliant product imagery | Generate marketing visuals for the endcap display |
+| **Memory Bank** | Cross-session user memory | Agent remembers Sarah's store and preferences |
+| **Model Armor** | Content safety and PII protection | Ensure customer data stays private in analytics |
+| **A2A Protocol** | Agent-to-agent communication | Other teams discover and invoke Sarah's simulator |
+| **ADK Evaluation** | Agent testing and simulation | Validate agent quality before production |
 
 ---
 
 ## Workshop Flow
 
-### Act 1: Knowledge Retrieval (Discovery Engine)
+### Act 1: The Hook -- Simulate Before You Spend (Shopper Simulator)
 
-**Scenario:** A store associate needs to look up closing procedures.
+**Sarah's problem:** *"I need to test this endcap strategy before spending $450 on signage and product placement across all 3 stores."*
 
 **What happens:**
-1. User asks: *"What are the closing procedures for frontline associates?"*
-2. Discovery Engine searches the SOP data store (GCS-backed PDFs)
-3. StreamAssist returns a grounded answer with citations
+1. Simulator creates concurrent shopper agents (12 personas: budget families, health enthusiasts, quick-stop shoppers, weekend cooks, elderly regulars)
+2. Each shopper walks store aisles, encounters the Nano Banana Pro endcap
+3. Orchestrator aggregates results: conversion rates, revenue impact, ROI
+4. Compare baseline vs. promotional scenarios across 3 store layouts
 
-**Key feature:** Grounded responses with document citations — not hallucinated content.
+**Key takeaway:** AI-powered A/B testing of physical store layouts -- test merchandising strategies before deploying them.
 
-**Try it:**
+**Demo:**
+```bash
+cd src/simulator_agent && adk web
+# Run "Simulate a seasonal produce endcap with Nano Banana Pro at 20% off"
+```
+
+**Google Cloud value:** Agent Engine manages the multi-agent simulation at scale. Each shopper persona is a concurrent sub-agent with its own decision-making model.
+
+---
+
+### Act 2: Brand Compliance + Creative (Discovery Engine + Imagen)
+
+**Sarah's problem:** *"Now I need marketing materials for the endcap. But they have to follow our brand guidelines exactly."*
+
+**What happens:**
+1. Sarah asks: *"What are the brand color guidelines and typography standards?"*
+2. Discovery Engine searches the brand guidelines data store (GCS-backed PDFs)
+3. StreamAssist returns a grounded answer with citations to specific pages
+4. Sarah asks: *"Generate a product image for Nano Banana Pro that follows our brand guidelines"*
+5. Root agent routes to `image_agent` via `transfer_to_agent`
+6. Image agent creates brand-compliant imagery using Imagen with the green/gold/white palette
+
+**Key takeaway:** Grounded enterprise search ensures brand compliance. Intelligent agent routing handles multi-step creative workflows.
+
+**Demo:**
 ```bash
 python -m src.frontend    # Open http://localhost:8080
-# Use StreamAssist tab, ask about closing procedures
+# StreamAssist tab: Ask about brand guidelines
+# Agent Engine tab: Ask for product image generation
 ```
 
-### Act 2: Multi-Agent Orchestration (Agent Engine)
+**Google Cloud value:** Discovery Engine provides grounded responses with document citations -- not hallucinated content. Imagen generates images that respect brand constraints.
 
-**Scenario:** A manager wants sales analytics and brand-compliant marketing materials.
+> **Notice:** The agent remembers Sarah's earlier context about the Nano Banana Pro promotion. Memory Bank stores her preferences across sessions -- no re-introduction needed.
+
+---
+
+### Act 3: Data-Driven Decisions (BigQuery Analytics)
+
+**Sarah's problem:** *"Before I commit to this promotion, I need to see historical sales data. Which stores would benefit most?"*
 
 **What happens:**
-1. User asks: *"What are the top 5 products by revenue?"*
-2. Root agent routes to `analytics_agent` via `transfer_to_agent`
-3. Analytics agent generates SQL, queries BigQuery, returns results
-4. User asks: *"Generate a product image for Nano Banana Pro"*
-5. Root agent routes to `image_agent`
-6. Image agent creates brand-compliant imagery via Imagen
+1. Sarah asks: *"What are the top 5 products by revenue?"*
+2. Root agent routes to `analytics_agent`
+3. Analytics agent generates SQL, queries the 12K-row BigQuery star schema
+4. Sarah asks: *"Show me sales by store -- which location has the most traffic?"*
+5. Agent compares Downtown Market, Westside Market, and Lakefront Market performance
 
-**Key feature:** Intelligent routing between specialized agents — each with its own tools.
+**Key takeaway:** Self-service analytics for managers -- no SQL knowledge required. The agent translates natural language to BigQuery queries.
 
-**Try it:**
+**Demo:**
 ```bash
-# Switch to Agent Engine tab in the frontend
-# Ask analytics and image generation questions
+# Agent Engine tab: Ask analytics questions
+# Try: "What are store sales by location?" or "Show me loyalty tier spending"
 ```
 
-### Act 3: Memory & Personalization (Memory Bank)
+**Google Cloud value:** BigQuery handles the 12K+ transaction star schema. The MCP Toolbox alternative lets the LLM generate arbitrary SQL (not just pattern-matched queries) with 9 BigQuery tools.
 
-**Scenario:** A returning user expects the agent to remember their preferences.
+> **Notice:** Sarah asks about "my stores" and the agent recalls her Downtown Market preference from Act 1 -- Memory Bank at work, invisibly.
 
-**What happens:**
-1. User (with persistent `user_id` from browser) mentions they work at Downtown Market
-2. Memory Bank stores this preference
-3. In a new session, the agent recalls: *"Based on your preference for the Downtown Market..."*
+---
 
-**Key feature:** Cross-session memory without explicit user login — just a browser-persistent ID.
+### Act 4: Enterprise Trust (Model Armor + Evaluation)
 
-### Act 4: Content Safety (Model Armor)
-
-**Scenario:** Demonstrating protection against adversarial inputs.
+**Sarah's problem:** *"This system touches customer loyalty data. How do we ensure PII stays protected and the AI is trustworthy?"*
 
 **What happens:**
-1. A harmful query is submitted via StreamAssist
-2. Model Armor screens the prompt before it reaches Discovery Engine
-3. The query is filtered; the user receives a safe response
+1. Model Armor screens all prompts and responses at the Discovery Engine level
+2. Filters: RAI harm (hate/violence), prompt injection/jailbreak, PII detection (SDP), malicious URLs
+3. Failure mode: `FAIL_OPEN` -- if Model Armor is unavailable, queries pass through to avoid blocking production
+4. 144 automated tests validate agent quality across all capabilities
+
+**Key takeaway:** Enterprise-grade content safety and quality assurance -- applied at the infrastructure level, not in application code.
 
 **Filters active:**
-- Hate speech / violence / sexual content (RAI)
-- Prompt injection / jailbreak attempts
-- PII detection (Sensitive Data Protection)
-- Malicious URL blocking
 
-**Key feature:** Applied at the Discovery Engine level — no code changes needed.
+| Filter | Purpose |
+|--------|---------|
+| RAI Harm Filter | Hate speech, violence, sexual content, dangerous content |
+| PI & Jailbreak Filter | Prompt injection and jailbreak attempts |
+| SDP Basic Filter | PII detection (customer names, emails, phone numbers) |
+| Malicious URI Filter | Blocks malicious URLs in prompts/responses |
 
-### Act 5: Agent-to-Agent Communication (A2A)
+**Google Cloud value:** Model Armor is applied at the Discovery Engine level -- no code changes needed. The ADK evaluation framework validates agent quality with user simulation, tool trajectory checks, and hallucination detection.
 
-**Scenario:** An external agent discovers and invokes the grocery agent.
+```bash
+# Run the evaluation suite
+python -m pytest tests/ --collect-only -q   # 144 tests across 10 test files
+```
 
-**What happens:**
-1. External agent fetches `/.well-known/agent.json` (AgentCard)
-2. Discovers capabilities: SOP lookup, analytics, image gen, brand guidelines
-3. Sends a task via the `/a2a` endpoint
-4. Receives structured results
+---
 
-**Key feature:** Composable AI services — any agent can discover and use this one.
+### Act 5: Composable AI Services (A2A Protocol)
 
-### Act 6: Simulation & Evaluation
-
-**Scenario:** Testing merchandising strategies before deploying in stores.
+**Sarah's problem:** *"The marketing team wants to use my simulator for their campaign planning. How do they find and invoke it?"*
 
 **What happens:**
-1. Simulator creates concurrent shopper agents (different personas)
-2. Each walks store aisles, encounters endcap displays
-3. Orchestrator aggregates results: conversion rates, revenue impact, ROI
-4. Compare baseline vs promotional scenarios
+1. Marketing team's agent fetches `/.well-known/agent.json` (AgentCard)
+2. Discovers capabilities: simulation, SOP lookup, analytics, image generation, brand guidelines
+3. Sends a simulation task via the `/a2a` endpoint
+4. Receives structured results: conversion rates, ROI projections
 
-**Key feature:** AI-powered A/B testing of physical store layouts.
+**Key takeaway:** Composable AI services -- any agent in the organization can discover and use Sarah's simulator through a standard protocol.
+
+**Demo:**
+```bash
+# A2A agent on Cloud Run
+curl https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app/.well-known/agent.json
+```
+
+**Google Cloud value:** A2A protocol enables a marketplace of AI agents. Agent Engine provides managed deployment with auto-scaling. Cloud Run hosts the A2A endpoint.
+
+---
+
+### Act 6: Resolution -- The Business Impact
+
+**Sarah's results:**
+
+| Metric | Before (Manual Planning) | After (AI-Powered) |
+|--------|-------------------------|---------------------|
+| Strategy testing | 2-3 weeks per test | Minutes per simulation |
+| SOP lookup | 15 min (paper binders) | 30 seconds (grounded search) |
+| Brand compliance | Manual review | Automated verification |
+| Analytics access | Requires analyst/SQL | Self-service natural language |
+| Content safety | Application-level checks | Infrastructure-level (Model Armor) |
+| Cross-team reuse | Email/meetings | A2A agent discovery |
+
+**ROI calculation:**
+- Endcap investment: $450 per store (signage + product placement)
+- Simulator prediction: 15% revenue lift on promoted products
+- Validation: Historical BigQuery data confirms seasonal trends
+- Result: Confident deployment to all 3 stores with data-backed projections
+
+**The platform value:**
+Sarah didn't build 6 separate systems. She used **one platform** -- Google Cloud's agent ecosystem -- where Discovery Engine, Agent Engine, BigQuery, Imagen, Memory Bank, Model Armor, A2A, and the ADK evaluation framework all work together. The config-driven design means switching retailers requires changing one YAML file.
+
+---
+
+## Next Steps
+
+1. **Technical deep-dive** -- Walk through the [Architecture](architecture.md) with your engineering team
+2. **POC scoping** -- Identify your equivalent of Sarah's endcap problem
+3. **Setup** -- Follow the [Setup Guide](setup.md) to deploy in your GCP project
+4. **Customization** -- Update `config/settings.yaml` with your retailer name and branding
 
 ---
 
@@ -120,37 +208,16 @@ See the [full architecture documentation](architecture.md) for detailed diagrams
 
 ---
 
-## ROI Arguments for Gemini Enterprise
-
-### 1. Operational Efficiency
-- **SOPs accessible in seconds** — Associates no longer dig through paper binders
-- **Self-service analytics** — Managers query sales data without SQL knowledge
-- **Automated brand compliance** — Marketing content checked against guidelines automatically
-
-### 2. Risk Reduction
-- **Model Armor** prevents PII leaks, prompt injection, and harmful content at the API level
-- **Grounded responses** with citations reduce hallucination risk
-- **Evaluation framework** validates agent quality before production deployment
-
-### 3. Scalability
-- **Agent Engine** provides managed deployment with auto-scaling and telemetry
-- **A2A protocol** enables composable agent services across departments
-- **Memory Bank** personalizes experiences at scale without per-user infrastructure
-
-### 4. Speed to Value
-- **Config-driven design** — Switch retailers by changing one YAML file
-- **Pre-built tools** — Discovery Engine search, BigQuery MCP, Imagen generation
-- **ADK framework** — Multi-agent architecture out of the box
-
----
-
 ## Deployed Resources
 
 | Resource | Type | ID |
 |----------|------|-----|
 | Discovery Engine | Search App | `grocery-workshop-engine` (global) |
-| Agent Engine | Reasoning Engine | `3323818153208709120` (us-central1) |
-| Model Armor | Template | `grocery-workshop-armor` (us-central1) |
+| Agent Engine (Main) | Reasoning Engine | `3323818153208709120` (us-central1) |
+| Agent Engine (MCP) | Reasoning Engine | `8287066417547706368` (us-central1) |
+| Agent Engine (Simulator) | Reasoning Engine | `256585331992690688` (us-central1) |
+| Cloud Run (A2A) | Service | `grocery-a2a-agent` (us-central1) |
+| Model Armor | Template | `grocery-workshop-armor-us` (us multi-region) |
 | BigQuery | Dataset | `wortz-project-352116.ge_grocery_demo` |
 | GCS | Bucket | `gs://wortz-project-352116-ge-workshop` |
 
@@ -160,14 +227,17 @@ See the [full architecture documentation](architecture.md) for detailed diagrams
 
 | Suite | Tests | Type | What It Validates |
 |-------|-------|------|-------------------|
-| `test_agent.py` | 15 | Unit | System prompts, SQL gen, tool configs, memory, model armor |
+| `test_agent.py` | 21 | Unit | System prompts, SQL gen, tool configs, memory |
 | `test_stream_assist.py` | 14 | Unit | StreamAssist client, parsing, error handling |
-| `test_mcp_agent.py` | 29 | Unit | MCP agent config, schema, instructions |
+| `test_mcp_agent.py` | 34 | Unit | MCP agent config, schema, instructions |
 | `test_a2a_agent.py` | 24 | Unit | A2A agent config, AgentCard, skills, simulator |
 | `test_model_armor.py` | 15 | Unit + Integration | Model Armor config, API schema, live validation |
 | `test_discovery_engine.py` | 4 | Integration | Discovery Engine search against live stores |
 | `test_agent_engine.py` | 5 | Integration | Deployed agent via Agent Engine REST API |
-| `test_bigquery.py` | 10 | Integration | BigQuery schema, data quality |
-| `test_acceptance.py` | 8 | Integration | End-to-end acceptance criteria |
+| `test_bigquery.py` | 12 | Integration | BigQuery schema, data quality |
+| `test_memory_bank.py` | 9 | Integration | Memory Bank service, user-scoped persistence |
+| `test_acceptance.py` | 6 | Integration | End-to-end acceptance criteria |
 
-**GitHub Actions** runs unit tests on every push/PR across Python 3.10-3.12 with coverage reporting.
+**Total: 144 tests (103 unit + 41 integration)**
+
+GitHub Actions runs unit tests on every push/PR across Python 3.10-3.12 with coverage reporting.

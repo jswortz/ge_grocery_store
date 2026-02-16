@@ -1,6 +1,8 @@
 # Agent Evaluation Guide
 
-Best practices and configuration for evaluating all deployed agents using the ADK evaluation framework.
+Best practices and configuration for evaluating all deployed agents on **Gemini Enterprise** (Discovery Engine API) using the ADK evaluation framework.
+
+> **Viewing Results**: Use `notebooks/view_eval_results.ipynb` to retrieve and visualize evaluation runs from Agent Engine. Requires `pandas>=2.1.0` to avoid DataFrame construction errors.
 
 ---
 
@@ -160,7 +162,7 @@ Run in order of speed and cost:
 
 Configure `user_simulator_config` with:
 - `max_allowed_invocations`: 8-15 turns depending on complexity
-- `model`: Use `gemini-2.5-flash` for speed, or a thinking model for complex scenarios
+- `model`: Use `gemini-3-flash-preview` for speed, or a thinking model for complex scenarios
 - Write `conversation_plan` that tests follow-up questions and edge cases
 
 ### 4. Test across scenarios
@@ -195,7 +197,7 @@ User simulation dynamically generates follow-up queries based on a `conversation
 ```json
 {
   "user_simulator_config": {
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3-flash-preview",
     "max_allowed_invocations": 10
   }
 }

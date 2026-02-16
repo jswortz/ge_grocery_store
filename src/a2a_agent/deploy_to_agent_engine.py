@@ -17,9 +17,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from a2a_agent.agent import create_agent
 
-PROJECT_ID = "wortz-project-352116"
-LOCATION = "us-central1"
-STAGING_BUCKET = "gs://wortz-project-352116-ge-workshop"
+PROJECT_ID = os.environ.get("PROJECT_ID", "wortz-project-352116")
+LOCATION = os.environ.get("AE_LOCATION", "us-central1")
+STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://wortz-project-352116-ge-workshop")
 
 
 def find_agent_by_display_name(display_name: str) -> str:

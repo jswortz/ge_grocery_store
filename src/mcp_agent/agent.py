@@ -71,7 +71,7 @@ def _load_config() -> dict:
 
     # Defaults for models if not set
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-2.5-flash")
+    config["models"].setdefault("adk", "gemini-3-flash-preview")
 
     return config
 
@@ -173,6 +173,7 @@ Guidelines:
 - For complex analytics questions, break them into steps.
 - When citing data, reference the specific tables and columns used.
 - Be concise and actionable in your responses.
+- IMPORTANT: Always show the SQL query you executed in a ```sql code block before presenting results. This helps users understand and verify the analysis.
 """
 
 
@@ -223,15 +224,25 @@ def create_agent():
     connection and exposes SQL execution plus metadata tools via MCP.
     """
     from google.adk.agents import LlmAgent
+    from google.adk.planners import BuiltInPlanner
+    from google.genai.types import ThinkingConfig
 
     config = _load_config()
     adk_model = config["models"]["adk"]
+
+    planner = BuiltInPlanner(
+        thinking_config=ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=2048,
+        )
+    )
 
     mcp_toolset = get_mcp_toolset()
 
     agent = LlmAgent(
         name="mcp_grocery_analyst",
         model=adk_model,
+        planner=planner,
         instruction=_get_agent_instruction(config),
         description=(
             "AI analytics assistant for grocery retail that uses MCP Toolbox "

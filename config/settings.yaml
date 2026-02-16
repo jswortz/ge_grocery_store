@@ -31,11 +31,12 @@ retailer:
       open_date: "2019-11-15"
 
 models:
-  adk: "gemini-2.5-flash"              # LLM for all ADK agents
-  imagen: "imagen-3.0-generate-002"     # Image generation model
+  adk: "gemini-3-flash-preview"              # LLM for all ADK agents (thinking enabled)
+  imagen: "gemini-3-pro-image-preview"       # Native image generation via Gemini 3 Pro
 
 project:
   id: "wortz-project-352116"
+  number: "679926387543"
   location: "global"
   engine_id: "grocery-workshop-engine"
   agent_id: "4127847317548975868"  # ADK agent registered on Discovery Engine (no auth)

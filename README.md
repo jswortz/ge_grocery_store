@@ -1,6 +1,6 @@
 # Gemini Enterprise Grocery Workshop
 
-A customer-facing workshop demonstrating **Gemini Enterprise** (Discovery Engine) capabilities, advanced reasoning, and platform extensibility for grocery retail. This repo is a reusable, retailer-agnostic resource — no client names are hardcoded anywhere.
+A customer-facing workshop demonstrating **Gemini Enterprise** (powered by the Discovery Engine API) capabilities, advanced reasoning, and platform extensibility for grocery retail. Built on Google Cloud's agent platform with ADK, Agent Engine, Memory Bank, Model Armor, and A2A protocol. This repo is a reusable, retailer-agnostic resource — no client names are hardcoded anywhere.
 
 **Documentation:**
 - [Workshop Guide](docs/workshop_guide.md) — Hands-on walkthrough for potential Gemini Enterprise buyers
@@ -53,7 +53,7 @@ This workshop integrates Google Cloud AI surfaces across multiple layers. See [d
 pip install -e ".[dev]"
 
 # 2. Run unit tests (no GCP credentials needed)
-python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py -v
+python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py tests/test_a2a_agent.py "tests/test_model_armor.py::TestModelArmorConfig" -v
 
 # 3. Set up BigQuery schema and seed data
 bq mk --dataset wortz-project-352116:ge_grocery_demo
@@ -156,7 +156,7 @@ cd src/mcp_agent && adk web
 Key files:
 - [`src/mcp_agent/agent.py`](src/mcp_agent/agent.py) — Agent with `McpToolset` + `StdioServerParameters`
 - [`src/mcp_agent/tools.yaml`](src/mcp_agent/tools.yaml) — Toolbox configuration
-- [`tests/test_mcp_agent.py`](tests/test_mcp_agent.py) — 29 unit tests
+- [`tests/test_mcp_agent.py`](tests/test_mcp_agent.py) — 34 unit tests
 
 ---
 
@@ -303,7 +303,7 @@ The test suite validates all layers — from unit tests (no GCP needed) to end-t
 
 ```bash
 # Unit tests only (fast, no credentials needed)
-python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py -v
+python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py tests/test_a2a_agent.py "tests/test_model_armor.py::TestModelArmorConfig" -v
 
 # All integration tests (requires gcloud auth + provisioned resources)
 python -m pytest tests/ -v
@@ -323,15 +323,18 @@ python -m pytest tests/test_agent.py::TestBQTool::test_generate_sql_top_products
 
 | File | Type | Tests | What it tests |
 |------|------|-------|---------------|
-| [`test_agent.py`](tests/test_agent.py) | Unit | 12 | System prompts, SQL generation, tool configs |
+| [`test_agent.py`](tests/test_agent.py) | Unit | 21 | System prompts, SQL generation, tool configs, memory |
 | [`test_stream_assist.py`](tests/test_stream_assist.py) | Unit + Integration | 14 | StreamAssist client, response parsing, error handling |
-| [`test_mcp_agent.py`](tests/test_mcp_agent.py) | Unit | 29 | MCP agent config, schema, instructions, toolbox path |
+| [`test_mcp_agent.py`](tests/test_mcp_agent.py) | Unit | 34 | MCP agent config, schema, instructions, toolbox path |
+| [`test_a2a_agent.py`](tests/test_a2a_agent.py) | Unit | 24 | A2A agent config, AgentCard, skills, Cloud Run files |
+| [`test_model_armor.py`](tests/test_model_armor.py) | Unit + Integration | 15 | Model Armor config, API schema, live template |
 | [`test_discovery_engine.py`](tests/test_discovery_engine.py) | Integration | 4 | Discovery Engine SearchService (SOP + brand stores) |
 | [`test_agent_engine.py`](tests/test_agent_engine.py) | Integration | 5 | Deployed ADK agent via Agent Engine REST API |
-| [`test_bigquery.py`](tests/test_bigquery.py) | Integration | 10 | Schema existence, data quality, forbidden name checks |
-| [`test_acceptance.py`](tests/test_acceptance.py) | Integration | 8 | Acceptance criteria via StreamAssist (greeting, SOP, brand) |
+| [`test_bigquery.py`](tests/test_bigquery.py) | Integration | 12 | Schema existence, data quality, forbidden name checks |
+| [`test_memory_bank.py`](tests/test_memory_bank.py) | Integration | 9 | Memory Bank service, user-scoped memory persistence |
+| [`test_acceptance.py`](tests/test_acceptance.py) | Integration | 6 | Acceptance criteria via StreamAssist (greeting, SOP, brand) |
 
-**Current status: 82 tests (55 unit + 27 integration)**
+**Current status: 144 tests (103 unit + 41 integration)**
 
 ---
 
@@ -361,8 +364,7 @@ ge_grocery_store/
 │   │   ├── requirements.txt       # Agent Engine dependencies
 │   │   ├── tools/
 │   │   │   ├── bq_tool.py         # BigQuery analytics FunctionTool
-│   │   │   ├── image_gen_tool.py  # Imagen product image FunctionTool
-│   │   │   └── sop_tool.py        # SOP data store helper
+│   │   │   └── image_gen_tool.py  # Imagen product image FunctionTool
 │   │   └── prompts/
 │   │       └── system_prompts.py  # Retailer-agnostic instructions
 │   ├── mcp_agent/
@@ -400,7 +402,7 @@ ge_grocery_store/
 │   ├── grocery_assistant/         # Root agent evals
 │   ├── mcp_analyst/               # MCP agent evals
 │   └── simulator/                 # Simulator evals
-├── tests/                         # 85+ tests (see Testing)
+├── tests/                         # 144+ tests (see Testing)
 ├── .github/workflows/
 │   └── unit-tests.yml             # GitHub Actions CI
 ├── pyproject.toml                 # Python project config

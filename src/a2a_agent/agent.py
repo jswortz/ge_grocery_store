@@ -52,7 +52,7 @@ def _load_config() -> dict:
         config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
 
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-2.5-flash")
+    config["models"].setdefault("adk", "gemini-3-flash-preview")
 
     return config
 
@@ -64,10 +64,19 @@ def create_agent():
     but configured for A2A serving via Cloud Run.
     """
     from google.adk.agents import LlmAgent
+    from google.adk.planners import BuiltInPlanner
+    from google.genai.types import ThinkingConfig
 
     config = _load_config()
     retailer = config["retailer"]["name"]
     adk_model = config["models"]["adk"]
+
+    planner = BuiltInPlanner(
+        thinking_config=ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=2048,
+        )
+    )
 
     # Import tools from the main agent module
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -116,6 +125,7 @@ def create_agent():
     analytics_agent = LlmAgent(
         name="analytics_agent",
         model=adk_model,
+        planner=planner,
         instruction=(
             f"You are the data analytics specialist for {retailer}. "
             "Use the query_grocery_data tool to answer questions about sales, "
@@ -128,6 +138,7 @@ def create_agent():
     image_agent = LlmAgent(
         name="image_agent",
         model=adk_model,
+        planner=planner,
         instruction=(
             f"You are the product imagery specialist for {retailer}. "
             "Use the generate_product_image tool to create product photos."
@@ -139,6 +150,7 @@ def create_agent():
     agent = LlmAgent(
         name="grocery_assistant",
         model=adk_model,
+        planner=planner,
         instruction=f"""You are an AI assistant for {retailer}, a grocery retail company.
 You help associates, managers, and stakeholders with:
 1. Standard Operating Procedures - Retrieve and explain SOPs

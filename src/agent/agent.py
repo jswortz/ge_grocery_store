@@ -54,8 +54,8 @@ def _load_config():
 
     # Defaults for models if not set
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-2.5-flash")
-    config["models"].setdefault("imagen", "imagen-3.0-generate-002")
+    config["models"].setdefault("adk", "gemini-3-flash-preview")
+    config["models"].setdefault("imagen", "gemini-3-pro-image-preview")
 
     return config
 
@@ -70,6 +70,15 @@ def _build_datastore_id(store_name: str) -> str:
     )
 
 
+async def _save_memory_callback(callback_context):
+    """Save session to memory after each agent turn for cross-session recall."""
+    memory_service = callback_context._invocation_context.memory_service
+    if memory_service is not None:
+        await memory_service.add_session_to_memory(
+            callback_context._invocation_context.session
+        )
+
+
 def create_agent():
     """Create and return the configured root agent with sub-agents.
 
@@ -78,7 +87,9 @@ def create_agent():
     prevents mixing retrieval tools with function tools (like transfer_to_agent).
     """
     from google.adk.agents import LlmAgent
+    from google.adk.planners import BuiltInPlanner
     from google.adk.tools.discovery_engine_search_tool import DiscoveryEngineSearchTool
+    from google.genai.types import ThinkingConfig
 
     from .prompts.system_prompts import get_main_agent_instruction
     from .tools.bq_tool import create_bq_tool
@@ -87,6 +98,14 @@ def create_agent():
     config = _load_config()
     retailer = config["retailer"]["name"]
     adk_model = config["models"]["adk"]
+
+    # Enable Gemini thinking for multi-step reasoning
+    planner = BuiltInPlanner(
+        thinking_config=ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=2048,
+        )
+    )
 
     # DiscoveryEngineSearchTool wraps the Discovery Engine SearchService API
     # as a regular FunctionTool, so it can coexist with transfer_to_agent tools.
@@ -135,6 +154,13 @@ def create_agent():
     except ImportError:
         print("Warning: GoogleSearchTool not available")
 
+    # Add A2A tool for cross-agent delegation to simulator
+    try:
+        from .tools.a2a_tool import create_a2a_tool
+        root_tools.append(create_a2a_tool())
+    except ImportError:
+        print("Warning: A2A tool not available")
+
     # Sub-agents for function tools
     sub_agents = []
 
@@ -142,6 +168,7 @@ def create_agent():
     analytics_agent = LlmAgent(
         name="analytics_agent",
         model=adk_model,
+        planner=planner,
         instruction=(
             f"You are the data analytics specialist for {retailer}. "
             "Use the query_grocery_data tool to answer questions about sales, "
@@ -160,6 +187,7 @@ def create_agent():
     image_agent = LlmAgent(
         name="image_agent",
         model=adk_model,
+        planner=planner,
         instruction=(
             f"You are the product imagery specialist for {retailer}. "
             "Use the generate_product_image tool to create product photos. "
@@ -177,6 +205,7 @@ def create_agent():
     agent = LlmAgent(
         name="grocery_assistant",
         model=adk_model,
+        planner=planner,
         instruction=get_main_agent_instruction(),
         description=(
             "AI assistant for grocery retail operations. Searches SOPs and "
@@ -185,6 +214,7 @@ def create_agent():
         ),
         tools=root_tools,
         sub_agents=sub_agents,
+        after_agent_callback=_save_memory_callback,
     )
 
     return agent

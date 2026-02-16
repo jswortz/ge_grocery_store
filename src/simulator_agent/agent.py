@@ -10,7 +10,7 @@ Architecture:
     ├── shopper_agent_2 (sub-agent: different persona/store)
     └── ...N concurrent shoppers
 
-Uses gemini-2.5-flash for all agents. Leverages ADK user simulation
+Uses gemini-3-flash-preview for all agents with thinking enabled. Leverages ADK user simulation
 evaluation to validate shopper behavior across merchandising scenarios.
 
 Usage:
@@ -43,7 +43,7 @@ def _load_config() -> dict:
     if os.environ.get("ADK_MODEL"):
         config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-2.5-flash")
+    config["models"].setdefault("adk", "gemini-3-flash-preview")
 
     return config
 
@@ -280,6 +280,28 @@ def _select_personas_by_distribution(num_shoppers: int) -> list[dict]:
     return selected
 
 
+def _create_planner():
+    """Create a BuiltInPlanner with thinking enabled for reasoning."""
+    from google.adk.planners import BuiltInPlanner
+    from google.genai.types import ThinkingConfig
+
+    return BuiltInPlanner(
+        thinking_config=ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=2048,
+        )
+    )
+
+
+async def _save_memory_callback(callback_context):
+    """Save session to memory after each agent turn for cross-session recall."""
+    memory_service = callback_context._invocation_context.memory_service
+    if memory_service is not None:
+        await memory_service.add_session_to_memory(
+            callback_context._invocation_context.session
+        )
+
+
 def create_shopper_agent(
     persona: dict,
     store_name: str = "Downtown Market",
@@ -294,6 +316,7 @@ def create_shopper_agent(
     return LlmAgent(
         name=f"shopper_{persona['id']}",
         model=adk_model,
+        planner=_create_planner(),
         instruction=_build_shopper_instruction(persona, store_name, scenario_key),
         description=f"Simulated shopper: {persona['name']} at {store_name}",
     )
@@ -342,9 +365,17 @@ def create_agent(
     except ImportError:
         tools = []
 
+    # Add PreloadMemoryTool for cross-session memory recall
+    try:
+        from google.adk.tools.preload_memory_tool import PreloadMemoryTool
+        tools.append(PreloadMemoryTool())
+    except ImportError:
+        pass
+
     orchestrator = LlmAgent(
         name="simulator_orchestrator",
         model=adk_model,
+        planner=_create_planner(),
         instruction=f"""You are a retail simulation orchestrator for {retailer}.
 You manage a world-model simulation of shoppers in {store_name}.
 
@@ -377,6 +408,7 @@ Compare results across scenarios when asked to evaluate merchandising strategies
         ),
         sub_agents=shopper_agents,
         tools=tools,
+        after_agent_callback=_save_memory_callback,
     )
 
     return orchestrator

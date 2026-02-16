@@ -18,7 +18,6 @@ if only `root_agent` is provided. This module provides both for flexibility.
 """
 
 import logging
-import os
 
 from google.adk.memory import InMemoryMemoryService
 
@@ -120,7 +119,7 @@ def create_runner():
     """Create a Runner with memory and session services configured.
 
     Returns:
-        Runner instance with the grocery assistant agent, memory service,
+        Runner instance with the code execution analytics agent, memory service,
         and VertexAI session service (or InMemory fallback).
     """
     from google.adk import Runner
@@ -133,7 +132,7 @@ def create_runner():
 
     return Runner(
         agent=agent,
-        app_name="grocery_assistant",
+        app_name="code_exec_analyst",
         session_service=session_service,
         memory_service=memory_service,
     )

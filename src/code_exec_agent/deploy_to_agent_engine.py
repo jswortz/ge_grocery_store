@@ -1,12 +1,14 @@
-"""Deploy the MCP BigQuery agent to Vertex AI Agent Engine.
+"""Deploy the Code Execution Analytics agent to Vertex AI Agent Engine.
 
-The MCP agent uses genai-toolbox for BigQuery access locally. Since the
-toolbox binary cannot be packaged with Agent Engine, this deployment script
-creates a self-contained version of the agent with an inline BigQuery
-FunctionTool (pattern-matched SQL) that has no cross-module dependencies.
+The Code Execution agent writes and executes Python code in a secure Agent Engine
+sandbox for advanced analytics (price elasticity, forecasting, visualizations).
+
+Since the agent imports BQ tool from src/agent/tools/bq_tool.py, this deployment
+script creates a self-contained version with inline implementations to avoid
+cross-module dependencies during deployment.
 
 Usage:
-    cd src && python -m mcp_agent.deploy_to_agent_engine
+    cd src && python -m code_exec_agent.deploy_to_agent_engine
 """
 
 import logging
@@ -24,12 +26,16 @@ STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://wortz-project-352116-ge-
 # Hardcoded config for Agent Engine deployment (avoids filesystem config loading)
 _DEPLOY_CONFIG = {
     "retailer": {"name": os.environ.get("RETAILER_NAME", "ValueFresh Market")},
-    "bigquery": {"project": os.environ.get("BQ_PROJECT", "wortz-project-352116"), "dataset": os.environ.get("BQ_DATASET", "ge_grocery_demo")},
+    "bigquery": {
+        "project": os.environ.get("BQ_PROJECT", "wortz-project-352116"),
+        "dataset": os.environ.get("BQ_DATASET", "ge_grocery_demo"),
+    },
     "models": {"adk": "gemini-3-flash-preview"},
 }
 
 
 # ── Self-contained BigQuery tool (no cross-module imports) ────────────────
+
 
 def _generate_sql(question: str, dataset: str) -> str:
     """Generate SQL from natural language using pattern matching."""
@@ -131,6 +137,7 @@ def query_grocery_data(question: str) -> dict:
 
     try:
         from google.cloud import bigquery
+
         client = bigquery.Client(project=project_id)
         sql = _generate_sql(question, full_dataset)
 
@@ -166,7 +173,100 @@ def query_grocery_data(question: str) -> dict:
         return {"status": "error", "question": question, "message": str(e)}
 
 
+# ── Self-contained Code Execution tool ────────────────────────────────────
+
+
+def execute_analytics_code(code: str, description: str) -> dict:
+    """Execute Python analytics code in a secure Agent Engine sandbox.
+
+    The sandbox has pre-installed packages: pandas, matplotlib, seaborn, numpy, scipy.
+    Code should process data previously retrieved from BigQuery and perform
+    advanced analytics or visualizations.
+
+    Args:
+        code: Python code to execute (use print() for text output)
+        description: Brief description of what the code does (for logging)
+
+    Returns:
+        Dict with 'status', 'description', 'output' (text), and 'images' (list of
+        base64-encoded PNGs if any charts were generated).
+
+    Example:
+        ```python
+        import pandas as pd
+        import matplotlib.pyplot as plt
+
+        # Assume 'data' is a list of dicts from BigQuery
+        df = pd.DataFrame(data)
+        print(df.describe())
+
+        plt.figure(figsize=(10, 6))
+        df.plot(kind='bar', x='product_name', y='total_revenue')
+        plt.title('Product Revenue')
+        plt.savefig('revenue_chart.png')
+        ```
+    """
+    try:
+        import vertexai
+        from vertexai import Client
+
+        project_id = os.environ.get("PROJECT_ID", _DEPLOY_CONFIG.get("project", {}).get("id", PROJECT_ID))
+
+        # Initialize Vertex AI client
+        vertexai.init(project=project_id)
+        client = Client()
+
+        # Create a sandbox with analytics packages
+        sandbox = client.agent_engines.sandboxes.create(
+            packages=[
+                "pandas",
+                "matplotlib",
+                "seaborn",
+                "numpy",
+                "scipy",
+            ]
+        )
+
+        logger.info(f"Executing analytics code: {description}")
+
+        # Execute the code
+        result = sandbox.execute(code)
+
+        # Collect text output
+        text_output = result.output if hasattr(result, "output") else ""
+
+        # Collect images (charts)
+        images = []
+        if hasattr(result, "images"):
+            images = result.images  # Already base64-encoded
+
+        sandbox.delete()
+
+        return {
+            "status": "success",
+            "description": description,
+            "output": text_output,
+            "images": images,
+            "image_count": len(images),
+        }
+
+    except ImportError:
+        return {
+            "status": "error",
+            "description": description,
+            "message": "Vertex AI sandbox not available. Install google-cloud-aiplatform.",
+        }
+    except Exception as e:
+        logger.error(f"Code execution failed: {e}")
+        return {
+            "status": "error",
+            "description": description,
+            "message": f"Execution failed: {str(e)}",
+        }
+
+
 # ── Deploy logic ──────────────────────────────────────────────────────────
+
 
 def find_agent_by_display_name(display_name: str) -> str:
     """Find reasoning engine by display name."""
@@ -177,15 +277,15 @@ def find_agent_by_display_name(display_name: str) -> str:
     return ""
 
 
-def deploy_mcp_agent():
-    """Deploy the MCP BigQuery agent to Agent Engine."""
+def deploy_code_exec_agent():
+    """Deploy the Code Execution Analytics agent to Agent Engine."""
     from google.adk.agents import LlmAgent
     from google.adk.planners import BuiltInPlanner
     from google.adk.tools import FunctionTool
     from google.genai.types import ThinkingConfig
 
     print("=" * 80)
-    print("DEPLOYING MCP BIGQUERY AGENT TO AGENT ENGINE")
+    print("DEPLOYING CODE EXECUTION ANALYTICS AGENT TO AGENT ENGINE")
     print("=" * 80)
 
     vertexai.init(
@@ -202,9 +302,11 @@ def deploy_mcp_agent():
     dataset = config["bigquery"]["dataset"]
     fq = f"{project}.{dataset}"
 
-    instruction = f"""You are a data analytics assistant for {retailer}, a grocery retail company.
-You answer natural language questions about sales, products, stores, customers,
-and employees by querying BigQuery.
+    instruction = f"""You are an advanced analytics specialist for {retailer}, a grocery retail company.
+
+You have two capabilities:
+1. Query BigQuery data using the query_grocery_data tool
+2. Write and execute Python code using the execute_analytics_code tool
 
 BigQuery Dataset: `{fq}`
 
@@ -233,14 +335,36 @@ Tables and Columns:
   email STRING, phone STRING, loyalty_tier STRING,
   home_store_id INT64, signup_date DATE, points_balance INT64
 
+Your Workflow:
+1. First, use query_grocery_data to retrieve the necessary data from BigQuery
+2. Then, write Python code to perform advanced analytics on that data
+3. Use execute_analytics_code to run the code in a secure sandbox
+4. Present insights clearly with visualizations when appropriate
+
+Focus Areas (MVP):
+- Price elasticity analysis: How demand changes with price
+- Demand forecasting: Predict future sales trends
+- Category performance: Deep dive into product categories
+- Store comparisons: Multi-dimensional store performance analysis
+
+Available Python packages in sandbox:
+- pandas: Data manipulation and analysis
+- matplotlib: Static visualizations
+- seaborn: Statistical visualizations
+- numpy: Numerical operations
+- scipy: Scientific computing (stats, optimization)
+
 Guidelines:
-- Use the query_grocery_data tool to answer questions about the data.
-- Present results clearly with specific numbers and context.
-- Be concise and actionable in your responses.
-- IMPORTANT: Always show the SQL query you executed in a ```sql code block before presenting results. This helps users understand and verify the analysis.
+- Always query data first, then analyze it with code
+- Write clean, commented Python code
+- Use print() for text output
+- Save charts with plt.savefig('chart_name.png') to include them in results
+- Be concise and actionable in your insights
+- Show both the code and the results
 """
 
     bq_tool = FunctionTool(func=query_grocery_data)
+    code_exec_tool = FunctionTool(func=execute_analytics_code)
 
     planner = BuiltInPlanner(
         thinking_config=ThinkingConfig(
@@ -250,23 +374,23 @@ Guidelines:
     )
 
     agent = LlmAgent(
-        name="mcp_grocery_analyst",
+        name="code_exec_analyst",
         model=adk_model,
         planner=planner,
         instruction=instruction,
         description=(
-            "AI analytics assistant for grocery retail that uses BigQuery "
-            "tools to answer natural language questions about sales, "
-            "products, stores, customers, and employees."
+            "Advanced analytics agent that writes and executes Python code "
+            "for price elasticity modeling, demand forecasting, and custom "
+            "visualizations using BigQuery data."
         ),
-        tools=[bq_tool],
+        tools=[bq_tool, code_exec_tool],
     )
 
-    display_name = "MCP Grocery Analyst"
+    display_name = "Code Execution Analytics Agent"
 
     app = agent_engines.AdkApp(
         agent=agent,
-        app_name="mcp_grocery_analyst_app",
+        app_name="code_exec_analyst_app",
         enable_tracing=True,
     )
 
@@ -285,6 +409,11 @@ Guidelines:
             "google-adk>=1.19.0",
             "google-cloud-bigquery>=3.0.0",
             "google-cloud-aiplatform",
+            "pandas",
+            "matplotlib",
+            "seaborn",
+            "scipy",
+            "numpy",
             "pyyaml>=6.0",
         ],
     )
@@ -293,5 +422,5 @@ Guidelines:
 
 
 if __name__ == "__main__":
-    resource_name = deploy_mcp_agent()
-    print(f"\nMCP Agent deployed: {resource_name}")
+    resource_name = deploy_code_exec_agent()
+    print(f"\nCode Execution Analytics Agent deployed: {resource_name}")

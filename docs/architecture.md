@@ -1,5 +1,7 @@
 # System Architecture
 
+> **Branding Note**: This system is powered by **Gemini Enterprise** (the product name for Google Cloud's Discovery Engine API). Throughout this document, "Discovery Engine" refers to the underlying API, while "Gemini Enterprise" is the product as presented to customers. Both terms describe the same platform.
+
 This document describes the architecture of the Gemini Enterprise Grocery Workshop. For setup instructions, see the [Setup Guide](setup.md).
 
 ---
@@ -93,7 +95,6 @@ Implementation: [`src/agent/agent.py`](../src/agent/agent.py)
 | [`agent.py`](../src/agent/agent.py) | Root agent + sub-agents, `_load_config()` |
 | [`tools/bq_tool.py`](../src/agent/tools/bq_tool.py) | BigQuery analytics FunctionTool |
 | [`tools/image_gen_tool.py`](../src/agent/tools/image_gen_tool.py) | Imagen product image FunctionTool |
-| [`tools/sop_tool.py`](../src/agent/tools/sop_tool.py) | SOP data store helper |
 | [`prompts/system_prompts.py`](../src/agent/prompts/system_prompts.py) | Retailer-agnostic system instructions |
 
 ---
@@ -197,7 +198,7 @@ An alternative analytics approach using the [MCP Toolbox for Databases](https://
 **Key files:**
 - [`src/mcp_agent/agent.py`](../src/mcp_agent/agent.py) — Agent definition
 - [`src/mcp_agent/tools.yaml`](../src/mcp_agent/tools.yaml) — Toolbox configuration
-- [`tests/test_mcp_agent.py`](../tests/test_mcp_agent.py) — 29 unit tests
+- [`tests/test_mcp_agent.py`](../tests/test_mcp_agent.py) — 34 unit tests
 
 ---
 
@@ -291,7 +292,7 @@ See the [Memory Bank & Model Armor diagram](diagrams/08_memory_model_armor.png) 
 ```yaml
 model_armor:
   enabled: true
-  template_id: "grocery-workshop-armor"
+  template_id: "grocery-workshop-armor-us"
   failure_mode: "FAIL_OPEN"
 ```
 

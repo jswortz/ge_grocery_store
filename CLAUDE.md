@@ -54,7 +54,7 @@ cd src && adk deploy agent_engine \
 
 ## Architecture
 
-This is a **workshop demo repo** demonstrating Gemini Enterprise (Discovery Engine API) for grocery retail. Full architecture docs at `docs/architecture.md`.
+This is a **workshop demo repo** demonstrating **Gemini Enterprise** (the product name for Google Cloud's Discovery Engine API) for grocery retail. "Discovery Engine" is the API; "Gemini Enterprise" is the customer-facing product name. Use "Gemini Enterprise (Discovery Engine API)" when both precision and branding matter. Full architecture docs at `docs/architecture.md`.
 
 ### Five subsystems
 
@@ -83,8 +83,8 @@ Central config loader in `src/agent/agent.py:_load_config()` reads `config/setti
 ### Deployed resources
 
 - **Agent Engine (Main)**: `reasoningEngines/3323818153208709120` — Grocery Retail Assistant (OTel enabled)
-- **Agent Engine (MCP)**: `reasoningEngines/8287066417547706368` — MCP Grocery Analyst (BigQuery analytics)
-- **Agent Engine (Simulator)**: `reasoningEngines/256585331992690688` — Shopper Simulator
+- **Agent Engine (MCP)**: `reasoningEngines/8287066417547706368` — MCP Grocery Analyst (OTel enabled)
+- **Agent Engine (Simulator)**: `reasoningEngines/256585331992690688` — Shopper Simulator (OTel enabled)
 - **Cloud Run (A2A)**: `https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app` — A2A protocol agent
 - **Discovery Engine**: `grocery-workshop-engine` (global, SEARCH_TIER_ENTERPRISE)
 - **Model Armor**: `grocery-workshop-armor-us` template (us multi-region, applied to Discovery Engine assistant)
@@ -102,16 +102,17 @@ Dataset `ge_grocery_demo` in `wortz-project-352116`:
 
 DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_data.sql`.
 
-### Test structure (121 tests)
+### Test structure (144 tests)
 
-- `tests/test_agent.py` (15) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
-- `tests/test_mcp_agent.py` (29) — **unit tests**, validates MCP agent config, schema context, instructions, toolbox path resolution
+- `tests/test_agent.py` (21) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
+- `tests/test_mcp_agent.py` (34) — **unit tests**, validates MCP agent config, schema context, instructions, toolbox path resolution
 - `tests/test_a2a_agent.py` (24) — **unit tests**, validates A2A agent config, AgentCard, skills, Cloud Run files, simulator agent
 - `tests/test_model_armor.py` (10 unit + 5 integration) — validates Model Armor config, API schema, live template and assistant
 - `tests/test_discovery_engine.py` (4) — **integration**, validates Discovery Engine SearchService directly against SOP and brand data stores
 - `tests/test_agent_engine.py` (5) — **integration**, validates deployed ADK agent via Agent Engine REST API (SOP search, analytics, brand guidelines)
-- `tests/test_bigquery.py` (10) — **integration**, validates schema and forbidden names against live BigQuery
-- `tests/test_acceptance.py` (8) — **integration**, validates acceptance criteria (greeting, SOP retrieval, brand guidelines) via StreamAssist
+- `tests/test_bigquery.py` (12) — **integration**, validates schema and forbidden names against live BigQuery
+- `tests/test_memory_bank.py` (9) — **integration**, validates Memory Bank service and user-scoped memory persistence
+- `tests/test_acceptance.py` (6) — **integration**, validates acceptance criteria (greeting, SOP retrieval, brand guidelines) via StreamAssist
 
 ### Infrastructure scripts
 

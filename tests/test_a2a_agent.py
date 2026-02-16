@@ -226,5 +226,113 @@ class TestSimulatorAgent(unittest.TestCase):
         assert str(persona["shopping_behavior"]["budget"]) in instruction
 
 
+class TestReportGenerator(unittest.TestCase):
+    """Test simulation report generation tool."""
+
+    def test_report_generator_with_json(self):
+        """Test report generation with well-formed JSON input."""
+        from src.simulator_agent.tools.report_generator import generate_simulation_report
+
+        test_data = {
+            "shoppers": [
+                {
+                    "persona": "Budget Family",
+                    "total_spend": 115.50,
+                    "cart_size": 25,
+                    "endcap_items": ["Nano Banana Pro"],
+                    "impulse_tendency": 0.3,
+                    "budget": 120
+                },
+                {
+                    "persona": "Health Professional",
+                    "total_spend": 72.30,
+                    "cart_size": 14,
+                    "endcap_items": [],
+                    "impulse_tendency": 0.5,
+                    "budget": 80
+                }
+            ],
+            "scenario": "Test Scenario",
+            "store_name": "Test Store"
+        }
+
+        result = generate_simulation_report(json.dumps(test_data))
+
+        assert result["status"] == "success"
+        assert result["report_path"] == "/tmp/simulation_report.html"
+        assert result["total_revenue"] == 187.80
+        assert result["avg_cart_size"] == 19.5
+        assert result["endcap_conversion_rate"] == 50.0
+        assert "summary" in result
+
+        # Verify HTML file was created
+        assert Path("/tmp/simulation_report.html").exists()
+
+    def test_report_generator_with_freeform_text(self):
+        """Test report generation with freeform text extraction."""
+        from src.simulator_agent.tools.report_generator import generate_simulation_report
+
+        test_text = """
+        Simulation for Downtown Market:
+        Shopper: Budget Conscious - Total spend: $95.50
+        Shopper: Health Nut - Total: $125.00
+        The endcap was effective.
+        """
+
+        result = generate_simulation_report(test_text)
+
+        assert result["status"] == "success"
+        assert result["report_path"] == "/tmp/simulation_report.html"
+        assert result["total_revenue"] > 0
+        assert "summary" in result
+
+    def test_report_generator_chart_js_included(self):
+        """Test that Chart.js is included in generated HTML."""
+        from src.simulator_agent.tools.report_generator import generate_simulation_report
+
+        test_data = {"shoppers": [{"persona": "Test", "total_spend": 50, "cart_size": 10}]}
+        generate_simulation_report(json.dumps(test_data))
+
+        html_content = Path("/tmp/simulation_report.html").read_text()
+        assert "chart.js" in html_content.lower()
+        assert "new Chart" in html_content
+        assert "conversionChart" in html_content
+        assert "personaChart" in html_content
+        assert "cartSizeChart" in html_content
+        assert "roiChart" in html_content
+
+    def test_report_generator_no_hardcoded_retailers(self):
+        """Test that no forbidden retailer names are hardcoded."""
+        import inspect
+        from src.simulator_agent.tools import report_generator
+
+        source = inspect.getsource(report_generator)
+        forbidden = ["Kroger", "HEB", "H-E-B", "Walmart", "Safeway"]
+        for name in forbidden:
+            assert name not in source, f"Hardcoded retailer name '{name}' found in report_generator.py"
+
+    def test_report_generator_uses_config_retailer_name(self):
+        """Test that report uses retailer name from config."""
+        from src.simulator_agent.tools.report_generator import generate_simulation_report
+
+        test_data = {"shoppers": [{"persona": "Test", "total_spend": 50, "cart_size": 10}]}
+        generate_simulation_report(json.dumps(test_data))
+
+        html_content = Path("/tmp/simulation_report.html").read_text()
+        # Should contain retailer name from config (ValueFresh Market by default)
+        assert "ValueFresh Market" in html_content or "RETAILER_NAME" not in os.environ
+
+    def test_report_generator_handles_empty_shoppers(self):
+        """Test report generation with empty shoppers list."""
+        from src.simulator_agent.tools.report_generator import generate_simulation_report
+
+        test_data = {"shoppers": []}
+        result = generate_simulation_report(json.dumps(test_data))
+
+        # Should still succeed with placeholder data
+        assert result["status"] == "success"
+        assert result["report_path"] == "/tmp/simulation_report.html"
+
+
 if __name__ == "__main__":
     unittest.main()

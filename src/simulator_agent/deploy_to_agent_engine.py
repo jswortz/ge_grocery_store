@@ -12,13 +12,13 @@ import os
 import vertexai
 from vertexai import agent_engines
 
-PROJECT_ID = "wortz-project-352116"
-LOCATION = "us-central1"
-STAGING_BUCKET = "gs://wortz-project-352116-ge-workshop"
+PROJECT_ID = os.environ.get("PROJECT_ID", "wortz-project-352116")
+LOCATION = os.environ.get("AE_LOCATION", "us-central1")
+STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://wortz-project-352116-ge-workshop")
 
 # Hardcoded config for deployment (avoids filesystem config dependency)
 _RETAILER_NAME = "ValueFresh Market"
-_ADK_MODEL = "gemini-2.5-flash"
+_ADK_MODEL = "gemini-3-flash-preview"
 
 
 def find_agent_by_display_name(display_name: str) -> str:
@@ -263,6 +263,15 @@ def _build_simulator_agent():
     the pickled agent has zero external module dependencies.
     """
     from google.adk.agents import LlmAgent
+    from google.adk.planners import BuiltInPlanner
+    from google.genai.types import ThinkingConfig
+
+    planner = BuiltInPlanner(
+        thinking_config=ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=2048,
+        )
+    )
 
     store_name = "Downtown Market"
     scenario_key = "seasonal_produce"
@@ -343,6 +352,7 @@ Respond with valid JSON matching this schema:
             LlmAgent(
                 name=f"shopper_{p['id']}",
                 model=model,
+                planner=planner,
                 instruction=instruction,
                 description=f"Simulated shopper: {p['name']} at {store_name}",
             )
@@ -351,6 +361,7 @@ Respond with valid JSON matching this schema:
     orchestrator = LlmAgent(
         name="simulator_orchestrator",
         model=model,
+        planner=planner,
         instruction=f"""You are a retail simulation orchestrator for {retailer}.
 You manage a world-model simulation of shoppers in {store_name}.
 

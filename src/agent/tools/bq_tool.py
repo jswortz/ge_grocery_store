@@ -46,32 +46,6 @@ def query_grocery_data(question: str) -> dict:
 
         client = bigquery.Client(project=project_id)
 
-        # Build a context-aware prompt for SQL generation
-        schema_context = f"""
-You are a SQL expert. Generate a BigQuery SQL query to answer this question.
-
-Dataset: `{full_dataset}`
-
-Tables:
-- `{full_dataset}.fact_transactions` (transaction_id INT64, transaction_ts TIMESTAMP,
-  store_id INT64, employee_id INT64, product_id INT64, quantity INT64,
-  unit_price NUMERIC, total_amount NUMERIC, payment_method STRING, customer_id INT64)
-- `{full_dataset}.dim_store` (store_id INT64, store_name STRING, city STRING,
-  state STRING, zip_code STRING, square_feet INT64, open_date DATE)
-- `{full_dataset}.dim_product` (product_id INT64, product_name STRING,
-  category STRING, subcategory STRING, brand STRING, unit_price NUMERIC,
-  unit_cost NUMERIC, image_uri STRING, description STRING)
-- `{full_dataset}.dim_employee` (employee_id INT64, first_name STRING,
-  last_name STRING, role STRING, store_id INT64, hire_date DATE)
-- `{full_dataset}.dim_customer` (customer_id INT64, first_name STRING,
-  last_name STRING, email STRING, phone STRING, loyalty_tier STRING,
-  home_store_id INT64, signup_date DATE, points_balance INT64)
-
-Question: {question}
-
-Return ONLY the SQL query, nothing else. Use fully qualified table names.
-Limit results to 20 rows unless the question implies otherwise.
-"""
         # For now, use predefined query patterns for common questions
         # In production, this would use Gemini to generate SQL
         sql = _generate_sql(question, full_dataset)
