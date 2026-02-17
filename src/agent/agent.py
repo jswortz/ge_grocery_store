@@ -185,7 +185,7 @@ def create_agent():
     )
     sub_agents.append(analytics_agent)
 
-    # Image generation sub-agent (Flash for coordination, Imagen for actual gen)
+    # Image generation sub-agent (Flash for coordination, Gemini Image for actual gen)
     image_agent = LlmAgent(
         name="image_agent",
         model=adk_fast,

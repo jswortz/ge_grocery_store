@@ -3,8 +3,8 @@
 Wraps Vertex AI's Gemini image generation to create product imagery
 grounded in brand guidelines. Uses a FunctionTool for ADK integration.
 
-Uses gemini-3-pro-image-preview for native image generation, replacing
-the legacy Imagen API (ImageGenerationModel.from_pretrained).
+Uses gemini-3-pro-image-preview (Gemini 3 Pro Image) for native image
+generation.
 """
 
 import base64

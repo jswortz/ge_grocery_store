@@ -255,41 +255,6 @@ body {
 .safety-btn:hover { background: var(--vf-red-600); color: white; }
 .safety-btn svg { width: 14px; height: 14px; fill: currentColor; }
 
-/* Compare mode */
-.compare-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  width: 100%;
-  margin-bottom: 12px;
-}
-.compare-cell {
-  border: 1px solid var(--vf-gray-200);
-  border-radius: var(--radius-md);
-  padding: 12px;
-  background: var(--vf-white);
-}
-.compare-cell .compare-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--vf-gray-500);
-  margin-bottom: 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--vf-gray-100);
-}
-.compare-cell .compare-label .dot { width: 6px; height: 6px; border-radius: 50%; }
-.compare-cell.stream-assist .compare-label .dot { background: var(--vf-green-600); }
-.compare-cell.agent-engine .compare-label .dot { background: var(--vf-gold-500); }
-.compare-cell .compare-body { font-size: 14px; line-height: 1.6; }
-.compare-cell .compare-meta { margin-top: 8px; font-size: 11px; color: var(--vf-gray-500); }
-.compare-cell.loading .compare-body { color: var(--vf-gray-400); }
-@media (max-width: 600px) { .compare-row { grid-template-columns: 1fr; } }
-
 /* ================================================================
    BACKEND TABS
    ================================================================ */
@@ -1055,15 +1020,6 @@ body {
           <span class="tab-label-sub">&middot; Analytics &amp; Multi-Agent</span>
         </span>
       </button>
-      <button class="tab-btn" data-backend="compare" onclick="switchBackend('compare')" title="Send the same query to both backends and compare results">
-        <span class="tab-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
-        </span>
-        <span>
-          Compare
-          <span class="tab-label-sub">&middot; Side by Side</span>
-        </span>
-      </button>
       <button class="tab-btn" data-backend="voice-ops" onclick="switchBackend('voice-ops')" title="Voice-activated operations assistant (BIDI streaming)">
         <span class="tab-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
@@ -1087,7 +1043,23 @@ body {
         <button onclick="toggleDataSources()" title="Data sources" style="background:none;border:none;color:inherit;cursor:pointer;opacity:0.6;font-size:11px;padding:2px 4px;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         </button>
+        <button onclick="toggleArchPanel()" title="Architecture info" style="background:none;border:none;color:inherit;cursor:pointer;opacity:0.6;font-size:11px;padding:2px 4px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        </button>
       </span>
+      <span id="model-card-wrap" style="display:none;margin-left:8px;font-size:11px;color:rgba(255,255,255,0.5);cursor:help;" title="">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span id="model-card-text"></span>
+      </span>
+    </div>
+
+    <!-- Architecture Info Panel (collapsible) -->
+    <div id="arch-panel" style="display:none;padding:10px 24px 12px;background:rgba(0,0,0,0.12);border-bottom:1px solid rgba(255,255,255,0.06);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:11px;color:rgba(255,255,255,0.5);font-weight:600;">Architecture</span>
+        <button onclick="document.getElementById('arch-panel').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:14px;padding:0;">&times;</button>
+      </div>
+      <div id="arch-content" style="font-size:12px;color:rgba(255,255,255,0.75);line-height:1.6;"></div>
     </div>
 
     <!-- Data Sources Panel (toggleable data store filter) -->
@@ -1182,7 +1154,7 @@ body {
       </div>
 
       <div class="sample-queries">
-        <button class="sample-btn" onclick="sendSample('What are the top 5 products by revenue?')">
+        <button class="sample-btn" onclick="sendSample('What are the top 5 products by revenue?', {backend:'agent-engine'})">
           <span class="sq-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
           </span>
@@ -1200,25 +1172,25 @@ body {
             <span class="sq-sub">Search &middot; Gemini Enterprise</span>
           </span>
         </button>
-        <button class="sample-btn" onclick="sendSample('Generate a product image for Nano Banana Pro that follows our brand guidelines')">
+        <button class="sample-btn" onclick="sendSample('Generate a product image for Nano Banana Pro that follows our brand guidelines', {backend:'agent-engine'})">
           <span class="sq-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
           </span>
           <span class="sq-text">
             <span class="sq-label">Generate product image</span>
-            <span class="sq-sub">Creative &middot; Imagen</span>
+            <span class="sq-sub">Creative &middot; Gemini Image</span>
           </span>
         </button>
-        <button class="sample-btn" onclick="sendSample('What are current retail trends for endcap merchandising and impulse purchases?')">
+        <button class="sample-btn" onclick="sendSample('What is the customer lifetime value by loyalty tier?', {backend:'stream-assist'})">
           <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-green-700)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
           </span>
           <span class="sq-text">
-            <span class="sq-label">Retail merchandising trends</span>
-            <span class="sq-sub">Trends &middot; Google Search</span>
+            <span class="sq-label">Customer lifetime value (CLTV)</span>
+            <span class="sq-sub">Analytics &middot; Data Insights Agent</span>
           </span>
         </button>
-        <button class="sample-btn" onclick="sendSample('Simulate 5 shoppers at Downtown Market with the seasonal produce endcap strategy')">
+        <button class="sample-btn" onclick="sendSample('Simulate 5 shoppers at Downtown Market with the seasonal produce endcap strategy', {backend:'agent-engine'})">
           <span class="sq-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </span>
@@ -1318,6 +1290,12 @@ async function loadConfig() {
       document.getElementById('brand-name').textContent = retailerName;
       document.getElementById('brand-tagline').textContent = tagline;
 
+      // Load Agent Engine agents from config
+      State.agentEngines = AppConfig?.agent_engines || [];
+      if (State.agentEngines.length > 0 && !State.selectedAgentEngineId) {
+        State.selectedAgentEngineId = State.agentEngines[0].id;
+      }
+
       // Initialize voice features from config
       const voiceConfig = AppConfig?.voice || {};
       if (!voiceConfig.enabled) {
@@ -1347,36 +1325,68 @@ async function loadAgents() {
     if (resp.ok) {
       const data = await resp.json();
       State.availableAgents = data.agents || [];
-      // Rebuild dropdown — all queries route through default_assistant,
-      // registered agents are shown for informational purposes
-      $selector.innerHTML = '';
-      const opt0 = document.createElement('option');
-      opt0.value = 'default_assistant';
-      opt0.textContent = 'Default Assistant';
-      $selector.appendChild(opt0);
-
-      // Add registered agents with type badges
-      const typeLabels = { adk: 'ADK', a2a: 'A2A', managed: 'Data' };
-      for (const agent of State.availableAgents) {
-        if (agent.type === 'assistant') continue; // already added default
-        const opt = document.createElement('option');
-        opt.value = agent.id;
-        const badge = typeLabels[agent.type] || agent.type;
-        opt.textContent = `${agent.name || agent.id} [${badge}]`;
-        $selector.appendChild(opt);
-      }
-      $selector.value = State.selectedAgent;
     }
   } catch (err) {
     console.warn('Failed to load agents:', err);
   }
+  rebuildAgentSelector();
   updateAgentSelectorVisibility();
 }
 
+function rebuildAgentSelector() {
+  const $selector = document.getElementById('agent-selector');
+  $selector.innerHTML = '';
+
+  if (State.backend === 'agent-engine') {
+    // Agent Engine mode — show deployed agents from config
+    const engines = State.agentEngines || [];
+    for (const ae of engines) {
+      if (!ae.id) continue;
+      const opt = document.createElement('option');
+      opt.value = ae.id;
+      const badge = ae.type ? ae.type.toUpperCase() : '';
+      opt.textContent = `${ae.name} [${badge}]`;
+      $selector.appendChild(opt);
+    }
+    $selector.value = State.selectedAgentEngineId || (engines[0] && engines[0].id) || '';
+  } else {
+    // StreamAssist mode — show Discovery Engine agents
+    const opt0 = document.createElement('option');
+    opt0.value = 'default_assistant';
+    opt0.textContent = 'Default Assistant';
+    $selector.appendChild(opt0);
+
+    const typeLabels = { adk: 'ADK', a2a: 'A2A', managed: 'Data' };
+    for (const agent of State.availableAgents) {
+      if (agent.type === 'assistant') continue;
+      const opt = document.createElement('option');
+      opt.value = agent.id;
+      const badge = typeLabels[agent.type] || agent.type;
+      opt.textContent = `${agent.name || agent.id} [${badge}]`;
+      $selector.appendChild(opt);
+    }
+    $selector.value = State.selectedAgent;
+  }
+}
+
 function selectAgent(agentId) {
+  if (State.backend === 'agent-engine') {
+    // Agent Engine mode — switch deployed agent
+    if (State.selectedAgentEngineId === agentId) return;
+    State.selectedAgentEngineId = agentId;
+    const ae = State.agentEngines.find(a => a.id === agentId);
+    const agentName = ae?.name || agentId;
+    console.log('Selected Agent Engine agent:', agentId, ae?.type);
+    if (State.messages.length > 0) {
+      addMessage('assistant', `Switched to: **${agentName}** (${ae?.type?.toUpperCase() || 'Agent Engine'}). Session reset.`);
+    }
+    return;
+  }
+
+  // StreamAssist mode
   if (State.selectedAgent === agentId) return;
   State.selectedAgent = agentId;
-  State.sessionName = null; // Clear session when switching
+  State.sessionName = null;
 
   const agent = State.availableAgents.find(a => a.id === agentId);
   const agentName = agent?.name || agentId;
@@ -1407,13 +1417,18 @@ function toggleDataStore(storeId) {
 }
 
 function getSelectedDataStoreSpecs() {
-  // If nothing selected or all selected, return empty (no filtering)
-  if (State.selectedDataStores.size === 0 ||
-      State.selectedDataStores.size === State.allDataStoreIds.length) {
+  // All selected — no filtering needed
+  if (State.selectedDataStores.size === State.allDataStoreIds.length) {
     return [];
   }
   const cfg = AppConfig?.project || {};
   const projectNumber = cfg.number || '';
+  // None selected — use a dummy store to block all results
+  if (State.selectedDataStores.size === 0) {
+    return [{
+      dataStore: `projects/${projectNumber}/locations/${cfg.location || 'global'}/collections/default_collection/dataStores/_none_`,
+    }];
+  }
   return Array.from(State.selectedDataStores).map(dsId => ({
     dataStore: `projects/${projectNumber}/locations/${cfg.location || 'global'}/collections/default_collection/dataStores/${dsId}`,
   }));
@@ -1497,13 +1512,64 @@ function renderDataStorePills() {
   }
 }
 
+const ARCH_DESCRIPTIONS = {
+  'stream-assist': '<b>StreamAssist</b> (Discovery Engine API)<br>Browser &rarr; Proxy Server &rarr; Discovery Engine StreamAssist &rarr; Default Assistant &rarr; Registered Agents (ADK, A2A, Data Insights) &rarr; Data Stores (SOPs, Brand Guidelines, Workspace)',
+  'agent-engine': {
+    'adk': '<b>ADK Agent</b> (Agent Engine)<br>Browser &rarr; Proxy Server &rarr; Agent Engine streamQuery &rarr; Root Agent (Gemini 3 Pro) &rarr; Sub-Agents: analytics_agent (BigQuery), image_agent (Gemini Image), simulator (A2A) &rarr; Memory Bank',
+    'mcp': '<b>MCP Agent</b> (Agent Engine + Toolbox)<br>Browser &rarr; Proxy Server &rarr; Agent Engine streamQuery &rarr; MCP Agent (Gemini 3 Pro) &rarr; genai-toolbox (stdio) &rarr; BigQuery (arbitrary SQL)',
+    'simulator': '<b>Simulator Agent</b> (Agent Engine)<br>Browser &rarr; Proxy Server &rarr; Agent Engine streamQuery &rarr; Simulator Agent (Gemini 3 Flash) &rarr; Persona-driven shopper simulation &rarr; Analytics tools',
+    'a2a': '<b>A2A Agent</b> (Agent Engine + Cloud Run)<br>Browser &rarr; Proxy Server &rarr; Agent Engine streamQuery &rarr; A2A Protocol &rarr; Cloud Run (A2A Server) &rarr; ADK Agent &rarr; Sub-Agents + Tools',
+  },
+};
+
+function toggleArchPanel() {
+  const panel = document.getElementById('arch-panel');
+  const content = document.getElementById('arch-content');
+  if (panel.style.display !== 'none') {
+    panel.style.display = 'none';
+    return;
+  }
+  // Determine architecture description
+  let desc = '';
+  if (State.backend === 'stream-assist') {
+    desc = ARCH_DESCRIPTIONS['stream-assist'];
+  } else if (State.backend === 'agent-engine') {
+    const ae = State.agentEngines.find(a => a.id === State.selectedAgentEngineId);
+    const aeType = ae?.type || 'adk';
+    desc = ARCH_DESCRIPTIONS['agent-engine'][aeType] || ARCH_DESCRIPTIONS['agent-engine']['adk'];
+  } else {
+    desc = 'Voice Operations &mdash; BIDI streaming via WebSocket &rarr; ADK Live API (Gemini 2.0 Flash Live)';
+  }
+  content.innerHTML = desc;
+  panel.style.display = 'block';
+}
+
 function updateAgentSelectorVisibility() {
   const $wrap = document.getElementById('agent-selector-wrap');
   const $dsPanel = document.getElementById('data-sources-panel');
-  // Show agent selector when StreamAssist or Compare mode is active
-  const show = State.backend === 'stream-assist' || State.backend === 'compare';
+  // Show agent selector for all backends except voice-ops
+  const show = State.backend !== 'voice-ops';
   $wrap.style.display = show ? 'inline-flex' : 'none';
   if (!show) $dsPanel.style.display = 'none';
+  updateModelCard();
+}
+
+function updateModelCard() {
+  const $wrap = document.getElementById('model-card-wrap');
+  const $text = document.getElementById('model-card-text');
+  if (State.backend !== 'agent-engine') {
+    $wrap.style.display = 'none';
+    return;
+  }
+  const ae = State.agentEngines.find(a => a.id === State.selectedAgentEngineId);
+  if (!ae) {
+    $wrap.style.display = 'none';
+    return;
+  }
+  const info = `${ae.model} | ${ae.resource_name} | ${ae.type.toUpperCase()}${ae.a2a_url ? ' | ' + ae.a2a_url : ''}`;
+  $text.textContent = ae.model;
+  $wrap.title = info;
+  $wrap.style.display = 'inline';
 }
 
 // ================================================================
@@ -1520,7 +1586,7 @@ function getUserId() {
 }
 
 const State = {
-  backend: 'stream-assist',       // 'stream-assist' | 'agent-engine'
+  backend: 'stream-assist',       // 'stream-assist' | 'agent-engine' | 'voice-ops'
   authMode: 'proxy',              // 'proxy' | 'token'
   sessionName: null,              // StreamAssist session resource name
   userId: getUserId(),             // Persistent user ID for Memory Bank
@@ -1534,6 +1600,8 @@ const State = {
   lastModelArmorResult: null,     // Model Armor filter result from StreamAssist
   selectedAgent: 'default_assistant', // StreamAssist agent/assistant ID
   availableAgents: [],            // List of available StreamAssist agents
+  agentEngines: [],               // List of deployed Agent Engine agents from config
+  selectedAgentEngineId: null,    // Currently selected Agent Engine resource ID
   selectedDataStores: new Set(),  // Selected data store IDs (empty = all)
   allDataStoreIds: [],            // All available data store IDs
 };
@@ -1578,7 +1646,6 @@ function switchBackend(backend) {
   // Confirm if there are existing messages
   if (State.messages.length > 0 && State.backend !== 'voice-ops') {
     const backendName = backend === 'stream-assist' ? 'StreamAssist'
-      : backend === 'compare' ? 'Compare Mode'
       : backend === 'voice-ops' ? 'Voice Operations'
       : 'Agent Engine & A2A';
     if (!confirm(`Switching to ${backendName} will clear the current conversation. Continue?`)) {
@@ -1612,8 +1679,6 @@ function switchBackend(backend) {
 
     if (backend === 'stream-assist') {
       $modeLabel.textContent = 'Discovery Engine StreamAssist';
-    } else if (backend === 'compare') {
-      $modeLabel.textContent = 'Compare Mode (Side by Side)';
     } else {
       $modeLabel.textContent = 'ADK Agent Engine & A2A';
     }
@@ -1629,7 +1694,8 @@ function switchBackend(backend) {
     $welcome.style.display = 'flex';
   }
 
-  // Show/hide agent selector based on backend
+  // Rebuild agent selector for new backend and show/hide
+  rebuildAgentSelector();
   updateAgentSelectorVisibility();
 }
 
@@ -1681,7 +1747,7 @@ function getAuthHeaders() {
 // ================================================================
 async function ensureSession() {
   if (State.sessionName) return;
-  if (State.backend !== 'stream-assist' && State.backend !== 'compare') return;
+  if (State.backend !== 'stream-assist') return;
 
   try {
     if (State.authMode === 'proxy') {
@@ -1851,13 +1917,20 @@ function parseStreamAssistResponse(data) {
   return texts.join('\n') || 'No response received. Try asking about store operations, brand guidelines, or product information.';
 }
 
-async function callAgentEngine(text) {
+async function callAgentEngine(text, overrideResourceId) {
   const payload = {
     input: {
       message: text,
       user_id: State.userId,
     },
   };
+
+  // Route to the selected agent engine resource (or override)
+  const resourceId = overrideResourceId || State.selectedAgentEngineId;
+  const defaultId = AppConfig?.project?.agent_engine_id;
+  if (resourceId && resourceId !== defaultId) {
+    payload.resource_id = resourceId;
+  }
 
   if (State.authMode === 'proxy') {
     const resp = await fetch('/api/agent-engine/query', {
@@ -2079,73 +2152,6 @@ function escapeHtml(text) {
 }
 
 // ================================================================
-// COMPARE MODE
-// ================================================================
-async function sendCompareQuery(text) {
-  hideWelcome();
-
-  // Create compare row with loading placeholders
-  const row = document.createElement('div');
-  row.className = 'compare-row';
-  row.innerHTML = `
-    <div class="compare-cell stream-assist loading">
-      <div class="compare-label"><span class="dot"></span>StreamAssist</div>
-      <div class="compare-body"><div class="typing-indicator"><span></span><span></span><span></span></div></div>
-      <div class="compare-meta"></div>
-    </div>
-    <div class="compare-cell agent-engine loading">
-      <div class="compare-label"><span class="dot"></span>Agent Engine &amp; A2A</div>
-      <div class="compare-body"><div class="typing-indicator"><span></span><span></span><span></span></div></div>
-      <div class="compare-meta"></div>
-    </div>
-  `;
-  $chatArea.appendChild(row);
-  scrollToBottom();
-
-  const saCell = row.querySelector('.stream-assist');
-  const aeCell = row.querySelector('.agent-engine');
-
-  // Call both backends in parallel
-  const [saResult, aeResult] = await Promise.allSettled([
-    (async () => {
-      const t0 = performance.now();
-      const resp = await callStreamAssist(text);
-      return { text: resp, ms: Math.round(performance.now() - t0) };
-    })(),
-    (async () => {
-      const t0 = performance.now();
-      const resp = await callAgentEngine(text);
-      return { text: resp, ms: Math.round(performance.now() - t0) };
-    })(),
-  ]);
-
-  // Render StreamAssist result
-  saCell.classList.remove('loading');
-  if (saResult.status === 'fulfilled') {
-    saCell.querySelector('.compare-body').innerHTML = renderMarkdown(saResult.value.text);
-    saCell.querySelector('.compare-meta').textContent = `${(saResult.value.ms / 1000).toFixed(1)}s`;
-  } else {
-    saCell.querySelector('.compare-body').innerHTML = `<span style="color:var(--vf-red-600);">Error: ${escapeHtml(saResult.reason?.message || 'Failed')}</span>`;
-  }
-
-  // Render Agent Engine result
-  aeCell.classList.remove('loading');
-  if (aeResult.status === 'fulfilled') {
-    aeCell.querySelector('.compare-body').innerHTML = renderMarkdown(aeResult.value.text);
-    let meta = `${(aeResult.value.ms / 1000).toFixed(1)}s`;
-    if (State.lastTraceUrl) {
-      meta += ` · <a href="${State.lastTraceUrl}" target="_blank" rel="noopener" style="color:var(--vf-green-700);text-decoration:none;">View Trace</a>`;
-      State.lastTraceUrl = null;
-    }
-    aeCell.querySelector('.compare-meta').innerHTML = meta;
-  } else {
-    aeCell.querySelector('.compare-body').innerHTML = `<span style="color:var(--vf-red-600);">Error: ${escapeHtml(aeResult.reason?.message || 'Failed')}</span>`;
-  }
-
-  scrollToBottom();
-}
-
-// ================================================================
 // SEND LOGIC
 // ================================================================
 async function sendMessage() {
@@ -2162,12 +2168,12 @@ async function sendMessage() {
 
   try {
     let response;
-    if (State.backend === 'compare') {
-      hideLoading();
-      await sendCompareQuery(text);
-      State.isLoading = false;
-      $sendBtn.disabled = false;
-      return;
+    // Auto-route image generation requests to Agent Engine
+    const isImageRequest = State.backend === 'stream-assist' &&
+      /\b(generate|create|make|design)\b.*\b(image|photo|picture|imagery|product image)\b/i.test(text);
+    if (isImageRequest) {
+      addMessage('assistant', '*Routing to Agent Engine for image generation...*');
+      response = await callAgentEngine(text);
     } else if (State.backend === 'stream-assist') {
       response = await callStreamAssist(text);
     } else {
@@ -2199,7 +2205,30 @@ async function sendMessage() {
   }
 }
 
-function sendSample(text) {
+function sendSample(text, opts) {
+  // opts: { backend: 'agent-engine'|'stream-assist', agentId: string }
+  if (opts?.backend && opts.backend !== State.backend) {
+    // Switch backend silently (no confirm since no conversation yet)
+    State.backend = opts.backend;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.backend === opts.backend);
+    });
+    if (opts.backend === 'stream-assist') {
+      $modeLabel.textContent = 'Discovery Engine StreamAssist';
+    } else {
+      $modeLabel.textContent = 'ADK Agent Engine & A2A';
+    }
+    State.messages = [];
+    State.sessionName = null;
+    $sessionInfo.style.display = 'none';
+    rebuildAgentSelector();
+    updateAgentSelectorVisibility();
+  }
+  if (opts?.agentId && State.backend === 'agent-engine') {
+    State.selectedAgentEngineId = opts.agentId;
+    const $selector = document.getElementById('agent-selector');
+    $selector.value = opts.agentId;
+  }
   $input.value = text;
   sendMessage();
 }
@@ -2832,6 +2861,8 @@ function connectVoiceOpsWebSocket(isAudio = true) {
           voiceOpsTranscript += `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px;border-left:3px solid var(--vf-gold-500);"><span style="font-size:11px;color:var(--vf-gold-500);font-weight:600;display:block;margin-bottom:4px;">Assistant</span><span style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.5;">${renderMarkdown(currentText)}</span></div>`;
           $transcript.innerHTML = voiceOpsTranscript;
           $transcript.scrollTop = $transcript.scrollHeight;
+          // Mirror completed assistant turn to main chat area
+          addMessage('assistant', currentText);
           currentText = '';
         }
         return;
@@ -2989,6 +3020,9 @@ function _sendVoiceOpsTextMessage(text) {
   }
   voiceOpsTranscript += `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:3px solid var(--vf-green-600);"><span style="font-size:11px;color:var(--vf-green-600);font-weight:600;display:block;margin-bottom:4px;">You</span><span style="color:rgba(255,255,255,0.9);font-size:13px;">${escapeHtml(text)}</span></div>`;
   $transcript.innerHTML = voiceOpsTranscript;
+
+  // Mirror user message to main chat area
+  addMessage('user', text);
 
   voiceOpsWs.send(JSON.stringify({
     mime_type: 'text/plain',

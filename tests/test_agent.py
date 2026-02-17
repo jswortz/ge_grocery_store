@@ -319,14 +319,14 @@ class TestFrontendFeatures:
         assert "View Trace" in content
         assert "lastTraceUrl" in content
 
-    def test_frontend_has_compare_mode(self):
-        """Verify index.html has Compare Mode for side-by-side backend comparison."""
+    def test_frontend_compare_mode_removed(self):
+        """Verify Compare Mode was removed from the frontend."""
         from pathlib import Path
         html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
         content = html_path.read_text()
-        assert "sendCompareQuery" in content
-        assert "compare-row" in content
-        assert 'data-backend="compare"' in content
+        assert "sendCompareQuery" not in content
+        assert 'data-backend="compare"' not in content
+        assert "compare-row" not in content
 
     def test_agent_engine_stream_endpoint(self):
         """Verify the frontend server has SSE streaming endpoint."""

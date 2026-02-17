@@ -33,7 +33,7 @@ retailer:
 models:
   adk: "gemini-3-pro-preview"                # Orchestrator / root agent (complex reasoning + tool use)
   adk_fast: "gemini-3-flash-preview"         # Sub-agents, analytics, streaming (lower latency)
-  imagen: "gemini-3-pro-image-preview"       # Native image generation via Gemini 3 Pro Image
+  imagen: "gemini-3-pro-image-preview"       # Gemini 3 Pro Image (key kept as 'imagen' for backward compat)
   live: "gemini-2.0-flash-live-001"          # Live API (BIDI voice streaming, requires us-east4)
 
 project:

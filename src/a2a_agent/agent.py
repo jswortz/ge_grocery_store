@@ -227,7 +227,7 @@ def get_agent_card() -> dict:
             {
                 "id": "image-generation",
                 "name": "Product Image Generation",
-                "description": "Generate brand-compliant product imagery using Vertex AI Imagen",
+                "description": "Generate brand-compliant product imagery using Gemini Image",
             },
         ],
     }

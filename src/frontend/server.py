@@ -123,6 +123,8 @@ class FrontendHandler(SimpleHTTPRequestHandler):
             return
         if path == "/api/config":
             # Return safe, public config fields for frontend
+            project_cfg = CONFIG.get("project", {})
+            models_cfg = CONFIG.get("models", {})
             safe_config = {
                 "retailer": {
                     "name": CONFIG.get("retailer", {}).get("name", "Grocery Retail"),
@@ -135,7 +137,39 @@ class FrontendHandler(SimpleHTTPRequestHandler):
                     "engine_id": DE_ENGINE,
                     "agent_engine_id": AE_RESOURCE_ID,
                     "agent_engine_location": AE_LOCATION,
+                    "data_agent_id": project_cfg.get("data_agent_id", ""),
                 },
+                "agent_engines": [
+                    {
+                        "id": AE_RESOURCE_ID,
+                        "name": "Grocery Retail Assistant",
+                        "type": "adk",
+                        "model": models_cfg.get("adk", "gemini-3-pro-preview"),
+                        "resource_name": f"reasoningEngines/{AE_RESOURCE_ID}",
+                    },
+                    {
+                        "id": project_cfg.get("mcp_agent_engine_id", ""),
+                        "name": "MCP Grocery Analyst",
+                        "type": "mcp",
+                        "model": models_cfg.get("adk", "gemini-3-pro-preview"),
+                        "resource_name": f"reasoningEngines/{project_cfg.get('mcp_agent_engine_id', '')}",
+                    },
+                    {
+                        "id": project_cfg.get("simulator_agent_engine_id", ""),
+                        "name": "Shopper Simulator",
+                        "type": "simulator",
+                        "model": models_cfg.get("adk_fast", "gemini-3-flash-preview"),
+                        "resource_name": f"reasoningEngines/{project_cfg.get('simulator_agent_engine_id', '')}",
+                    },
+                    {
+                        "id": project_cfg.get("a2a_agent_engine_id", ""),
+                        "name": "A2A Grocery Agent",
+                        "type": "a2a",
+                        "model": models_cfg.get("adk", "gemini-3-pro-preview"),
+                        "resource_name": f"reasoningEngines/{project_cfg.get('a2a_agent_engine_id', '')}",
+                        "a2a_url": project_cfg.get("a2a_cloud_run_url", ""),
+                    },
+                ],
                 "voice": CONFIG.get("voice", {
                     "enabled": True,
                     "input_lang": "en-US",
@@ -320,7 +354,7 @@ class FrontendHandler(SimpleHTTPRequestHandler):
             resp.raise_for_status()
             self._json_response(resp.json())
         except Exception as exc:
-            logger.exception("StreamAssist query failed (assistant=%s)", assistant_id)
+            logger.exception("StreamAssist query failed")
             self._json_error(502, str(exc))
 
     # --- Agent Engine proxy ---------------------------------------------
@@ -330,13 +364,24 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         import time
         import requests as req
 
-        url = f"{AE_BASE}:streamQuery"
+        body = self._read_body()
+        payload = json.loads(body) if body else {}
+
+        # Allow frontend to specify an alternative agent engine resource ID
+        resource_id = payload.pop("resource_id", None)
+        if resource_id:
+            url = (
+                f"https://{AE_LOCATION}-aiplatform.googleapis.com/v1"
+                f"/projects/{AE_PROJECT_NUMBER}/locations/{AE_LOCATION}"
+                f"/reasoningEngines/{resource_id}:streamQuery"
+            )
+        else:
+            url = f"{AE_BASE}:streamQuery"
+
         headers = {
             "Authorization": f"Bearer {_get_token()}",
             "Content-Type": "application/json",
         }
-        body = self._read_body()
-        payload = json.loads(body) if body else {}
 
         try:
             t0 = time.monotonic()
