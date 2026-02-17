@@ -42,10 +42,10 @@ project:
   location: "global"
   engine_id: "grocery-workshop-engine"
   agent_id: "17851962453813099770"  # ADK agent registered on Discovery Engine (adkAgentDefinition)
-  agent_engine_id: "857604776014118912"  # ADK agent deployed to Agent Engine (with OTel)
-  mcp_agent_engine_id: "2949526802927714304"  # MCP BigQuery analyst on Agent Engine (with OTel)
-  simulator_agent_engine_id: "1774087300184014848"  # Shopper simulator on Agent Engine (with OTel)
-  a2a_agent_engine_id: "859856575827804160"  # A2A agent deployed to Agent Engine (with OTel)
+  agent_engine_id: "4433744355123003392"  # ADK agent deployed to Agent Engine (with OTel)
+  mcp_agent_engine_id: "7481555402945986560"  # MCP BigQuery analyst on Agent Engine (with OTel)
+  simulator_agent_engine_id: "31475719368343552"  # Shopper simulator on Agent Engine (with OTel)
+  a2a_agent_engine_id: "2240491336593571840"  # A2A agent deployed to Agent Engine (with OTel)
   a2a_cloud_run_url: "https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app"  # A2A agent on Cloud Run
   a2a_agent_id: "6222808436610094141"  # A2A agent registered on Discovery Engine (a2aAgentDefinition)
   data_agent_id: "14793816534468506603"  # Data Insights Agent for BQ analytics
