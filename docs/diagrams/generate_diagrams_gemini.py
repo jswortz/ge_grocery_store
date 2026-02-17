@@ -97,7 +97,7 @@ MIDDLE ROW (Core Platform):
 BOTTOM ROW (Backend Services):
 - "BigQuery" icon with "ge_grocery_demo" label (orange #F9AB00 accent)
   - Tables: fact_transactions, dim_store, dim_product, dim_employee, dim_customer
-- "Vertex AI Imagen" icon (purple #A142F4 accent)
+- "Gemini Image" icon (purple #A142F4 accent)
 - "Cloud Run" icon with "A2A Agent" label (teal #12B5CB accent)
 - "GCS Bucket" (yellow #FBBC05 folder icon)
 
@@ -122,19 +122,19 @@ Show a hierarchical agent architecture:
 TOP: "User Query" (red ellipse #EA4335)
 
 CENTER: "grocery_assistant" (large blue #4285F4 rounded rectangle, labeled "Root Agent / LlmAgent"):
-- Model: gemini-2.5-flash
+- Model: gemini-3-pro-preview
 - Tool: DiscoveryEngineSearchTool (searches sop-store and brand-guidelines-store)
 - Tool: PreloadMemoryTool (loads cross-session memories)
 
 LEFT BRANCH: "analytics_agent" (orange #F9AB00 rounded rectangle, labeled "Sub-Agent"):
-  - Model: gemini-2.5-flash
+  - Model: gemini-3-flash-preview
   - Tool: query_grocery_data (FunctionTool)
   - Connects to: BigQuery (orange #F9AB00 cylinder)
 
 RIGHT BRANCH: "image_agent" (purple #A142F4 rounded rectangle, labeled "Sub-Agent"):
-  - Model: gemini-2.5-flash
+  - Model: gemini-3-flash-preview
   - Tool: generate_product_image (FunctionTool)
-  - Connects to: Vertex AI Imagen (purple #A142F4 cylinder)
+  - Connects to: Gemini Image (purple #A142F4 cylinder)
 
 SEARCH BRANCH from Root:
 - DiscoveryEngineSearchTool connects to:
@@ -175,7 +175,7 @@ Step 3: "Processing / Orchestration" (green #34A853 rounded rectangle):
 Step 4 (parallel paths, color-coded):
 - Path A: Discovery Engine Search (blue #4285F4): SearchTool → data_store_specs filter → sop-store/brand-store → Grounded Results
 - Path B: BigQuery Analytics (orange #F9AB00): analytics_agent → query_grocery_data → SQL execution → Structured Results
-- Path C: Image Generation (purple #A142F4): image_agent → prompt construction → Vertex AI Imagen → Generated Image
+- Path C: Image Generation (purple #A142F4): image_agent → prompt construction → Gemini Image → Generated Image
 
 Step 5: "Response Assembly" (green #34A853 rounded rectangle)
 
@@ -241,7 +241,7 @@ Show a LEFT-TO-RIGHT flow:
 
 LEFT: "ADK Agent" (green #34A853 rounded rectangle):
 - mcp_grocery_analyst
-- gemini-2.5-flash
+- gemini-3-pro-preview
 - "LLM generates arbitrary SQL"
 - Contains: McpToolset with StdioConnectionParams
 
@@ -276,12 +276,12 @@ TOP: "Client" (red ellipse #EA4335) — Frontend UI / REST API / A2A Agent
 
 MIDDLE ROW (deployment targets):
 1. "Vertex AI Agent Engine" (green #34A853 rounded rectangle, us-central1):
-   - ReasoningEngine ID: 3323818153208709120
+   - ReasoningEngine ID: 4433744355123003392
    - ADK Agent (grocery_assistant)
    - PreloadMemoryTool → Memory Bank (purple #A142F4 sub-box)
    - DiscoveryEngineSearchTool
    - analytics_agent (BigQuery)
-   - image_agent (Imagen)
+   - image_agent (Gemini Image)
    - OpenTelemetry: Enabled
 
 2. "Cloud Run" (teal #12B5CB rounded rectangle, us-central1):
@@ -296,7 +296,7 @@ MIDDLE ROW (deployment targets):
 
 BOTTOM ROW (backend services):
 - BigQuery (orange #F9AB00): ge_grocery_demo
-- Vertex AI Imagen (purple #A142F4): imagen-3.0-generate-002
+- Gemini Image (purple #A142F4): gemini-3-pro-image-preview
 - GCS (yellow #FBBC05): brand guidelines + SOPs
 
 Show connections between all components.
