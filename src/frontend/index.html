@@ -1054,12 +1054,26 @@ body {
     </div>
 
     <!-- Architecture Info Panel (collapsible) -->
-    <div id="arch-panel" style="display:none;padding:10px 24px 12px;background:rgba(0,0,0,0.12);border-bottom:1px solid rgba(255,255,255,0.06);">
+    <style>
+      .arch-tree { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 11px; line-height: 1.7; color: rgba(255,255,255,0.7); }
+      .arch-tree .node { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
+      .arch-tree .node.highlight { color: #f9a825; font-weight: 600; }
+      .arch-tree .connector { color: rgba(255,255,255,0.25); user-select: none; white-space: pre; }
+      .arch-tree .badge { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 600; letter-spacing: 0.3px; vertical-align: middle; }
+      .arch-tree .badge-agent { background: #1565c0; color: #fff; }
+      .arch-tree .badge-tool { background: #2e7d32; color: #fff; }
+      .arch-tree .badge-sub { background: #e65100; color: #fff; }
+      .arch-tree .badge-data { background: #6a1b9a; color: #fff; }
+      .arch-tree .badge-svc { background: #00695c; color: #fff; }
+      .arch-tree .badge-model { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.6); }
+      .arch-tree .dim { color: rgba(255,255,255,0.35); font-size: 10px; }
+    </style>
+    <div id="arch-panel" style="display:none;padding:10px 24px 12px;background:rgba(0,0,0,0.18);border-bottom:1px solid rgba(255,255,255,0.06);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <span style="font-size:11px;color:rgba(255,255,255,0.5);font-weight:600;">Architecture</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.5);font-weight:600;">Agent Architecture</span>
         <button onclick="document.getElementById('arch-panel').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:14px;padding:0;">&times;</button>
       </div>
-      <div id="arch-content" style="font-size:12px;color:rgba(255,255,255,0.75);line-height:1.6;"></div>
+      <div id="arch-content" class="arch-tree"></div>
     </div>
 
     <!-- Data Sources Panel (toggleable data store filter) -->
@@ -1512,15 +1526,98 @@ function renderDataStorePills() {
   }
 }
 
-const ARCH_DESCRIPTIONS = {
-  'stream-assist': '<b>StreamAssist</b> (Discovery Engine API)<br>Browser &rarr; Proxy Server &rarr; Discovery Engine StreamAssist &rarr; Default Assistant &rarr; Registered Agents (ADK, A2A, Data Insights) &rarr; Data Stores (SOPs, Brand Guidelines, Workspace)',
-  'agent-engine': {
-    'adk': '<b>ADK Agent</b> (Agent Engine)<br>Browser &rarr; Proxy Server &rarr; Agent Engine streamQuery &rarr; Root Agent (Gemini 3 Pro) &rarr; Sub-Agents: analytics_agent (BigQuery), image_agent (Gemini Image), simulator (A2A) &rarr; Memory Bank',
-    'mcp': '<b>MCP Agent</b> (Agent Engine + Toolbox)<br>Browser &rarr; Proxy Server &rarr; Agent Engine streamQuery &rarr; MCP Agent (Gemini 3 Pro) &rarr; genai-toolbox (stdio) &rarr; BigQuery (arbitrary SQL)',
-    'simulator': '<b>Simulator Agent</b> (Agent Engine)<br>Browser &rarr; Proxy Server &rarr; Agent Engine streamQuery &rarr; Simulator Agent (Gemini 3 Flash) &rarr; Persona-driven shopper simulation &rarr; Analytics tools',
-    'a2a': '<b>A2A Agent</b> (Agent Engine + Cloud Run)<br>Browser &rarr; Proxy Server &rarr; Agent Engine streamQuery &rarr; A2A Protocol &rarr; Cloud Run (A2A Server) &rarr; ADK Agent &rarr; Sub-Agents + Tools',
-  },
-};
+function _n(text, badge, badgeClass, highlight, dim) {
+  const hl = highlight ? ' highlight' : '';
+  const b = badge ? ` <span class="badge ${badgeClass}">${badge}</span>` : '';
+  const d = dim ? ` <span class="dim">${dim}</span>` : '';
+  return `<div class="node${hl}">${text}${b}${d}</div>`;
+}
+function _l(indent, last, text, badge, badgeClass, highlight, dim) {
+  const ch = last ? '\u2514\u2500\u2500 ' : '\u251C\u2500\u2500 ';
+  const pad = indent.replace(/\u251C/g, '\u2502').replace(/\u2514/g, ' ').replace(/\u2500/g, ' ');
+  const conn = `<span class="connector">${indent}${ch}</span>`;
+  return _n(conn + text, badge, badgeClass, highlight, dim);
+}
+
+function buildArchTree() {
+  if (State.backend === 'stream-assist') {
+    const sel = State.selectedAgent;
+    const hi = (id) => id === sel;
+    return [
+      _n('Discovery Engine <span class="dim">grocery-workshop-engine</span>', 'ENGINE', 'badge-svc'),
+      _l('', false, 'Default Assistant', 'ASSISTANT', 'badge-agent', hi('default_assistant')),
+      _l('\u2502   ', false, 'Data Insights Agent', 'DATA', 'badge-data', hi('14793816534468506603'), 'BigQuery analytics'),
+      _l('\u2502   ', false, 'Grocery Retail Agent', 'ADK', 'badge-agent', hi('17851962453813099770'), 'Agent Engine'),
+      _l('\u2502   ', false, 'Grocery A2A Agent', 'A2A', 'badge-svc', hi('6222808436610094141'), 'Cloud Run'),
+      _l('\u2502   ', true, 'Deep Research', 'MANAGED', 'badge-model', hi('deep_research')),
+      _l('', false, 'sop-store', 'DATA STORE', 'badge-tool', false, 'SOPs (GCS)'),
+      _l('', true, 'brand-guidelines-store', 'DATA STORE', 'badge-tool', false, 'Brand docs (GCS)'),
+    ].join('');
+  }
+
+  if (State.backend === 'agent-engine') {
+    const ae = State.agentEngines.find(a => a.id === State.selectedAgentEngineId);
+    const aeType = ae?.type || 'adk';
+
+    if (aeType === 'mcp') return [
+      _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
+      _l('', true, 'mcp_grocery_analyst', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
+      _l('    ', true, 'McpToolset <span class="dim">genai-toolbox --prebuilt bigquery</span>', 'MCP', 'badge-svc'),
+      _l('        ', false, 'execute_sql', 'TOOL', 'badge-tool'),
+      _l('        ', false, 'list_table_ids', 'TOOL', 'badge-tool'),
+      _l('        ', false, 'get_table_info', 'TOOL', 'badge-tool'),
+      _l('        ', false, 'forecast', 'TOOL', 'badge-tool'),
+      _l('        ', false, 'analyze_contribution', 'TOOL', 'badge-tool'),
+      _l('        ', true, '<span class="dim">+ 4 more tools</span>'),
+    ].join('');
+
+    if (aeType === 'simulator') return [
+      _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
+      _l('', true, 'simulation_orchestrator', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
+      _l('    ', false, 'Shopper Personas <span class="dim">(12 concurrent)</span>', '', '', false),
+      _l('    \u2502   ', false, 'Budget Family Shopper', 'PERSONA', 'badge-model'),
+      _l('    \u2502   ', false, 'Health Enthusiast', 'PERSONA', 'badge-model'),
+      _l('    \u2502   ', false, 'Quick-Stop Worker', 'PERSONA', 'badge-model'),
+      _l('    \u2502   ', true, '<span class="dim">+ 9 more personas</span>'),
+      _l('    ', true, 'Store Layouts <span class="dim">(3 stores)</span>', '', ''),
+      _l('        ', false, 'Downtown Market', 'STORE', 'badge-data'),
+      _l('        ', false, 'Westside Market', 'STORE', 'badge-data'),
+      _l('        ', true, 'Lakefront Market', 'STORE', 'badge-data'),
+    ].join('');
+
+    if (aeType === 'a2a') return [
+      _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
+      _l('', true, 'A2A Protocol', 'A2A', 'badge-svc', false, 'Cloud Run'),
+      _l('    ', true, 'grocery_assistant', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
+      _l('        ', false, 'DiscoveryEngineSearchTool', 'TOOL', 'badge-tool', false, 'SOPs + Brand'),
+      _l('        ', false, 'analytics_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash'),
+      _l('        \u2502   ', true, 'query_grocery_data', 'TOOL', 'badge-tool', false, 'BigQuery'),
+      _l('        ', true, 'image_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash'),
+      _l('            ', true, 'generate_product_image', 'TOOL', 'badge-tool', false, 'Gemini Image'),
+    ].join('');
+
+    // Default: ADK agent
+    return [
+      _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
+      _l('', true, 'grocery_assistant', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
+      _l('    ', false, 'DiscoveryEngineSearchTool', 'TOOL', 'badge-tool', false, 'SOPs + Brand Guidelines'),
+      _l('    ', false, 'PreloadMemoryTool', 'TOOL', 'badge-tool', false, 'Memory Bank'),
+      _l('    ', false, 'delegate_to_simulator', 'TOOL', 'badge-tool', false, 'Simulator Agent Engine'),
+      _l('    ', false, 'analytics_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash-preview'),
+      _l('    \u2502   ', true, 'query_grocery_data', 'TOOL', 'badge-tool', false, 'BigQuery'),
+      _l('    ', true, 'image_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash-preview'),
+      _l('        ', true, 'generate_product_image', 'TOOL', 'badge-tool', false, 'Gemini Image'),
+    ].join('');
+  }
+
+  // Voice Ops
+  return [
+    _n('WebSocket <span class="dim">port 8081</span>', 'BIDI', 'badge-svc'),
+    _l('', true, 'voice_operations_assistant', 'ROOT', 'badge-agent', true, 'gemini-2.0-flash-live'),
+    _l('    ', false, 'BIDI Audio Streaming', 'LIVE', 'badge-model', false, 'PCM 16kHz / 24kHz'),
+    _l('    ', true, 'Supply Chain Operations', '', '', false, 'voice-guided workflows'),
+  ].join('');
+}
 
 function toggleArchPanel() {
   const panel = document.getElementById('arch-panel');
@@ -1529,18 +1626,7 @@ function toggleArchPanel() {
     panel.style.display = 'none';
     return;
   }
-  // Determine architecture description
-  let desc = '';
-  if (State.backend === 'stream-assist') {
-    desc = ARCH_DESCRIPTIONS['stream-assist'];
-  } else if (State.backend === 'agent-engine') {
-    const ae = State.agentEngines.find(a => a.id === State.selectedAgentEngineId);
-    const aeType = ae?.type || 'adk';
-    desc = ARCH_DESCRIPTIONS['agent-engine'][aeType] || ARCH_DESCRIPTIONS['agent-engine']['adk'];
-  } else {
-    desc = 'Voice Operations &mdash; BIDI streaming via WebSocket &rarr; ADK Live API (Gemini 2.0 Flash Live)';
-  }
-  content.innerHTML = desc;
+  content.innerHTML = buildArchTree();
   panel.style.display = 'block';
 }
 
@@ -1842,12 +1928,19 @@ async function callStreamAssist(text) {
   const sessionResource = State.sessionName ||
     `projects/${cfg.id}/locations/${cfg.location}/collections/default_collection/engines/${cfg.engine_id}/sessions/-`;
 
-  // Always route through default_assistant — registered agents (ADK, A2A)
-  // are automatically available for routing by the assistant
+  // Route through default_assistant; if a specific agent is selected,
+  // include agentsSpec to explicitly route the query to that agent
   const payload = {
     session: sessionResource,
     query: { text },
   };
+
+  // Explicitly route to selected agent (e.g. Data Insights Agent)
+  if (State.selectedAgent && State.selectedAgent !== 'default_assistant') {
+    payload.agentsSpec = {
+      agentSpecs: [{ agentId: State.selectedAgent }],
+    };
+  }
 
   // Add data store filtering if specific stores are selected
   const dsSpecs = getSelectedDataStoreSpecs();

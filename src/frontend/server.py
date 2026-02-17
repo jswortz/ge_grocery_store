@@ -338,8 +338,8 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         body = self._read_body()
         payload = json.loads(body) if body else {}
 
-        # Strip assistant_id — always route through default_assistant
-        # Registered agents are available via automatic routing
+        # Strip assistant_id — always route through default_assistant.
+        # Agent routing is handled via agentsSpec.agentSpecs[] in payload.
         payload.pop("assistant_id", None)
         url = f"{DE_BASE}/assistants/default_assistant:streamAssist"
 

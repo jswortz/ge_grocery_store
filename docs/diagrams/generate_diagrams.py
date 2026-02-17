@@ -133,26 +133,26 @@ def diagram_1_overall_architecture():
         )
         c.node(
             "agent_engine",
-            "Vertex AI Agent Engine\nID: 3323818153208709120\nus-central1",
+            "Vertex AI Agent Engine\nID: 4433744355123003392\nus-central1",
             fillcolor="#a5d6a7",
             color="#2e7d32",
             shape="box3d",
         )
         c.node(
             "root_agent",
-            "Root Agent: grocery_assistant\ngemini-2.5-flash\nDiscoveryEngineSearchTool",
+            "Root Agent: grocery_assistant\ngemini-3-pro-preview\nDiscoveryEngineSearchTool",
             fillcolor="#c8e6c9",
             color="#2e7d32",
         )
         c.node(
             "analytics_agent",
-            "analytics_agent\ngemini-2.5-flash\nquery_grocery_data\nFunctionTool",
+            "analytics_agent\ngemini-3-flash-preview\nquery_grocery_data\nFunctionTool",
             fillcolor="#dcedc8",
             color="#558b2f",
         )
         c.node(
             "image_agent",
-            "image_agent\ngemini-2.5-flash\ngenerate_product_image\nFunctionTool",
+            "image_agent\ngemini-3-flash-preview\ngenerate_product_image\nFunctionTool",
             fillcolor="#dcedc8",
             color="#558b2f",
         )
@@ -231,10 +231,10 @@ def diagram_1_overall_architecture():
         c.edge("fact_tx", "dim_employee", color="#e65100", style="dotted")
         c.edge("fact_tx", "dim_customer", color="#e65100", style="dotted")
 
-    # --- Vertex AI Imagen ---
+    # --- Gemini Image ---
     dot.node(
         "imagen",
-        "Vertex AI Imagen\nimagen-3.0-generate-002\nus-central1\n\nProduct Photography\nbase64 PNG output",
+        "Gemini Image\ngemini-3-pro-image-preview\nus-central1\n\nProduct Photography\nbase64 PNG output",
         fillcolor="#f3e5f5",
         color="#6a1b9a",
         shape="box3d",
@@ -342,7 +342,7 @@ def diagram_1_overall_architecture():
     dot.edge(
         "image_agent",
         "imagen",
-        label="vertexai SDK\nImageGenerationModel",
+        label="Gemini SDK\ngenerate_content()",
         color="#6a1b9a",
         penwidth="2",
     )
@@ -424,7 +424,7 @@ def diagram_2_agent_architecture():
         )
         c.node(
             "root",
-            'grocery_assistant\nModel: gemini-2.5-flash\nType: LlmAgent (root orchestrator)\n\nInstruction: get_main_agent_instruction()\n"AI assistant for grocery retail operations"',
+            'grocery_assistant\nModel: gemini-3-pro-preview\nType: LlmAgent (root orchestrator)\n\nInstruction: get_main_agent_instruction()\n"AI assistant for grocery retail operations"',
             fillcolor="#bbdefb",
             color="#1565c0",
             shape="box",
@@ -487,7 +487,7 @@ def diagram_2_agent_architecture():
         )
         c.node(
             "analytics",
-            'analytics_agent\nModel: gemini-2.5-flash\nType: LlmAgent (sub-agent)\n\n"Data analytics specialist"\n"Answers data questions by querying\nthe BigQuery star schema"',
+            'analytics_agent\nModel: gemini-3-flash-preview\nType: LlmAgent (sub-agent)\n\n"Data analytics specialist"\n"Answers data questions by querying\nthe BigQuery star schema"',
             fillcolor="#ffe0b2",
             color="#e65100",
             shape="box",
@@ -523,7 +523,7 @@ def diagram_2_agent_architecture():
         )
         c.node(
             "image",
-            'image_agent\nModel: gemini-2.5-flash\nType: LlmAgent (sub-agent)\n\n"Product imagery specialist"\n"Generates product images following\nbrand guidelines"',
+            'image_agent\nModel: gemini-3-flash-preview\nType: LlmAgent (sub-agent)\n\n"Product imagery specialist"\n"Generates product images following\nbrand guidelines"',
             fillcolor="#e1bee7",
             color="#6a1b9a",
             shape="box",
@@ -538,7 +538,7 @@ def diagram_2_agent_architecture():
         )
         c.node(
             "imagen",
-            "Vertex AI Imagen\nimagen-3.0-generate-002\n\nPNG output, 1:1 aspect\nus-central1",
+            "Gemini Image\ngemini-3-pro-image-preview\n\nPNG output, 1:1 aspect\nus-central1",
             fillcolor="#ba68c8",
             color="#4a148c",
             fontcolor="white",
@@ -548,7 +548,7 @@ def diagram_2_agent_architecture():
         c.edge(
             "img_tool",
             "imagen",
-            label="ImageGenerationModel\n.generate_images()",
+            label="Gemini Image\ngenerate()",
             color="#4a148c",
             penwidth="1.5",
         )
@@ -696,7 +696,7 @@ def diagram_3_data_flow():
     # Step 3: Root Agent
     dot.node(
         "root_agent",
-        "Step 3: Root Agent Orchestration\n\ngrocery_assistant (gemini-2.5-flash)\nAnalyzes intent and decides routing:\n\n  SOP/Brand query -> DiscoveryEngineSearchTool\n  Data/Analytics query -> transfer_to_agent -> analytics_agent\n  Image query -> transfer_to_agent -> image_agent",
+        "Step 3: Root Agent Orchestration\n\ngrocery_assistant (gemini-3-pro-preview)\nAnalyzes intent and decides routing:\n\n  SOP/Brand query -> DiscoveryEngineSearchTool\n  Data/Analytics query -> transfer_to_agent -> analytics_agent\n  Image query -> transfer_to_agent -> image_agent",
         fillcolor="#dcedc8",
         color="#33691e",
         shape="box",
@@ -800,7 +800,7 @@ def diagram_3_data_flow():
         )
         c.node(
             "imagen",
-            "Vertex AI Imagen\nimagen-3.0-generate-002",
+            "Gemini Image\ngemini-3-pro-image-preview",
             fillcolor="#ba68c8",
             color="#4a148c",
             fontcolor="white",
@@ -1027,7 +1027,7 @@ def diagram_5_mcp_integration():
         )
         c.node(
             "agent",
-            "mcp_grocery_analyst\ngemini-2.5-flash\n\nLLM generates\narbitrary SQL",
+            "mcp_grocery_analyst\ngemini-3-pro-preview\n\nLLM generates\narbitrary SQL",
             fillcolor="#c8e6c9",
             color="#2e7d32",
             penwidth="2",
@@ -1131,7 +1131,7 @@ def diagram_6_deployment():
         )
         c.node(
             "re",
-            "ReasoningEngine\nID: 3323818153208709120\n\nADK Agent (grocery_assistant)\n+ PreloadMemoryTool\n+ DiscoveryEngineSearchTool\n+ analytics_agent (BigQuery)\n+ image_agent (Imagen)\n\nOpenTelemetry: Enabled",
+            "ReasoningEngine\nID: 4433744355123003392\n\nADK Agent (grocery_assistant)\n+ PreloadMemoryTool\n+ DiscoveryEngineSearchTool\n+ analytics_agent (BigQuery)\n+ image_agent (Gemini Image)\n\nOpenTelemetry: Enabled",
             fillcolor="#c8e6c9",
             color="#2e7d32",
             shape="box3d",
@@ -1169,7 +1169,7 @@ def diagram_6_deployment():
     dot.node("de", "Discovery Engine\n(global)\ngrocery-workshop-engine", fillcolor="#bbdefb", color="#1565c0", shape="box3d")
     dot.node("ma", "Model Armor\ngrocery-workshop-armor\n(us-central1)", fillcolor="#fce4ec", color="#c62828", shape="octagon")
     dot.node("bq", "BigQuery\nge_grocery_demo", fillcolor="#ffcc80", color="#e65100", shape="cylinder")
-    dot.node("imagen", "Vertex AI Imagen\nimagen-3.0-generate-002", fillcolor="#e1bee7", color="#6a1b9a", shape="cylinder")
+    dot.node("imagen", "Gemini Image\ngemini-3-pro-image-preview", fillcolor="#e1bee7", color="#6a1b9a", shape="cylinder")
 
     # Edges
     dot.edge("client", "re", label="streamQuery API", color="#2e7d32", penwidth="2")
@@ -1242,7 +1242,7 @@ def diagram_7_config_system():
     # Consumers
     consumers = [
         ("bq_tool", "bq_tool.py\nBigQuery SQL", "#ffe0b2", "#e65100"),
-        ("image_gen", "image_gen_tool.py\nImagen prompts", "#e1bee7", "#6a1b9a"),
+        ("image_gen", "image_gen_tool.py\nGemini Image prompts", "#e1bee7", "#6a1b9a"),
         ("system_prompts", "system_prompts.py\nRetailer name\nin instructions", "#bbdefb", "#1565c0"),
         ("stream_assist", "stream_assist.py\nAPI endpoints\nProject config", "#e8eaf6", "#283593"),
         ("mcp_agent", "mcp_agent/agent.py\nBQ project\nSchema context", "#c8e6c9", "#2e7d32"),

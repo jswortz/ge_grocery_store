@@ -45,8 +45,8 @@ A single-page branded web application with a Python proxy server.
 
 **Design:**
 - Green (#2e7d32) / gold (#f9a825) / white color scheme
-- Three backend modes: StreamAssist, Agent Engine, and Compare (side-by-side)
-- Agent selector dropdown for StreamAssist assistant routing
+- Two backend modes: StreamAssist and Agent Engine
+- Agent selector dropdown for all backends (StreamAssist agents + Agent Engine deployed agents)
 - Markdown rendering via marked.js with DOMPurify sanitization
 - Session management for Discovery Engine conversations
 - Voice input via Gemini Live (WebSocket on port 8081) with browser TTS fallback
@@ -60,7 +60,7 @@ A single-page branded web application with a Python proxy server.
 | Frontend Route | Backend Target |
 |----------------|----------------|
 | `POST /api/stream-assist/sessions` | Discovery Engine `sessions` endpoint |
-| `POST /api/stream-assist/query` | Discovery Engine `streamAssist` endpoint (supports `assistant_id` routing) |
+| `POST /api/stream-assist/query` | Discovery Engine `streamAssist` endpoint (supports `agentsSpec` routing) |
 | `GET /api/stream-assist/agents` | Discovery Engine `assistants` endpoint (list available agents) |
 | `POST /api/agent-engine/query` | Agent Engine `streamQuery` endpoint |
 | `POST /api/agent-engine/stream` | Agent Engine SSE streaming endpoint |
@@ -97,7 +97,7 @@ All agents use the Gemini 3 model family, with model selection matched to task c
 |-------|------|---------|
 | `gemini-3-pro-preview` | Orchestration, complex reasoning, tool use | Root agent, MCP agent, Simulator orchestrator |
 | `gemini-3-flash-preview` | Fast sub-agent tasks, streaming | analytics_agent, image_agent |
-| `gemini-3-flash-preview` | Native image generation | image_gen_tool |
+| `gemini-3-pro-image-preview` | Native image generation | image_gen_tool |
 
 ### ADK Multi-Agent Architecture (`src/agent/`)
 
@@ -114,7 +114,7 @@ The primary agent uses Google's [Agent Development Kit (ADK)](https://google.git
 
 **Sub-agents** (Gemini 3 Flash):
 - `analytics_agent` — `query_grocery_data` FunctionTool for BigQuery analytics
-- `image_agent` — `generate_product_image` FunctionTool for brand-compliant product images via Gemini 3 Pro Image
+- `image_agent` — `generate_product_image` FunctionTool for brand-compliant product images via Gemini Image (`gemini-3-pro-image-preview`)
 
 **Key design decision**: `DiscoveryEngineSearchTool` vs `VertexAiSearchTool`
 
@@ -254,7 +254,7 @@ A world-model simulation agent (`src/simulator_agent/`) that simulates shoppers 
 **Integration with main agent:**
 The root `grocery_assistant` agent delegates simulation requests via the `delegate_to_simulator` tool, which calls the Simulator Agent Engine directly using the `streamQuery` REST API.
 
-**Deployed resource:** `projects/679926387543/locations/us-central1/reasoningEngines/256585331992690688`
+**Deployed resource:** `projects/679926387543/locations/us-central1/reasoningEngines/31475719368343552`
 
 ---
 
@@ -293,10 +293,10 @@ Four agents are deployed across Agent Engine and Cloud Run:
 
 | Agent | Platform | Resource ID | Model |
 |-------|----------|-------------|-------|
-| Grocery Retail Assistant | Agent Engine | `3323818153208709120` | Gemini 3 Pro |
-| MCP Grocery Analyst | Agent Engine | `8287066417547706368` | Gemini 3 Pro |
-| Shopper Simulator | Agent Engine | `256585331992690688` | Gemini 3 Pro |
-| A2A Agent | Cloud Run | `grocery-a2a-agent` | Gemini 3 Pro |
+| Grocery Retail Assistant | Agent Engine | `4433744355123003392` | Gemini 3 Pro |
+| MCP Grocery Analyst | Agent Engine | `7481555402945986560` | Gemini 3 Pro |
+| Shopper Simulator | Agent Engine | `31475719368343552` | Gemini 3 Pro |
+| A2A Agent | Agent Engine + Cloud Run | `2240491336593571840` | Gemini 3 Pro |
 
 All Agent Engine deployments have OpenTelemetry tracing enabled (`enable_tracing=True`) for Cloud Trace observability.
 
@@ -332,7 +332,7 @@ Memory Bank provides shared memory across agent sessions so the agent remembers 
 
 ### How It Works
 
-![Memory Bank & Model Armor](diagrams/07_memory_model_armor.png)
+![Memory Bank & Model Armor](diagrams/08_memory_model_armor.png)
 
 **Key points:**
 - `PreloadMemoryTool` is added to the root agent's tool list
@@ -365,7 +365,7 @@ Model Armor provides content safety screening on the Discovery Engine `grocery-w
 
 ### Architecture
 
-See the [Memory Bank & Model Armor diagram](diagrams/07_memory_model_armor.png) above for the full architecture.
+See the [Memory Bank & Model Armor diagram](diagrams/08_memory_model_armor.png) above for the full architecture.
 
 **Failure mode:** `FAIL_OPEN` — if Model Armor is unavailable, queries pass through to avoid blocking production traffic.
 
