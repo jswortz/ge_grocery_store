@@ -1,11 +1,12 @@
-"""A2A cross-agent communication tool.
+"""Simulator delegation tool.
 
-Enables the main grocery assistant to delegate tasks to the A2A-enabled
-agent running on Cloud Run. This demonstrates the Agent-to-Agent protocol
-for cross-agent collaboration in a production setting.
+Enables the main grocery assistant to delegate simulation tasks to the
+shopper simulator agent deployed on Agent Engine. This demonstrates
+cross-agent collaboration where the orchestrator routes simulation
+requests to a specialized agent.
 
-The A2A agent endpoint is configured via config/settings.yaml:
-    project.a2a_cloud_run_url
+The simulator Agent Engine ID is configured via config/settings.yaml:
+    project.simulator_agent_engine_id
 """
 
 import json
@@ -29,10 +30,10 @@ def delegate_to_simulator(
     scenario: str = "seasonal_produce",
     num_shoppers: int = 3,
 ) -> dict:
-    """Delegate a simulation task to the A2A shopper simulator agent.
+    """Delegate a simulation task to the shopper simulator agent on Agent Engine.
 
-    Sends a task to the A2A agent running on Cloud Run, which wraps the
-    shopper simulator. Use this when users ask to simulate shopper behavior,
+    Sends a simulation request to the shopper simulator deployed on
+    Agent Engine. Use this when users ask to simulate shopper behavior,
     test endcap merchandising strategies, or evaluate store layout changes.
 
     Args:
@@ -45,18 +46,25 @@ def delegate_to_simulator(
         Dict with simulation results or error information.
     """
     config = _load_config()
-    a2a_url = config.get("project", {}).get("a2a_cloud_run_url", "")
+    project_number = config.get("project", {}).get("number", "")
+    location = config.get("memory", {}).get("location", "us-central1")
+    simulator_id = config.get("project", {}).get("simulator_agent_engine_id", "")
 
-    if not a2a_url:
+    if not simulator_id:
         return {
             "status": "error",
-            "message": "A2A agent URL not configured in settings.yaml",
+            "message": "Simulator Agent Engine ID not configured in settings.yaml",
         }
 
-    # Build A2A task request
-    a2a_endpoint = f"{a2a_url}/a2a"
+    # Build Agent Engine streamQuery URL
+    ae_base = (
+        f"https://{location}-aiplatform.googleapis.com/v1"
+        f"/projects/{project_number}/locations/{location}"
+        f"/reasoningEngines/{simulator_id}"
+    )
+    url = f"{ae_base}:streamQuery"
 
-    # Get auth token for Cloud Run
+    # Get auth token
     try:
         credentials, _ = google.auth.default()
         auth_request = google.auth.transport.requests.Request()
@@ -64,62 +72,57 @@ def delegate_to_simulator(
         token = credentials.token
     except Exception as e:
         logger.warning("Could not get auth token: %s", e)
-        token = None
+        return {
+            "status": "error",
+            "message": f"Authentication failed: {e}",
+        }
 
-    headers = {"Content-Type": "application/json"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
 
-    # A2A protocol task message
+    # Build the simulation prompt
+    simulation_prompt = (
+        f"{task_description}\n\n"
+        f"Store: {store_name}\n"
+        f"Scenario: {scenario}\n"
+        f"Number of shoppers: {num_shoppers}"
+    )
+
     payload = {
-        "jsonrpc": "2.0",
-        "method": "tasks/send",
-        "params": {
-            "message": {
-                "role": "user",
-                "parts": [
-                    {
-                        "text": (
-                            f"{task_description}\n\n"
-                            f"Store: {store_name}\n"
-                            f"Scenario: {scenario}\n"
-                            f"Number of shoppers: {num_shoppers}"
-                        ),
-                    }
-                ],
-            },
+        "input": {
+            "message": simulation_prompt,
         },
-        "id": "a2a-sim-request",
     }
 
     try:
-        resp = requests.post(a2a_endpoint, headers=headers, json=payload, timeout=120)
+        resp = requests.post(url, headers=headers, json=payload, timeout=180)
         resp.raise_for_status()
-        result = resp.json()
 
-        # Extract the response text from A2A protocol response
-        task_result = result.get("result", {})
-        artifacts = task_result.get("artifacts", [])
-        response_text = ""
-        for artifact in artifacts:
-            for part in artifact.get("parts", []):
-                if "text" in part:
-                    response_text += part["text"]
+        # Parse NDJSON response (same format as Agent Engine streamQuery)
+        texts = []
+        for line in resp.text.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                event = json.loads(line)
+                parts = (event.get("content") or {}).get("parts") or []
+                for part in parts:
+                    if part.get("text"):
+                        texts.append(part["text"])
+            except (json.JSONDecodeError, TypeError):
+                pass
 
-        if not response_text:
-            # Try extracting from task status message
-            status = task_result.get("status", {})
-            message = status.get("message", {})
-            for part in message.get("parts", []):
-                if "text" in part:
-                    response_text += part["text"]
+        response_text = "\n".join(texts)
 
         return {
             "status": "success",
             "store": store_name,
             "scenario": scenario,
             "num_shoppers": num_shoppers,
-            "simulation_results": response_text or json.dumps(task_result),
+            "simulation_results": response_text or "Simulation completed but returned no text output.",
         }
 
     except requests.exceptions.Timeout:
@@ -128,15 +131,15 @@ def delegate_to_simulator(
             "message": "Simulation request timed out. Try with fewer shoppers.",
         }
     except Exception as e:
-        logger.error("A2A delegation failed: %s", e)
+        logger.error("Simulator delegation failed: %s", e)
         return {
             "status": "error",
-            "message": f"Failed to reach A2A agent: {str(e)}",
+            "message": f"Failed to reach simulator agent: {str(e)}",
         }
 
 
 def create_a2a_tool():
-    """Create a FunctionTool for A2A cross-agent delegation."""
+    """Create a FunctionTool for simulator delegation."""
     from google.adk.tools import FunctionTool
 
     return FunctionTool(func=delegate_to_simulator)

@@ -109,24 +109,50 @@ python -m src.frontend    # http://localhost:8080
 ```
 
 Features:
-- **Two switchable backends**: StreamAssist (Discovery Engine) and Agent Engine (full agent)
+- **Three backend modes**: StreamAssist, Agent Engine, and Compare (side-by-side)
+- **Agent selector**: Dropdown to route StreamAssist queries to different registered agents
+- **Voice input**: Gemini Live (Puck) via WebSocket with browser TTS fallback
+- **Model Armor safety demo**: Interactive buttons demonstrating content safety filters
+- **Memory Bank**: Cross-session memory with per-user tooltip showing memory count
+- **Compare mode**: Side-by-side StreamAssist vs Agent Engine responses
+- **Cloud Trace integration**: Deeplinks and latency/tool-count metrics for Agent Engine
 - ValueFresh Market branding (green/gold/white color scheme)
-- Markdown rendering for agent responses
-- Session management for Discovery Engine conversations
+- Markdown rendering with inline image support for Gemini 3 Pro Image output
 - Server-side proxy with Application Default Credentials (no tokens in browser)
 
 The proxy server routes requests:
 - `POST /api/stream-assist/sessions` → Discovery Engine sessions
-- `POST /api/stream-assist/query` → Discovery Engine `streamAssist`
+- `POST /api/stream-assist/query` → Discovery Engine `streamAssist` (supports `assistant_id` routing)
+- `GET /api/stream-assist/agents` → Discovery Engine `assistants` (list available agents)
 - `POST /api/agent-engine/query` → Agent Engine `streamQuery`
+- `POST /api/agent-engine/stream` → Agent Engine SSE streaming
+- `GET /api/images/*` → GCS image proxy for generated product images
+- `GET /api/memory/status` → Memory Bank memory count
 
 ---
 
 ## ADK Agent Architecture
 
-The agent uses a **multi-agent architecture** with Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/). See [Architecture: Agent Layer](docs/architecture.md#agent-layer) for full details.
+The agent uses a **multi-agent architecture** with Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) running on the **Gemini 3 model family**. See [Architecture: Agent Layer](docs/architecture.md#agent-layer) for full details.
 
 ![Agent Architecture](docs/diagrams/02_agent_architecture.png)
+
+### Gemini 3 Model Regime
+
+| Model | Role | Used By |
+|-------|------|---------|
+| `gemini-3-pro-preview` | Orchestration, complex reasoning | Root agent, MCP agent, Simulator |
+| `gemini-3-flash-preview` | Fast sub-agent tasks | analytics_agent, image_agent |
+| `gemini-3-flash-preview` | Native image generation | image_gen_tool |
+
+### Agent Capabilities
+
+The root `grocery_assistant` agent (Gemini 3 Pro) orchestrates:
+- **Document search** — SOPs and brand guidelines via `DiscoveryEngineSearchTool`
+- **Analytics** — BigQuery queries via `analytics_agent` sub-agent (Gemini 3 Flash)
+- **Image generation** — Brand-compliant product images via `image_agent` sub-agent (Gemini 3 Flash)
+- **Shopper simulation** — Endcap merchandising A/B testing via `delegate_to_simulator` → Simulator Agent Engine
+- **Memory** — Cross-session user preferences via `PreloadMemoryTool` → Memory Bank
 
 **Why `DiscoveryEngineSearchTool` instead of `VertexAiSearchTool`?**
 
@@ -210,19 +236,23 @@ Key files:
 
 ## Shopper Simulator
 
-A world-model simulation agent that simulates shoppers walking store aisles and building carts. Evaluates endcap merchandising placement strategies.
+A world-model simulation agent that simulates shoppers walking store aisles and building carts. Evaluates endcap merchandising placement strategies. Accessible from the main agent via the `delegate_to_simulator` tool.
 
 ```bash
 # Local development
 cd src/simulator_agent && adk web
+
+# Deploy to Agent Engine
+python -m src.simulator_agent.deploy_to_agent_engine
 ```
 
 **Features:**
-- 5 shopper personas (budget family, health enthusiast, quick-stop, weekend cook, elderly regular)
+- 12 shopper personas (budget family, health enthusiast, quick-stop, weekend cook, elderly regular, etc.)
 - 3 store layouts (Downtown, Westside, Lakefront Market)
 - 4 merchandising scenarios (baseline, seasonal produce, snack impulse, health wellness)
-- Concurrent sub-agent simulation
+- Concurrent sub-agent simulation with persona-specific decision making
 - Aggregate metrics: endcap conversion rate, incremental revenue, ROI
+- Integrated with main agent — ask "Simulate 5 shoppers at Downtown Market" in the frontend
 
 Key files:
 - [`src/simulator_agent/agent.py`](src/simulator_agent/agent.py) — Orchestrator + shopper agents
@@ -233,10 +263,19 @@ Key files:
 
 ## Agent Engine Deployment
 
-The ADK agent is deployed to **Vertex AI Agent Engine** for production use:
+Four agents are deployed across **Vertex AI Agent Engine** and **Cloud Run**:
+
+| Agent | Platform | Resource ID | Purpose |
+|-------|----------|-------------|---------|
+| Grocery Retail Assistant | Agent Engine | `3323818153208709120` | Main multi-agent orchestrator |
+| MCP Grocery Analyst | Agent Engine | `8287066417547706368` | BigQuery analytics via MCP Toolbox |
+| Shopper Simulator | Agent Engine | `256585331992690688` | Endcap merchandising A/B simulation |
+| A2A Agent | Cloud Run | `grocery-a2a-agent` | A2A protocol inter-agent communication |
+
+All Agent Engine deployments have OpenTelemetry tracing enabled for Cloud Trace observability.
 
 ```bash
-# Deploy (from project root)
+# Deploy main agent (from project root)
 cd src && adk deploy agent_engine \
   --project=wortz-project-352116 \
   --region=us-central1 \
@@ -245,9 +284,14 @@ cd src && adk deploy agent_engine \
   --trace_to_cloud \
   agent
 
-# Current deployment
-# Agent Engine ID: 3323818153208709120
-# Resource: projects/679926387543/locations/us-central1/reasoningEngines/3323818153208709120
+# Deploy MCP agent
+python -m src.mcp_agent.deploy_to_agent_engine
+
+# Deploy Simulator agent
+python -m src.simulator_agent.deploy_to_agent_engine
+
+# Deploy A2A agent to Cloud Run
+bash src/a2a_agent/deploy_to_cloud_run.sh
 ```
 
 The deployment uses environment variables from [`src/agent/.env`](src/agent/.env) for config overrides (retailer name, project ID, engine ID, BigQuery coordinates) and OpenTelemetry instrumentation.
@@ -323,7 +367,7 @@ python -m pytest tests/test_agent.py::TestBQTool::test_generate_sql_top_products
 
 | File | Type | Tests | What it tests |
 |------|------|-------|---------------|
-| [`test_agent.py`](tests/test_agent.py) | Unit | 48 | System prompts, SQL gen, tool configs, memory, voice, frontend |
+| [`test_agent.py`](tests/test_agent.py) | Unit | 50 | System prompts, SQL gen, tool configs, memory, voice, frontend, agent selector |
 | [`test_stream_assist.py`](tests/test_stream_assist.py) | Unit + Integration | 14 | StreamAssist client, response parsing, error handling |
 | [`test_mcp_agent.py`](tests/test_mcp_agent.py) | Unit | 34 | MCP agent config, schema, instructions, toolbox path |
 | [`test_a2a_agent.py`](tests/test_a2a_agent.py) | Unit | 24 | A2A agent config, AgentCard, skills, Cloud Run files |
@@ -334,7 +378,7 @@ python -m pytest tests/test_agent.py::TestBQTool::test_generate_sql_top_products
 | [`test_memory_bank.py`](tests/test_memory_bank.py) | Integration | 9 | Memory Bank service, user-scoped memory persistence |
 | [`test_acceptance.py`](tests/test_acceptance.py) | Integration | 6 | Acceptance criteria via StreamAssist (greeting, SOP, brand) |
 
-**Current status: 177 tests (124 unit + 47 integration)**
+**Current status: 138 unit tests + 47 integration tests**
 
 ---
 
@@ -364,7 +408,8 @@ ge_grocery_store/
 │   │   ├── requirements.txt       # Agent Engine dependencies
 │   │   ├── tools/
 │   │   │   ├── bq_tool.py         # BigQuery analytics FunctionTool
-│   │   │   └── image_gen_tool.py  # Imagen product image FunctionTool
+│   │   │   ├── image_gen_tool.py  # Gemini 3 Pro Image product image FunctionTool
+│   │   │   └── a2a_tool.py        # Simulator delegation via Agent Engine streamQuery
 │   │   └── prompts/
 │   │       └── system_prompts.py  # Retailer-agnostic instructions
 │   ├── mcp_agent/
@@ -384,8 +429,9 @@ ge_grocery_store/
 │   │   ├── agent.py               # Shopper simulator orchestrator
 │   │   └── scenarios/             # User simulation scenarios
 │   ├── frontend/
-│   │   ├── index.html             # Branded chat UI
-│   │   ├── server.py              # Python proxy server
+│   │   ├── index.html             # Branded chat UI (3 modes, agent selector, safety demo)
+│   │   ├── server.py              # Python proxy server (StreamAssist + Agent Engine)
+│   │   ├── voice_server.py        # WebSocket voice server (Gemini Live / ADK bidi streaming)
 │   │   ├── __init__.py
 │   │   └── __main__.py            # python -m src.frontend
 │   └── docs_gen/

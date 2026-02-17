@@ -14,9 +14,11 @@ This document describes the architecture of the Gemini Enterprise Grocery Worksh
 4. [Search & Retrieval Layer](#search--retrieval-layer)
 5. [Data Layer](#data-layer)
 6. [MCP Integration](#mcp-integration)
-7. [Deployment Architecture](#deployment-architecture)
-8. [Configuration System](#configuration-system)
-9. [Cross-References](#cross-references)
+7. [Shopper Simulator](#shopper-simulator)
+8. [A2A Agent](#a2a-agent)
+9. [Deployment Architecture](#deployment-architecture)
+10. [Configuration System](#configuration-system)
+11. [Cross-References](#cross-references)
 
 ---
 
@@ -43,17 +45,28 @@ A single-page branded web application with a Python proxy server.
 
 **Design:**
 - Green (#2e7d32) / gold (#f9a825) / white color scheme
-- Two switchable backends: StreamAssist and Agent Engine
+- Three backend modes: StreamAssist, Agent Engine, and Compare (side-by-side)
+- Agent selector dropdown for StreamAssist assistant routing
 - Markdown rendering via marked.js with DOMPurify sanitization
 - Session management for Discovery Engine conversations
+- Voice input via Gemini Live (WebSocket on port 8081) with browser TTS fallback
+- Model Armor safety demo with specific filter identification
+- Memory Bank tooltip showing per-user memory count
+- Cloud Trace deeplinks and performance metrics for Agent Engine responses
+- Client-side greeting handler for StreamAssist (friendly responses for "hi", "thanks", etc.)
 
 **Proxy routes:**
 
 | Frontend Route | Backend Target |
 |----------------|----------------|
 | `POST /api/stream-assist/sessions` | Discovery Engine `sessions` endpoint |
-| `POST /api/stream-assist/query` | Discovery Engine `streamAssist` endpoint |
+| `POST /api/stream-assist/query` | Discovery Engine `streamAssist` endpoint (supports `assistant_id` routing) |
+| `GET /api/stream-assist/agents` | Discovery Engine `assistants` endpoint (list available agents) |
 | `POST /api/agent-engine/query` | Agent Engine `streamQuery` endpoint |
+| `POST /api/agent-engine/stream` | Agent Engine SSE streaming endpoint |
+| `GET /api/images/*` | GCS image proxy for generated product images |
+| `GET /api/config` | Public configuration (retailer name, voice settings) |
+| `GET /api/memory/status` | Memory Bank memory count for current user |
 | `GET /api/health` | Health check |
 
 ```bash
@@ -76,11 +89,32 @@ A programmatic REST client for the Discovery Engine `streamAssist` endpoint.
 
 ## Agent Layer
 
+### Gemini 3 Model Regime
+
+All agents use the Gemini 3 model family, with model selection matched to task complexity:
+
+| Model | Role | Used By |
+|-------|------|---------|
+| `gemini-3-pro-preview` | Orchestration, complex reasoning, tool use | Root agent, MCP agent, Simulator orchestrator |
+| `gemini-3-flash-preview` | Fast sub-agent tasks, streaming | analytics_agent, image_agent |
+| `gemini-3-flash-preview` | Native image generation | image_gen_tool |
+
 ### ADK Multi-Agent Architecture (`src/agent/`)
 
 The primary agent uses Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) with a multi-agent design.
 
 ![Agent Architecture](diagrams/02_agent_architecture.png)
+
+**Root agent** (`grocery_assistant`, Gemini 3 Pro):
+- `DiscoveryEngineSearchTool` — searches SOPs and brand guidelines via Discovery Engine SearchService
+- `PreloadMemoryTool` — loads user-scoped memories from Memory Bank at each turn
+- `delegate_to_simulator` — delegates shopper simulation requests to the Simulator Agent Engine
+- Transfers to `analytics_agent` for BigQuery queries
+- Transfers to `image_agent` for product image generation
+
+**Sub-agents** (Gemini 3 Flash):
+- `analytics_agent` — `query_grocery_data` FunctionTool for BigQuery analytics
+- `image_agent` — `generate_product_image` FunctionTool for brand-compliant product images via Gemini 3 Pro Image
 
 **Key design decision**: `DiscoveryEngineSearchTool` vs `VertexAiSearchTool`
 
@@ -94,8 +128,9 @@ Implementation: [`src/agent/agent.py`](../src/agent/agent.py)
 |------|---------|
 | [`agent.py`](../src/agent/agent.py) | Root agent + sub-agents, `_load_config()` |
 | [`tools/bq_tool.py`](../src/agent/tools/bq_tool.py) | BigQuery analytics FunctionTool |
-| [`tools/image_gen_tool.py`](../src/agent/tools/image_gen_tool.py) | Imagen product image FunctionTool |
-| [`prompts/system_prompts.py`](../src/agent/prompts/system_prompts.py) | Retailer-agnostic system instructions |
+| [`tools/image_gen_tool.py`](../src/agent/tools/image_gen_tool.py) | Gemini 3 Pro Image product image FunctionTool |
+| [`tools/a2a_tool.py`](../src/agent/tools/a2a_tool.py) | Simulator delegation via Agent Engine `streamQuery` |
+| [`prompts/system_prompts.py`](../src/agent/prompts/system_prompts.py) | Retailer-agnostic system instructions (7 capability sections) |
 
 ---
 
@@ -202,6 +237,44 @@ An alternative analytics approach using the [MCP Toolbox for Databases](https://
 
 ---
 
+## Shopper Simulator
+
+A world-model simulation agent (`src/simulator_agent/`) that simulates shoppers walking store aisles and building carts. Evaluates endcap merchandising placement strategies.
+
+**Architecture:**
+- Orchestrator agent (Gemini 3 Pro) creates concurrent shopper persona sub-agents
+- Each shopper walks the store layout, decides aisle-by-aisle, and builds a cart
+- Aggregate metrics: endcap conversion rate, incremental revenue, ROI
+
+**Components:**
+- 12 shopper personas (budget family, health enthusiast, quick-stop, weekend cook, elderly regular, etc.)
+- 3 store layouts (Downtown, Westside, Lakefront Market)
+- 4 merchandising scenarios (baseline, seasonal produce, snack impulse, health wellness)
+
+**Integration with main agent:**
+The root `grocery_assistant` agent delegates simulation requests via the `delegate_to_simulator` tool, which calls the Simulator Agent Engine directly using the `streamQuery` REST API.
+
+**Deployed resource:** `projects/679926387543/locations/us-central1/reasoningEngines/256585331992690688`
+
+---
+
+## A2A Agent
+
+An A2A-enabled version of the grocery agent (`src/a2a_agent/`) for inter-agent communication, deployed on Cloud Run.
+
+**Endpoints:**
+- `GET /.well-known/agent.json` — AgentCard with capabilities and skills
+- `POST /a2a` — A2A task execution endpoint
+
+**Deployed resource:** `https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app`
+
+Key files:
+- [`src/a2a_agent/agent.py`](../src/a2a_agent/agent.py) — Agent definition + AgentCard
+- [`src/a2a_agent/server.py`](../src/a2a_agent/server.py) — A2A server (uvicorn)
+- [`src/a2a_agent/Dockerfile`](../src/a2a_agent/Dockerfile) — Cloud Run container
+
+---
+
 ## Request Processing Flow
 
 The following diagram shows how a user query flows through the system from entry to grounded response.
@@ -216,9 +289,18 @@ The following diagram shows how a user query flows through the system from entry
 
 ![Deployment Architecture](diagrams/06_deployment.png)
 
-**Resource:** `projects/679926387543/locations/us-central1/reasoningEngines/3323818153208709120`
+Four agents are deployed across Agent Engine and Cloud Run:
 
-**Deployment command:**
+| Agent | Platform | Resource ID | Model |
+|-------|----------|-------------|-------|
+| Grocery Retail Assistant | Agent Engine | `3323818153208709120` | Gemini 3 Pro |
+| MCP Grocery Analyst | Agent Engine | `8287066417547706368` | Gemini 3 Pro |
+| Shopper Simulator | Agent Engine | `256585331992690688` | Gemini 3 Pro |
+| A2A Agent | Cloud Run | `grocery-a2a-agent` | Gemini 3 Pro |
+
+All Agent Engine deployments have OpenTelemetry tracing enabled (`enable_tracing=True`) for Cloud Trace observability.
+
+**Deployment command (main agent):**
 ```bash
 cd src && adk deploy agent_engine \
   --project=wortz-project-352116 \
@@ -257,6 +339,7 @@ Memory Bank provides shared memory across agent sessions so the agent remembers 
 - Memories are scoped per `user_id` — each browser gets a unique persistent ID via `localStorage`
 - `VertexAiMemoryBankService` is configured at the Runner/deployment level, using the reasoning engine ID
 - No separate resource provisioning needed — Memory Bank is a built-in feature of Agent Engine
+- Frontend shows memory count via tooltip with `GET /api/memory/status`
 
 **Configuration** (`config/settings.yaml`):
 ```yaml
@@ -304,5 +387,8 @@ model_armor:
 |----------|---------|
 | [README.md](../README.md) | Project overview, quick start, test matrix |
 | [Setup Guide](setup.md) | Step-by-step provisioning instructions |
+| [Workshop Guide](workshop_guide.md) | Hands-on walkthrough for potential Gemini Enterprise buyers |
+| [Evaluation Guide](evaluation_guide.md) | Agent evaluation best practices and configuration |
+| [Memory Bank Integration](memory_bank_integration.md) | Memory Bank setup and usage |
 | [config/settings.yaml](../config/settings.yaml) | All retailer-specific configuration |
 | [CLAUDE.md](../CLAUDE.md) | AI coding assistant guidance |

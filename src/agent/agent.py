@@ -54,7 +54,8 @@ def _load_config():
 
     # Defaults for models if not set
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3-flash-preview")
+    config["models"].setdefault("adk", "gemini-3-pro-preview")
+    config["models"].setdefault("adk_fast", "gemini-3-flash-preview")
     config["models"].setdefault("imagen", "gemini-3-pro-image-preview")
 
     return config
@@ -97,7 +98,8 @@ def create_agent():
 
     config = _load_config()
     retailer = config["retailer"]["name"]
-    adk_model = config["models"]["adk"]
+    adk_model = config["models"]["adk"]          # Pro for root orchestrator
+    adk_fast = config["models"]["adk_fast"]      # Flash for sub-agents
 
     # Enable Gemini thinking for multi-step reasoning
     planner = BuiltInPlanner(
@@ -164,10 +166,10 @@ def create_agent():
     # Sub-agents for function tools
     sub_agents = []
 
-    # Analytics sub-agent
+    # Analytics sub-agent (Flash for fast SQL generation)
     analytics_agent = LlmAgent(
         name="analytics_agent",
-        model=adk_model,
+        model=adk_fast,
         planner=planner,
         instruction=(
             f"You are the data analytics specialist for {retailer}. "
@@ -183,15 +185,19 @@ def create_agent():
     )
     sub_agents.append(analytics_agent)
 
-    # Image generation sub-agent
+    # Image generation sub-agent (Flash for coordination, Imagen for actual gen)
     image_agent = LlmAgent(
         name="image_agent",
-        model=adk_model,
+        model=adk_fast,
         planner=planner,
         instruction=(
             f"You are the product imagery specialist for {retailer}. "
             "Use the generate_product_image tool to create product photos. "
-            "Apply brand colors and style guidelines when generating images."
+            "Apply brand colors and style guidelines when generating images. "
+            "IMPORTANT: When the tool returns successfully, always include the "
+            "markdown image from the 'message' field in your response exactly "
+            "as returned (e.g., ![Product Name](/api/images/...)) so the user "
+            "can see the generated image inline in the chat."
         ),
         description=(
             "Generates product images following brand guidelines "

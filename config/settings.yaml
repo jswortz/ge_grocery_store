@@ -31,20 +31,23 @@ retailer:
       open_date: "2019-11-15"
 
 models:
-  adk: "gemini-3-flash-preview"              # LLM for all ADK agents (thinking enabled)
-  imagen: "gemini-3-pro-image-preview"       # Native image generation via Gemini 3 Pro
+  adk: "gemini-3-pro-preview"                # Orchestrator / root agent (complex reasoning + tool use)
+  adk_fast: "gemini-3-flash-preview"         # Sub-agents, analytics, streaming (lower latency)
+  imagen: "gemini-3-pro-image-preview"       # Native image generation via Gemini 3 Pro Image
+  live: "gemini-2.0-flash-live-001"          # Live API (BIDI voice streaming, requires us-east4)
 
 project:
   id: "wortz-project-352116"
   number: "679926387543"
   location: "global"
   engine_id: "grocery-workshop-engine"
-  agent_id: "4127847317548975868"  # ADK agent registered on Discovery Engine (no auth)
-  agent_engine_id: "3323818153208709120"  # ADK agent deployed to Agent Engine (with telemetry)
-  mcp_agent_engine_id: "8287066417547706368"  # MCP BigQuery analyst on Agent Engine
-  simulator_agent_engine_id: "256585331992690688"  # Shopper simulator on Agent Engine
+  agent_id: "17851962453813099770"  # ADK agent registered on Discovery Engine (adkAgentDefinition)
+  agent_engine_id: "857604776014118912"  # ADK agent deployed to Agent Engine (with OTel)
+  mcp_agent_engine_id: "2949526802927714304"  # MCP BigQuery analyst on Agent Engine (with OTel)
+  simulator_agent_engine_id: "1774087300184014848"  # Shopper simulator on Agent Engine (with OTel)
+  a2a_agent_engine_id: "859856575827804160"  # A2A agent deployed to Agent Engine (with OTel)
   a2a_cloud_run_url: "https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app"  # A2A agent on Cloud Run
-  a2a_agent_id: "1302067298490321373"  # A2A agent registered on Discovery Engine (streaming)
+  a2a_agent_id: "6222808436610094141"  # A2A agent registered on Discovery Engine (a2aAgentDefinition)
   data_agent_id: "14793816534468506603"  # Data Insights Agent for BQ analytics
   authorization_id: "grocery-data-agent-auth"  # OAuth auth resource for data agent
 
@@ -67,6 +70,17 @@ model_armor:
   template_id: "grocery-workshop-armor-us"
   location: "us"   # Must be 'us' multi-region to match global Discovery Engine
   failure_mode: "FAIL_OPEN"
+
+voice:
+  enabled: true                  # Enable voice input/output in the frontend
+  voice_name: "Puck"             # ADK Live API voice (Puck, Charon, Kore, Fenrir, Aoede, Leda, Orus, Zephyr)
+  live_location: "us-east4"      # Vertex AI region for Live API (gemini-2.0-flash-live-001)
+  ws_port: 8081                  # WebSocket port for voice server
+  input_lang: "en-US"            # Web Speech API recognition language (fallback)
+  output_enabled: true           # Enable text-to-speech for agent responses
+  output_voice: "Google US English"  # SpeechSynthesis voice name (browser TTS fallback)
+  output_rate: 1.0               # Speech rate (0.1 - 10)
+  output_pitch: 1.0              # Speech pitch (0 - 2)
 
 drive:
   folder_id: ""      # Populated after uploading assets

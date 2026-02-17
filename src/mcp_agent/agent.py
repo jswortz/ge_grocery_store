@@ -71,7 +71,7 @@ def _load_config() -> dict:
 
     # Defaults for models if not set
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3-flash-preview")
+    config["models"].setdefault("adk", "gemini-3-pro-preview")
 
     return config
 

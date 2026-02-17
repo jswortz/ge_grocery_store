@@ -50,7 +50,8 @@ def generate_product_image(
         import vertexai
         from vertexai.generative_models import GenerativeModel
 
-        vertexai.init(project=project_id, location="us-central1")
+        # Image generation models require the global endpoint
+        vertexai.init(project=project_id, location="global")
         model = GenerativeModel(imagen_model)
         response = model.generate_content(
             prompt,
@@ -83,34 +84,25 @@ def generate_product_image(
                 "bucket", f"{project_id}-ge-workshop"
             )
             try:
-                import datetime
                 storage_client = storage.Client(project=project_id)
                 bucket = storage_client.bucket(gcs_bucket)
                 blob = bucket.blob(blob_name)
                 blob.upload_from_string(image_bytes, content_type=mime_type)
                 image_uri = f"gs://{gcs_bucket}/{blob_name}"
 
-                # Generate a signed URL for frontend inline display
-                signed_url = ""
-                try:
-                    signed_url = blob.generate_signed_url(
-                        version="v4",
-                        expiration=datetime.timedelta(hours=1),
-                        method="GET",
-                    )
-                except Exception:
-                    # Signed URLs require service account key; fall back to public URL
-                    blob.make_public()
-                    signed_url = blob.public_url
+                # Use proxy URL for frontend display (avoids signed URL /
+                # CORS issues when running with ADC instead of service account keys).
+                # The frontend server proxies /api/images/<path> to GCS.
+                proxy_url = f"/api/images/{blob_name}"
 
                 return {
                     "status": "success",
                     "message": (
                         f"Generated product image for '{product_name}'.\n\n"
-                        f"![{product_name}]({signed_url})"
+                        f"![{product_name}]({proxy_url})"
                     ),
                     "image_uri": image_uri,
-                    "image_url": signed_url,
+                    "image_url": proxy_url,
                     "mime_type": mime_type,
                     "size_bytes": len(image_bytes),
                 }

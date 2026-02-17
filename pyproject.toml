@@ -17,6 +17,7 @@ dependencies = [
     "reportlab>=4.0.0",
     "matplotlib>=3.7.0",
     "seaborn>=0.12.0",
+    "websockets>=12.0",
 ]
 
 [project.optional-dependencies]
@@ -29,10 +30,14 @@ dev = [
 
 [build-system]
 requires = ["setuptools>=68.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+index-url = "https://pypi.org/simple/"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
     "integration: marks tests that require live API access (deselect with '-m \"not integration\"')",
+    "e2e: marks end-to-end tests requiring a running frontend (deselect with '-m \"not e2e\"')",
 ]

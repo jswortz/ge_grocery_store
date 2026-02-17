@@ -1,10 +1,10 @@
-"""Deploy the A2A grocery agent to Vertex AI Agent Engine.
+"""Deploy the main grocery assistant to Vertex AI Agent Engine.
 
 Self-contained deployment script — builds the agent inline to avoid
-cloudpickle / gRPC deep-copy errors in the Agent Engine runtime.
+cloudpickle module-not-found errors in the Agent Engine runtime.
 
 Usage:
-    cd src && python -m a2a_agent.deploy_to_agent_engine
+    cd src && python -m agent.deploy_to_agent_engine
 """
 
 import os
@@ -17,6 +17,7 @@ PROJECT_NUMBER = os.environ.get("PROJECT_NUMBER", "679926387543")
 LOCATION = os.environ.get("AE_LOCATION", "us-central1")
 STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://wortz-project-352116-ge-workshop")
 
+# Hardcoded config for Agent Engine deployment
 _RETAILER_NAME = os.environ.get("RETAILER_NAME", "ValueFresh Market")
 _ADK_MODEL = os.environ.get("ADK_MODEL", "gemini-3-pro-preview")
 _ADK_FAST = os.environ.get("ADK_FAST", "gemini-3-flash-preview")
@@ -25,6 +26,8 @@ _BQ_DATASET = os.environ.get("BQ_DATASET", "ge_grocery_demo")
 _ENGINE_ID = os.environ.get("ENGINE_ID", "grocery-workshop-engine")
 _GCS_BUCKET = os.environ.get("GCS_BUCKET", "wortz-project-352116-ge-workshop")
 _IMAGEN_MODEL = os.environ.get("IMAGEN_MODEL", "gemini-3-pro-image-preview")
+# Simulator Agent Engine resource ID for A2A delegation
+_SIMULATOR_AE_ID = os.environ.get("SIMULATOR_AE_ID", "1774087300184014848")
 
 
 def find_agent_by_display_name(display_name: str) -> str:
@@ -37,7 +40,7 @@ def find_agent_by_display_name(display_name: str) -> str:
 
 
 def _build_agent():
-    """Build the A2A agent inline for deployment (avoids gRPC deep-copy)."""
+    """Build the full grocery assistant agent inline for deployment."""
     from google.adk.agents import LlmAgent
     from google.adk.planners import BuiltInPlanner
     from google.adk.tools import FunctionTool
@@ -156,7 +159,10 @@ def _build_agent():
 
     image_tool = FunctionTool(func=generate_product_image)
 
-    # --- Discovery Engine search as FunctionTool (avoids gRPC deep-copy) ---
+    # --- Discovery Engine search as FunctionTool ---
+    # NOTE: We use a plain FunctionTool instead of DiscoveryEngineSearchTool
+    # because the latter contains gRPC Channel objects that cannot be
+    # deep-copied during agent_engines.create() serialization.
     _search_engine_id = (
         f"projects/{PROJECT_ID}/locations/global/collections/"
         f"default_collection/engines/{_ENGINE_ID}"
@@ -221,11 +227,16 @@ def _build_agent():
     # --- Root tools ---
     root_tools = [search_tool]
 
+    # PreloadMemoryTool
     try:
         from google.adk.tools.preload_memory_tool import PreloadMemoryTool
         root_tools.append(PreloadMemoryTool())
     except ImportError:
         pass
+
+    # NOTE: GoogleSearchTool is excluded from Agent Engine deployment
+    # because it has a version-incompatible 'model' attribute in the
+    # Agent Engine runtime. It works fine in local ADK mode.
 
     # --- Sub-agents ---
     analytics_agent = LlmAgent(
@@ -262,22 +273,25 @@ def _build_agent():
     instruction = f"""You are an AI assistant for {_RETAILER_NAME}, a grocery retail company.
 You help associates, managers, and stakeholders with:
 
-1. **Standard Operating Procedures** — Retrieve and explain SOPs.
-   Use the SOP search tool to find relevant procedures.
+1. **Standard Operating Procedures** — Retrieve and explain SOPs for frontline associates.
+   Use the SOP search tool to find relevant procedures grounded in official documents.
 
 2. **Brand-Compliant Marketing Content** — Generate materials aligned with brand guidelines.
-   Always search brand guidelines first.
+   Always search brand guidelines first to ensure tone, colors, and messaging align.
 
 3. **Product Information & Analytics** — Answer questions about products, sales trends, and
-   store performance using BigQuery analytics.
+   store performance using BigQuery analytics. Provide data-driven insights.
 
 4. **Product Image Generation** — Create product imagery following brand guidelines.
 
 5. **Memory & Personalization** — Use memory bank to personalize responses across sessions.
 
+6. **Market Intelligence** — Use Google Search for current retail trends and market data.
+
 Guidelines:
 - Always ground your responses in data from the tools available to you.
 - When citing SOPs, reference the specific document and section.
+- For marketing content, apply the brand's tone: warm, friendly, clear, and positive.
 - For analytics, include specific numbers and cite the data source.
 - Be concise and actionable in your responses.
 """
@@ -300,9 +314,9 @@ Guidelines:
 
 
 def deploy():
-    """Deploy the A2A agent to Agent Engine."""
+    """Deploy the main grocery assistant to Agent Engine."""
     print("=" * 80)
-    print("DEPLOYING A2A GROCERY AGENT TO AGENT ENGINE")
+    print("DEPLOYING GROCERY ASSISTANT TO AGENT ENGINE")
     print("=" * 80)
 
     vertexai.init(
@@ -312,19 +326,13 @@ def deploy():
     )
 
     agent = _build_agent()
-    display_name = "Grocery A2A Agent"
+    display_name = "Grocery Retail Assistant"
 
     app = agent_engines.AdkApp(
         agent=agent,
-        app_name="grocery_a2a_agent_app",
+        app_name="grocery_assistant_app",
         enable_tracing=True,
     )
-
-    env_vars = {
-        "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY": "true",
-        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "true",
-        "GOOGLE_CLOUD_LOCATION": "global",  # Gemini 3 models require global endpoint
-    }
 
     existing = find_agent_by_display_name(display_name)
 
@@ -332,6 +340,12 @@ def deploy():
         print(f"Deleting existing deployment: {existing}")
         agent_engines.delete(existing, force=True)
         print("  Deleted.")
+
+    env_vars = {
+        "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY": "true",
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "true",
+        "GOOGLE_CLOUD_LOCATION": "global",  # Gemini 3 models require global endpoint
+    }
 
     print("Creating new deployment...")
     remote_app = agent_engines.create(
@@ -353,4 +367,4 @@ def deploy():
 
 if __name__ == "__main__":
     resource_name = deploy()
-    print(f"\nA2A Agent deployed: {resource_name}")
+    print(f"\nGrocery Assistant deployed: {resource_name}")

@@ -108,15 +108,16 @@ class TestModelConfig:
         from src.agent.agent import _load_config
         config = _load_config()
         assert "models" in config
-        assert config["models"]["adk"] == "gemini-3-flash-preview"
+        assert config["models"]["adk"] == "gemini-3-pro-preview"
+        assert config["models"]["adk_fast"] == "gemini-3-flash-preview"
         assert config["models"]["imagen"] == "gemini-3-pro-image-preview"
 
     def test_config_model_env_override(self):
         import os
         from src.agent.agent import _load_config
-        with patch.dict(os.environ, {"ADK_MODEL": "gemini-3-pro", "IMAGEN_MODEL": "imagen-4.0"}):
+        with patch.dict(os.environ, {"ADK_MODEL": "gemini-3-pro-preview", "IMAGEN_MODEL": "imagen-4.0"}):
             config = _load_config()
-            assert config["models"]["adk"] == "gemini-3-pro"
+            assert config["models"]["adk"] == "gemini-3-pro-preview"
             assert config["models"]["imagen"] == "imagen-4.0"
 
     def test_old_imagegeneration_model_not_used(self):
@@ -300,6 +301,7 @@ class TestFrontendFeatures:
         assert "safety-demo" in content
         assert "Model Armor" in content
         assert "Prompt injection" in content
+        assert "sendSafetySample" in content
 
     def test_frontend_has_memory_tooltip(self):
         """Verify index.html has memory tooltip UI."""
@@ -330,6 +332,32 @@ class TestFrontendFeatures:
         """Verify the frontend server has SSE streaming endpoint."""
         from src.frontend.server import FrontendHandler
         assert hasattr(FrontendHandler, '_proxy_agent_engine_stream')
+
+    def test_frontend_has_agent_selector(self):
+        """Verify index.html has agent selector for StreamAssist routing."""
+        from pathlib import Path
+        html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
+        content = html_path.read_text()
+        assert "agent-selector" in content
+        assert "loadAgents" in content
+        assert "selectAgent" in content
+        assert "selectedAgent" in content
+
+    def test_server_has_list_agents_endpoint(self):
+        """Verify the frontend server has _proxy_list_agents method."""
+        from src.frontend.server import FrontendHandler
+        assert hasattr(FrontendHandler, '_proxy_list_agents')
+
+    def test_frontend_has_greeting_handler(self):
+        """Verify index.html handles greetings client-side for StreamAssist."""
+        from pathlib import Path
+        html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
+        content = html_path.read_text()
+        assert "handleGreeting" in content
+        assert "greetingResponses" in content
+        # Should handle: hello, thanks, bye, how are you, what's your favorite
+        assert "what's your" in content.lower() or "what is your" in content.lower()
+        assert "who are you" in content.lower()
 
 
 class TestBuildConfig:

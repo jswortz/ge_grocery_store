@@ -52,7 +52,8 @@ def _load_config() -> dict:
         config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
 
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3-flash-preview")
+    config["models"].setdefault("adk", "gemini-3-pro-preview")
+    config["models"].setdefault("adk_fast", "gemini-3-flash-preview")
 
     return config
 
@@ -69,7 +70,8 @@ def create_agent():
 
     config = _load_config()
     retailer = config["retailer"]["name"]
-    adk_model = config["models"]["adk"]
+    adk_model = config["models"]["adk"]          # Pro for root orchestrator
+    adk_fast = config["models"]["adk_fast"]      # Flash for sub-agents
 
     planner = BuiltInPlanner(
         thinking_config=ThinkingConfig(
@@ -121,10 +123,10 @@ def create_agent():
     except ImportError:
         pass
 
-    # Sub-agents
+    # Sub-agents (Flash for fast delegation)
     analytics_agent = LlmAgent(
         name="analytics_agent",
-        model=adk_model,
+        model=adk_fast,
         planner=planner,
         instruction=(
             f"You are the data analytics specialist for {retailer}. "
@@ -137,11 +139,15 @@ def create_agent():
 
     image_agent = LlmAgent(
         name="image_agent",
-        model=adk_model,
+        model=adk_fast,
         planner=planner,
         instruction=(
             f"You are the product imagery specialist for {retailer}. "
-            "Use the generate_product_image tool to create product photos."
+            "Use the generate_product_image tool to create product photos. "
+            "IMPORTANT: When the tool returns successfully, always include the "
+            "markdown image from the 'message' field in your response exactly "
+            "as returned (e.g., ![Product Name](/api/images/...)) so the user "
+            "can see the generated image inline."
         ),
         description="Generates product images following brand guidelines.",
         tools=[create_image_gen_tool()],

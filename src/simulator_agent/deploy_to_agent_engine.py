@@ -424,6 +424,12 @@ def deploy():
         agent_engines.delete(existing, force=True)
         print("  Deleted.")
 
+    env_vars = {
+        "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY": "true",
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "true",
+        "GOOGLE_CLOUD_LOCATION": "global",  # Gemini 3 models require global endpoint
+    }
+
     print("Creating new deployment...")
     remote_app = agent_engines.create(
         agent_engine=app,
@@ -432,6 +438,7 @@ def deploy():
             "google-adk>=1.19.0",
             "google-cloud-aiplatform",
         ],
+        env_vars=env_vars,
     )
     print(f"Deployed: {remote_app.resource_name}")
     return remote_app.resource_name

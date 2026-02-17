@@ -56,16 +56,24 @@ cd src && adk deploy agent_engine \
 
 This is a **workshop demo repo** demonstrating **Gemini Enterprise** (the product name for Google Cloud's Discovery Engine API) for grocery retail. "Discovery Engine" is the API; "Gemini Enterprise" is the customer-facing product name. Use "Gemini Enterprise (Discovery Engine API)" when both precision and branding matter. Full architecture docs at `docs/architecture.md`.
 
-### Five subsystems
+### Gemini 3 Model Regime
 
-**Frontend Web UI** (`src/frontend/`): Branded single-page chat app with Python proxy server. Two switchable backends: StreamAssist (Discovery Engine) and Agent Engine (full agent). Proxy routes: `/api/stream-assist/sessions`, `/api/stream-assist/query`, `/api/agent-engine/query`. Uses ADC for auth. Launch with `python -m src.frontend`.
+All agents use the Gemini 3 model family (`config/settings.yaml` → `models` section):
+- `gemini-3-pro-preview` → Root agent orchestrator, MCP agent (complex reasoning + tool use)
+- `gemini-3-flash-preview` → Sub-agents: analytics_agent, image_agent, simulator (low latency)
+- `gemini-3-pro-image-preview` → Image generation (native Gemini 3 image output)
+
+### Seven subsystems
+
+**Frontend Web UI** (`src/frontend/`): Branded single-page chat app with Python proxy server. Three backend modes: StreamAssist, Agent Engine, and Compare (side-by-side). Agent selector dropdown for StreamAssist assistant routing. Voice input via Gemini Live (WebSocket port 8081). Model Armor safety demo buttons. Memory Bank tooltip. Cloud Trace deeplinks. Proxy routes: `/api/stream-assist/*`, `/api/agent-engine/*`, `/api/images/*`, `/api/memory/status`, `/api/config`. Client-side greeting handler for conversational queries. Uses ADC for auth. Launch with `python -m src.frontend`.
 
 **StreamAssist Client** (`src/client/stream_assist.py`): REST client for the Discovery Engine `streamAssist` endpoint. Key class is `StreamAssistClient` with `create_session()` and `query()` methods. Uses tenacity retry logic for transient errors (429, 5xx). Parses responses into `StreamAssistResponse` dataclasses. Configured via `StreamAssistClient.from_config()` which reads `config/settings.yaml`.
 
 **ADK Agent** (`src/agent/`): Google Agent Development Kit multi-agent architecture:
-- Root agent `grocery_assistant` with `DiscoveryEngineSearchTool` (searches sop-store and brand-guidelines-store via the engine, restricted with `data_store_specs` to exclude workspace data stores)
-- `analytics_agent` sub-agent with `query_grocery_data` FunctionTool (BigQuery)
-- `image_agent` sub-agent with `generate_product_image` FunctionTool (Imagen)
+- Root agent `grocery_assistant` (Gemini 3 Pro) with `DiscoveryEngineSearchTool` (searches sop-store and brand-guidelines-store via the engine, restricted with `data_store_specs` to exclude workspace data stores)
+- `analytics_agent` sub-agent (Gemini 3 Flash) with `query_grocery_data` FunctionTool (BigQuery)
+- `image_agent` sub-agent (Gemini 3 Flash) with `generate_product_image` FunctionTool (Gemini 3 Pro Image)
+- `delegate_to_simulator` tool — calls Simulator Agent Engine via `streamQuery` REST API
 - `PreloadMemoryTool` for cross-session user-scoped memory via Vertex AI Memory Bank
 
 Key design choices:
@@ -82,9 +90,9 @@ Central config loader in `src/agent/agent.py:_load_config()` reads `config/setti
 
 ### Deployed resources
 
-- **Agent Engine (Main)**: `reasoningEngines/3323818153208709120` — Grocery Retail Assistant (OTel enabled)
-- **Agent Engine (MCP)**: `reasoningEngines/8287066417547706368` — MCP Grocery Analyst (OTel enabled)
-- **Agent Engine (Simulator)**: `reasoningEngines/256585331992690688` — Shopper Simulator (OTel enabled)
+- **Agent Engine (Main)**: `reasoningEngines/7806659001046794240` — Grocery Retail Assistant (OTel enabled)
+- **Agent Engine (MCP)**: `reasoningEngines/3942570520762908672` — MCP Grocery Analyst (OTel enabled)
+- **Agent Engine (Simulator)**: `reasoningEngines/9159990689071628288` — Shopper Simulator (OTel enabled)
 - **Cloud Run (A2A)**: `https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app` — A2A protocol agent
 - **Discovery Engine**: `grocery-workshop-engine` (global, SEARCH_TIER_ENTERPRISE)
 - **Model Armor**: `grocery-workshop-armor-us` template (us multi-region, applied to Discovery Engine assistant)
@@ -102,9 +110,9 @@ Dataset `ge_grocery_demo` in `wortz-project-352116`:
 
 DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_data.sql`.
 
-### Test structure (177 tests)
+### Test structure (139 unit + 47 integration)
 
-- `tests/test_agent.py` (48) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
+- `tests/test_agent.py` (51) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
 - `tests/test_mcp_agent.py` (34) — **unit tests**, validates MCP agent config, schema context, instructions, toolbox path resolution
 - `tests/test_a2a_agent.py` (24) — **unit tests**, validates A2A agent config, AgentCard, skills, Cloud Run files, simulator agent
 - `tests/test_model_armor.py` (10 unit + 5 integration) — validates Model Armor config, API schema, live template and assistant

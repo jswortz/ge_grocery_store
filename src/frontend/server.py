@@ -150,6 +150,12 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         if path == "/api/memory/status":
             self._proxy_memory_status(query_params)
             return
+        if path == "/api/stream-assist/agents":
+            self._proxy_list_agents()
+            return
+        if path == "/api/stream-assist/data-stores":
+            self._proxy_list_data_stores()
+            return
         if path.startswith("/api/images/"):
             self._proxy_gcs_image(path)
             return
@@ -157,6 +163,112 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     # --- StreamAssist proxies -------------------------------------------
+
+    def _proxy_list_agents(self):
+        """GET /api/stream-assist/agents -> list assistants and registered agents."""
+        import requests as req
+
+        headers = {
+            "Authorization": f"Bearer {_get_token()}",
+            "X-Goog-User-Project": DE_PROJECT,
+        }
+
+        try:
+            agents = []
+
+            # 1. List top-level assistants
+            resp = req.get(f"{DE_BASE}/assistants", headers=headers, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+            for assistant in data.get("assistants", []):
+                name = assistant.get("name", "")
+                display_name = assistant.get("displayName", name.split("/")[-1])
+                agent_id = name.split("/")[-1] if "/" in name else name
+                agents.append({
+                    "id": agent_id,
+                    "name": display_name,
+                    "fullName": name,
+                    "type": "assistant",
+                    "actions": [],
+                })
+
+            # 2. List registered agents under default_assistant
+            try:
+                agents_url = f"{DE_BASE}/assistants/default_assistant/agents"
+                resp2 = req.get(agents_url, headers=headers, timeout=15)
+                resp2.raise_for_status()
+                agents_data = resp2.json()
+                for agent in agents_data.get("agents", []):
+                    name = agent.get("name", "")
+                    display_name = agent.get("displayName", name.split("/")[-1])
+                    agent_id = name.split("/")[-1] if "/" in name else name
+                    state = agent.get("state", "UNKNOWN")
+                    if state != "ENABLED":
+                        continue
+                    agent_type = "managed"
+                    if "adkAgentDefinition" in agent:
+                        agent_type = "adk"
+                    elif "a2aAgentDefinition" in agent:
+                        agent_type = "a2a"
+                    agents.append({
+                        "id": agent_id,
+                        "name": display_name,
+                        "fullName": name,
+                        "type": agent_type,
+                        "description": agent.get("description", ""),
+                        "actions": [],
+                    })
+            except Exception as exc2:
+                logger.debug("Could not list registered agents: %s", exc2)
+
+            self._json_response({"agents": agents})
+        except Exception as exc:
+            logger.warning("List agents failed: %s", exc)
+            self._json_response({"agents": [
+                {"id": "default_assistant", "name": "Default Assistant", "fullName": "",
+                 "type": "assistant", "actions": []},
+            ]})
+
+    def _proxy_list_data_stores(self):
+        """GET /api/stream-assist/data-stores -> list Discovery Engine data stores."""
+        import requests as req
+
+        # List data stores at the collection level
+        url = (
+            f"https://discoveryengine.googleapis.com/v1alpha/projects/{DE_PROJECT}"
+            f"/locations/{DE_LOCATION}/collections/default_collection/dataStores"
+        )
+        headers = {
+            "Authorization": f"Bearer {_get_token()}",
+            "X-Goog-User-Project": DE_PROJECT,
+        }
+
+        try:
+            resp = req.get(url, headers=headers, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+            stores = []
+            for ds in data.get("dataStores", []):
+                ds_name = ds.get("name", "")
+                ds_id = ds_name.split("/")[-1] if "/" in ds_name else ds_name
+                display_name = ds.get("displayName", ds_id)
+                # Determine source type from the data store config
+                content_config = ds.get("contentConfig", "")
+                solution_types = ds.get("solutionTypes", [])
+                stores.append({
+                    "id": ds_id,
+                    "name": display_name,
+                    "contentConfig": content_config,
+                    "solutionTypes": solution_types,
+                })
+            self._json_response({"dataStores": stores})
+        except Exception as exc:
+            logger.warning("List data stores failed: %s", exc)
+            # Return known defaults as fallback
+            self._json_response({"dataStores": [
+                {"id": "sop-store", "name": "SOPs", "contentConfig": "CONTENT_REQUIRED", "solutionTypes": []},
+                {"id": "brand-guidelines-store", "name": "Brand Guidelines", "contentConfig": "CONTENT_REQUIRED", "solutionTypes": []},
+            ]})
 
     def _proxy_create_session(self):
         """POST /api/stream-assist/sessions -> DE sessions endpoint."""
@@ -180,24 +292,35 @@ class FrontendHandler(SimpleHTTPRequestHandler):
             self._json_error(502, str(exc))
 
     def _proxy_stream_assist_query(self):
-        """POST /api/stream-assist/query -> DE streamAssist endpoint."""
+        """POST /api/stream-assist/query -> DE streamAssist endpoint.
+
+        Always routes through 'default_assistant'. Registered agents (ADK,
+        A2A, managed) are automatically available to the assistant for
+        query routing — the StreamAssist API only supports assistant-level
+        endpoints, not individual agent endpoints.
+        """
         import requests as req
 
+        body = self._read_body()
+        payload = json.loads(body) if body else {}
+
+        # Strip assistant_id — always route through default_assistant
+        # Registered agents are available via automatic routing
+        payload.pop("assistant_id", None)
         url = f"{DE_BASE}/assistants/default_assistant:streamAssist"
+
         headers = {
             "Authorization": f"Bearer {_get_token()}",
             "Content-Type": "application/json",
             "X-Goog-User-Project": DE_PROJECT,
         }
-        body = self._read_body()
-        payload = json.loads(body) if body else {}
 
         try:
             resp = req.post(url, headers=headers, json=payload, timeout=120)
             resp.raise_for_status()
             self._json_response(resp.json())
         except Exception as exc:
-            logger.exception("StreamAssist query failed")
+            logger.exception("StreamAssist query failed (assistant=%s)", assistant_id)
             self._json_error(502, str(exc))
 
     # --- Agent Engine proxy ---------------------------------------------

@@ -25,7 +25,7 @@ STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://wortz-project-352116-ge-
 _DEPLOY_CONFIG = {
     "retailer": {"name": os.environ.get("RETAILER_NAME", "ValueFresh Market")},
     "bigquery": {"project": os.environ.get("BQ_PROJECT", "wortz-project-352116"), "dataset": os.environ.get("BQ_DATASET", "ge_grocery_demo")},
-    "models": {"adk": "gemini-3-flash-preview"},
+    "models": {"adk": "gemini-3-pro-preview"},
 }
 
 
@@ -277,6 +277,12 @@ Guidelines:
         agent_engines.delete(existing, force=True)
         print("  Deleted.")
 
+    env_vars = {
+        "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY": "true",
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "true",
+        "GOOGLE_CLOUD_LOCATION": "global",  # Gemini 3 models require global endpoint
+    }
+
     print("Creating new deployment...")
     remote_app = agent_engines.create(
         agent_engine=app,
@@ -287,6 +293,7 @@ Guidelines:
             "google-cloud-aiplatform",
             "pyyaml>=6.0",
         ],
+        env_vars=env_vars,
     )
     print(f"Deployed: {remote_app.resource_name}")
     return remote_app.resource_name

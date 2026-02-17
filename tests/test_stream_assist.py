@@ -206,6 +206,95 @@ class TestErrorHandling:
             client._handle_error(mock_response)
 
 
+# --- Frontend Server Proxy Tests ---
+
+class TestFrontendServerRouting:
+    """Tests for the frontend proxy server's StreamAssist routing logic."""
+
+    def test_proxy_always_routes_through_default_assistant(self):
+        """Verify server always routes queries through default_assistant,
+        not through registered agent IDs (which would cause 404s)."""
+        from pathlib import Path
+        server_py = (Path(__file__).parent.parent / "src" / "frontend" / "server.py").read_text()
+        # The proxy should strip assistant_id and always use default_assistant
+        assert 'assistants/default_assistant:streamAssist' in server_py
+        # Should NOT use the assistant_id from the payload as URL path
+        assert 'assistants/{assistant_id}:streamAssist' not in server_py
+
+    def test_proxy_strips_assistant_id_from_payload(self):
+        """Verify server pops assistant_id from the request payload."""
+        from pathlib import Path
+        server_py = (Path(__file__).parent.parent / "src" / "frontend" / "server.py").read_text()
+        assert 'payload.pop("assistant_id", None)' in server_py
+
+    def test_proxy_lists_registered_agents(self):
+        """Verify server lists both assistants and registered agents."""
+        from pathlib import Path
+        server_py = (Path(__file__).parent.parent / "src" / "frontend" / "server.py").read_text()
+        assert "assistants/default_assistant/agents" in server_py
+        assert '"adkAgentDefinition"' in server_py
+        assert '"a2aAgentDefinition"' in server_py
+
+    def test_proxy_agent_type_detection(self):
+        """Verify server detects agent types (adk, a2a, managed)."""
+        from pathlib import Path
+        server_py = (Path(__file__).parent.parent / "src" / "frontend" / "server.py").read_text()
+        for agent_type in ["adk", "a2a", "managed"]:
+            assert f'agent_type = "{agent_type}"' in server_py
+
+    def test_proxy_data_store_listing_endpoint(self):
+        """Verify server has a data store listing endpoint."""
+        from pathlib import Path
+        server_py = (Path(__file__).parent.parent / "src" / "frontend" / "server.py").read_text()
+        assert "/api/stream-assist/data-stores" in server_py
+        assert "dataStores" in server_py
+
+
+class TestFrontendDataStoreSpecs:
+    """Tests for frontend data store spec generation in index.html."""
+
+    def test_frontend_passes_data_store_specs(self):
+        """Verify frontend sends dataStoreSpecs in toolsSpec when filtering."""
+        from pathlib import Path
+        html = (Path(__file__).parent.parent / "src" / "frontend" / "index.html").read_text()
+        assert "getSelectedDataStoreSpecs" in html
+        assert "vertexAiSearchSpec" in html
+        assert "dataStoreSpecs" in html
+
+    def test_frontend_data_store_toggle(self):
+        """Verify frontend has toggleable data store pills."""
+        from pathlib import Path
+        html = (Path(__file__).parent.parent / "src" / "frontend" / "index.html").read_text()
+        assert "toggleDataStore" in html or "renderDataStorePills" in html
+        assert "selectedDataStores" in html
+
+    def test_frontend_always_routes_default_assistant(self):
+        """Verify frontend callStreamAssist always uses default_assistant."""
+        from pathlib import Path
+        html = (Path(__file__).parent.parent / "src" / "frontend" / "index.html").read_text()
+        # In callStreamAssist, the direct API path should use default_assistant
+        assert "assistants/default_assistant:streamAssist" in html
+        # Should NOT pass assistant_id in the payload
+        assert "assistant_id: State.selectedAgent" not in html
+
+    def test_frontend_agent_selector_shows_type_badges(self):
+        """Verify frontend agent dropdown shows type badges for registered agents."""
+        from pathlib import Path
+        html = (Path(__file__).parent.parent / "src" / "frontend" / "index.html").read_text()
+        assert "ADK" in html
+        assert "A2A" in html
+
+    def test_register_agents_script_exists(self):
+        """Verify infrastructure script for registering agents exists."""
+        from pathlib import Path
+        script = Path(__file__).parent.parent / "infra" / "register_agents.sh"
+        assert script.exists()
+        content = script.read_text()
+        assert "adkAgentDefinition" in content
+        assert "a2aAgentDefinition" in content
+        assert "jsonAgentCard" in content
+
+
 # --- Integration Tests ---
 
 @pytest.mark.integration
