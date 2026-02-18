@@ -45,7 +45,6 @@ project:
   agent_engine_id: "3727910666648944640"  # ADK agent deployed to Agent Engine (with OTel)
   mcp_agent_engine_id: "5787744546217525248"  # MCP BigQuery analyst on Agent Engine (with OTel)
   simulator_agent_engine_id: "7053256041508634624"  # Shopper simulator on Agent Engine (with OTel)
-  a2a_agent_engine_id: "2240491336593571840"  # A2A agent deployed to Agent Engine (with OTel)
   a2a_cloud_run_url: "https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app"  # A2A agent on Cloud Run
   a2a_agent_id: "6222808436610094141"  # A2A agent registered on Discovery Engine (a2aAgentDefinition)
   data_agent_id: "14793816534468506603"  # Data Insights Agent for BQ analytics

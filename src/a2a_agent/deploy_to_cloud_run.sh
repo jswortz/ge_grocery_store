@@ -25,7 +25,6 @@ cd "$(dirname "$0")/../.."
 
 gcloud run deploy "$SERVICE_NAME" \
   --source=. \
-  --dockerfile=src/a2a_agent/Dockerfile \
   --region="$REGION" \
   --project="$PROJECT_ID" \
   --platform=managed \
