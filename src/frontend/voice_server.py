@@ -146,9 +146,10 @@ def _create_run_config(is_audio=True):
             "speech_config": speech_config,
         }
 
-        # Add output transcription when audio is enabled
+        # Add transcription when audio is enabled
         if is_audio:
             config["output_audio_transcription"] = types.AudioTranscriptionConfig()
+            config["input_audio_transcription"] = types.AudioTranscriptionConfig()
 
         return RunConfig(**config)
     except ImportError:
@@ -275,8 +276,20 @@ async def handle_voice_session(websocket):
                 if not isinstance(part, types.Part):
                     continue
 
-                # Text: send only partial responses to avoid duplication
-                if part.text and event.partial:
+                # Text: forward with the event's role
+                role = event.content.role if event.content.role else "model"
+
+                if part.text and role == "user":
+                    # User input transcription — always forward
+                    message = {
+                        "mime_type": "text/plain",
+                        "data": part.text,
+                        "role": "user",
+                        "partial": bool(event.partial),
+                    }
+                    await websocket.send(json.dumps(message))
+                elif part.text and event.partial:
+                    # Model partial response — send to avoid duplication
                     message = {
                         "mime_type": "text/plain",
                         "data": part.text,

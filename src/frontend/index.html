@@ -2491,12 +2491,15 @@ function addStreamingMessage(role) {
   const msgDiv = document.createElement('div');
   msgDiv.className = `message ${role}`;
   msgDiv.dataset.streaming = 'true';
-  const avatarContent = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1.41-3.53C10.43 15 14 12 17 8z"/></svg>';
+  const avatarContent = role === 'user'
+    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1.41-3.53C10.43 15 14 12 17 8z"/></svg>';
+  const metaLabel = role === 'user' ? 'listening...' : 'streaming...';
   msgDiv.innerHTML = `
     <div class="msg-avatar">${avatarContent}</div>
     <div class="msg-body">
       <div class="msg-bubble"></div>
-      <div class="msg-meta" style="color:var(--vf-gold-500);">streaming...</div>
+      <div class="msg-meta" style="color:var(--vf-gold-500);">${metaLabel}</div>
     </div>
   `;
   $chatArea.appendChild(msgDiv);
@@ -2511,16 +2514,20 @@ function updateStreamingMessage(el, text) {
   scrollToBottom();
 }
 
-function finalizeStreamingMessage(el, text) {
+function finalizeStreamingMessage(el, text, role) {
   if (!el) return;
+  const effectiveRole = role || 'assistant';
   delete el.dataset.streaming;
   const bubble = el.querySelector('.msg-bubble');
-  if (bubble) bubble.innerHTML = renderMarkdown(text);
+  if (bubble) {
+    bubble.innerHTML = effectiveRole === 'user' ? escapeHtml(text) : renderMarkdown(text);
+  }
   const meta = el.querySelector('.msg-meta');
   if (meta) {
     const ts = new Date();
-    State.messages.push({ role: 'assistant', text, ts });
-    meta.textContent = `${ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Voice Ops`;
+    State.messages.push({ role: effectiveRole, text, ts });
+    const sourceLabel = effectiveRole === 'user' ? 'Voice' : 'Voice · Agent Engine';
+    meta.textContent = `${ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${sourceLabel}`;
     meta.style.color = '';
   }
   scrollToBottom();
@@ -2697,7 +2704,9 @@ let audioRecorderContext = null; // AudioContext for recording (16kHz)
 let micStream = null;            // MediaStream from getUserMedia
 let isRecording = false;
 let isVoiceSessionActive = false;
-let currentVoiceMessageId = null; // Track streaming text for voice turn
+let currentVoiceMessageId = null; // Track streaming model text for voice turn
+let currentVoiceUserMsgId = null; // Track streaming user transcription for voice turn
+let currentVoiceUserText = '';    // Accumulate user transcription text
 
 const VOICE_WS_PORT = 8081;
 const MIC_SAMPLE_RATE = 16000;   // ADK Live API input: 16kHz
@@ -2819,10 +2828,30 @@ function connectVoiceWebSocket(isAudio) {
 
       // Turn complete or interrupted
       if (message.turn_complete) {
-        currentVoiceMessageId = null;
+        // Finalize user transcription bubble if still open
+        if (currentVoiceUserMsgId) {
+          const userEl = document.getElementById(currentVoiceUserMsgId);
+          if (userEl && currentVoiceUserText) {
+            finalizeStreamingMessage(userEl, currentVoiceUserText, 'user');
+          }
+          currentVoiceUserMsgId = null;
+          currentVoiceUserText = '';
+        }
+        // Finalize model response bubble if still open
+        if (currentVoiceMessageId) {
+          const modelEl = document.getElementById(currentVoiceMessageId);
+          if (modelEl) {
+            const bubble = modelEl.querySelector('.msg-bubble');
+            const rawText = bubble ? (bubble.getAttribute('data-raw') || '') : '';
+            if (rawText) finalizeStreamingMessage(modelEl, rawText, 'assistant');
+          }
+          currentVoiceMessageId = null;
+        }
         return;
       }
       if (message.interrupted) {
+        currentVoiceUserMsgId = null;
+        currentVoiceUserText = '';
         currentVoiceMessageId = null;
         if (audioPlayerNode) {
           audioPlayerNode.port.postMessage({ command: 'endOfAudio' });
@@ -2835,10 +2864,39 @@ function connectVoiceWebSocket(isAudio) {
         audioPlayerNode.port.postMessage(base64ToArrayBuffer(message.data));
       }
 
-      // Text: display in chat (streaming append)
-      if (message.mime_type === 'text/plain' && message.data) {
+      // User transcription: display in a user bubble
+      if (message.mime_type === 'text/plain' && message.data && message.role === 'user') {
+        currentVoiceUserText += message.data;
+        if (currentVoiceUserMsgId) {
+          const existingEl = document.getElementById(currentVoiceUserMsgId);
+          if (existingEl) {
+            updateStreamingMessage(existingEl, currentVoiceUserText);
+            return;
+          }
+        }
+        // Create new user streaming bubble
+        const userEl = addStreamingMessage('user');
+        const userMsgId = 'voice-user-' + Date.now();
+        userEl.id = userMsgId;
+        currentVoiceUserMsgId = userMsgId;
+        updateStreamingMessage(userEl, currentVoiceUserText);
+        return;
+      }
+
+      // Model text: display in assistant bubble (streaming append)
+      if (message.mime_type === 'text/plain' && message.data && message.role !== 'user') {
+        // Finalize user bubble when model starts responding
+        if (currentVoiceUserMsgId) {
+          const userEl = document.getElementById(currentVoiceUserMsgId);
+          if (userEl && currentVoiceUserText) {
+            finalizeStreamingMessage(userEl, currentVoiceUserText, 'user');
+          }
+          currentVoiceUserMsgId = null;
+          currentVoiceUserText = '';
+        }
+
         if (currentVoiceMessageId) {
-          // Append to existing message element
+          // Append to existing model message
           const existingEl = document.getElementById(currentVoiceMessageId);
           if (existingEl) {
             const contentDiv = existingEl.querySelector('.msg-bubble');
@@ -2852,13 +2910,16 @@ function connectVoiceWebSocket(isAudio) {
             return;
           }
         }
-        // New message
+        // New model message — use streaming helper
+        const modelEl = addStreamingMessage('assistant');
         const msgId = 'voice-msg-' + Date.now();
+        modelEl.id = msgId;
         currentVoiceMessageId = msgId;
-        addMessage('assistant', message.data);
-        // Tag the last message with our ID for streaming append
-        const lastMsg = $chatArea.querySelector('.message:last-child');
-        if (lastMsg) lastMsg.id = msgId;
+        const bubble = modelEl.querySelector('.msg-bubble');
+        if (bubble) {
+          bubble.innerHTML = renderMarkdown(message.data);
+          bubble.setAttribute('data-raw', message.data);
+        }
       }
 
     } catch (e) {
@@ -2889,15 +2950,10 @@ async function toggleVoiceInput() {
     }
     stopVoiceSession();
   } else {
-    // Use browser SpeechRecognition directly for the inline mic button.
-    // The full bidi streaming experience is available via the Voice Ops tab.
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      fallbackToSpeechRecognition();
-    } else {
-      // No browser speech support — try WebSocket bidi streaming
-      await startVoiceSession();
-    }
+    // Use WebSocket bidi streaming for inline mic button.
+    // Speech is transcribed by Gemini and streamed into user/assistant bubbles.
+    // Falls back to browser SpeechRecognition if WebSocket fails (in startVoiceSession catch).
+    await startVoiceSession();
   }
 }
 
@@ -2979,6 +3035,8 @@ function stopVoiceSession() {
   isRecording = false;
   isVoiceSessionActive = false;
   currentVoiceMessageId = null;
+  currentVoiceUserMsgId = null;
+  currentVoiceUserText = '';
   document.getElementById('mic-btn').classList.remove('recording');
   $input.placeholder = 'Ask about SOPs, brand guidelines, analytics, or image generation...';
 }
