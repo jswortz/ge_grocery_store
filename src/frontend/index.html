@@ -2058,6 +2058,17 @@ function parseStreamAssistResponse(data) {
         } else if (!isThought && content.text) {
           texts.push(content.text);
         }
+        // Handle parts-based responses (A2A agents may use this format)
+        if (!isThought && content.parts) {
+          for (const part of content.parts) {
+            if (part.text) {
+              texts.push(part.text);
+            }
+            if (part.inlineData && part.inlineData.mimeType && part.inlineData.data) {
+              texts.push(`![Generated Image](data:${part.inlineData.mimeType};base64,${part.inlineData.data})`);
+            }
+          }
+        }
       }
     }
     // Also extract thoughts from diagnosticInfo planner steps
@@ -2550,10 +2561,13 @@ async function sendMessage() {
 
   try {
     let response;
-    // Check if selected StreamAssist agent is ADK and should route via Agent Engine
-    // Note: A2A agents go through StreamAssist (registered on Discovery Engine via agent card)
+    // Check if selected StreamAssist agent has an Agent Engine deployment
+    // Use the mapping as primary signal (more reliable than type detection
+    // since Discovery Engine list API may not return adkAgentDefinition)
     const selectedAgentInfo = State.availableAgents.find(a => a.id === State.selectedAgent);
-    const isAgentEngineAgent = selectedAgentInfo && selectedAgentInfo.type === 'adk';
+    const aeMapping = AppConfig?.agent_engine_mapping || {};
+    const aeResourceId = State.selectedAgent && aeMapping[State.selectedAgent];
+    const isAgentEngineAgent = aeResourceId || (selectedAgentInfo && selectedAgentInfo.type === 'adk');
     const isA2aAgent = selectedAgentInfo && selectedAgentInfo.type === 'a2a';
 
     // Auto-route image generation requests to Agent Engine (only for default assistant,
@@ -2563,9 +2577,7 @@ async function sendMessage() {
       /\b(generate|create|make|design)\b.*\b(image|photo|picture|imagery|product image)\b/i.test(text);
 
     if (isAgentEngineAgent && State.backend === 'stream-assist') {
-      // ADK agents on StreamAssist return empty responses — route via Agent Engine
-      const aeMapping = AppConfig?.agent_engine_mapping || {};
-      const aeResourceId = aeMapping[State.selectedAgent];
+      // Agents with Agent Engine deployments return empty via StreamAssist — route directly
       if (aeResourceId) {
         response = await callAgentEngine(text, aeResourceId);
       } else {
