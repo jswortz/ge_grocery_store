@@ -178,6 +178,105 @@ class TestA2AFiles(unittest.TestCase):
         path = Path(__file__).parent.parent / "src" / "a2a_agent" / "server.py"
         assert path.exists(), "server.py missing"
 
+    def test_dockerfile_uses_global_location(self):
+        """Gemini 3 models require global endpoint, not a regional one."""
+        path = Path(__file__).parent.parent / "src" / "a2a_agent" / "Dockerfile"
+        content = path.read_text()
+        assert "GOOGLE_CLOUD_LOCATION=global" in content, (
+            "Dockerfile must set GOOGLE_CLOUD_LOCATION=global for Gemini 3 models"
+        )
+        assert "GOOGLE_CLOUD_LOCATION=us-central1" not in content, (
+            "Dockerfile must NOT use us-central1 — Gemini 3 models require global"
+        )
+
+    def test_root_dockerfile_uses_global_location(self):
+        """Root Dockerfile (used by gcloud run deploy --source) must also use global."""
+        path = Path(__file__).parent.parent / "Dockerfile"
+        content = path.read_text()
+        assert "GOOGLE_CLOUD_LOCATION=global" in content, (
+            "Root Dockerfile must set GOOGLE_CLOUD_LOCATION=global for Gemini 3 models"
+        )
+
+    def test_deploy_script_uses_global_location(self):
+        """Deploy script must pass GOOGLE_CLOUD_LOCATION=global, not regional."""
+        path = Path(__file__).parent.parent / "src" / "a2a_agent" / "deploy_to_cloud_run.sh"
+        content = path.read_text()
+        assert "GOOGLE_CLOUD_LOCATION=global" in content, (
+            "Deploy script must set GOOGLE_CLOUD_LOCATION=global for Gemini 3 models"
+        )
+        assert "GOOGLE_CLOUD_LOCATION=${REGION}" not in content, (
+            "Deploy script must NOT use REGION for GOOGLE_CLOUD_LOCATION — Gemini 3 requires global"
+        )
+
+    def test_no_agent_engine_deploy_script(self):
+        """A2A agents only deploy via Cloud Run, not Agent Engine."""
+        path = Path(__file__).parent.parent / "src" / "a2a_agent" / "deploy_to_agent_engine.py"
+        assert not path.exists(), (
+            "deploy_to_agent_engine.py should not exist — A2A only deploys via Cloud Run"
+        )
+
+    def test_config_no_a2a_agent_engine_id(self):
+        """Config should not have an a2a_agent_engine_id — A2A is Cloud Run only."""
+        import yaml
+        config_path = Path(__file__).parent.parent / "config" / "settings.yaml"
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        assert "a2a_agent_engine_id" not in config.get("project", {}), (
+            "config should not have a2a_agent_engine_id — A2A deploys via Cloud Run only"
+        )
+
+    def test_config_has_a2a_cloud_run_url(self):
+        """Config must have a2a_cloud_run_url for Cloud Run deployment."""
+        import yaml
+        config_path = Path(__file__).parent.parent / "config" / "settings.yaml"
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        url = config.get("project", {}).get("a2a_cloud_run_url", "")
+        assert url.startswith("https://"), (
+            f"a2a_cloud_run_url must be a valid HTTPS URL, got: {url}"
+        )
+
+    def test_config_has_a2a_agent_id(self):
+        """Config must have a2a_agent_id for Discovery Engine registration."""
+        import yaml
+        config_path = Path(__file__).parent.parent / "config" / "settings.yaml"
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        agent_id = config.get("project", {}).get("a2a_agent_id", "")
+        assert agent_id, "a2a_agent_id must be set in config for GE registration"
+
+
+class TestSimulatorGERegistration(unittest.TestCase):
+    """Test that simulator agent is configured for Discovery Engine registration."""
+
+    def test_config_has_simulator_agent_engine_id(self):
+        """Config must have simulator_agent_engine_id for Agent Engine deployment."""
+        import yaml
+        config_path = Path(__file__).parent.parent / "config" / "settings.yaml"
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        engine_id = config.get("project", {}).get("simulator_agent_engine_id", "")
+        assert engine_id, "simulator_agent_engine_id must be set in config"
+
+    def test_config_has_simulator_agent_id(self):
+        """Config must have simulator_agent_id for Discovery Engine registration."""
+        import yaml
+        config_path = Path(__file__).parent.parent / "config" / "settings.yaml"
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        agent_id = config.get("project", {}).get("simulator_agent_id", "")
+        assert agent_id, (
+            "simulator_agent_id must be set in config for GE registration"
+        )
+
+    def test_register_script_includes_simulator(self):
+        """Registration script should register the simulator agent on GE."""
+        path = Path(__file__).parent.parent / "infra" / "register_agents.sh"
+        content = path.read_text()
+        assert "simulator" in content.lower() or "Simulator" in content, (
+            "register_agents.sh should include simulator agent registration"
+        )
+
 
 class TestSimulatorAgent(unittest.TestCase):
     """Basic tests for the shopper simulator agent."""

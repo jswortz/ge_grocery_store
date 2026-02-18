@@ -110,14 +110,14 @@ Dataset `ge_grocery_demo` in `wortz-project-352116`:
 
 DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_data.sql`.
 
-### Test structure (291 unit + 78 integration = 369 total)
+### Test structure (300 unit + 78 integration = 378 total)
 
 - `tests/test_agent.py` (53) — **unit tests**, system prompts, SQL gen, tool configs, memory, voice, frontend, agent refactor, simulator scenario validation
 - `tests/test_stream_assist.py` (14 unit + 1 integration) — StreamAssist client, parsing, error handling, infra scripts
 - `tests/test_mcp_agent.py` (34) — **unit tests**, validates MCP agent config, schema context, instructions, toolbox path resolution
-- `tests/test_a2a_agent.py` (31) — **unit tests**, validates A2A agent config, AgentCard, skills, Cloud Run files, simulator agent, report generator, model config
+- `tests/test_a2a_agent.py` (41) — **unit tests**, validates A2A agent config, AgentCard, skills, Cloud Run files, model location, deployment config, simulator GE registration, report generator
 - `tests/test_frontend.py` (52) — **unit tests**, compare-tab removal, Imagen labels, data-source toggle, agent selector, routing, voice, architecture panel, model card, thinking display, simulator labels, report endpoint
-- `tests/test_frontend_e2e.py` (76) — **unit tests**, tabs, agent selector, data stores, voice ops, streaming, multi-turn, deployment scripts, E2E page load, API endpoints
+- `tests/test_frontend_e2e.py` (75) — **unit tests**, tabs, agent selector, data stores, voice ops, streaming, multi-turn, deployment scripts, E2E page load, API endpoints
 - `tests/test_model_armor.py` (10 unit + 5 integration) — validates Model Armor config, API schema, live template and assistant
 - `tests/test_evals.py` (40) — **unit tests**, validates eval config and scenario JSON structure for all eval directories
 - `tests/test_discovery_engine.py` (4) — **integration**, validates Discovery Engine SearchService directly against SOP and brand data stores

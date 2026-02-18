@@ -2554,16 +2554,16 @@ async function sendMessage() {
     const isImageRequest = State.backend === 'stream-assist' &&
       /\b(generate|create|make|design)\b.*\b(image|photo|picture|imagery|product image)\b/i.test(text);
 
-    // Check if selected StreamAssist agent is ADK/A2A and should route via Agent Engine
+    // Check if selected StreamAssist agent is ADK and should route via Agent Engine
+    // Note: A2A agents go through StreamAssist (registered on Discovery Engine via agent card)
     const selectedAgentInfo = State.availableAgents.find(a => a.id === State.selectedAgent);
-    const isAgentEngineAgent = selectedAgentInfo &&
-      (selectedAgentInfo.type === 'adk' || selectedAgentInfo.type === 'a2a');
+    const isAgentEngineAgent = selectedAgentInfo && selectedAgentInfo.type === 'adk';
 
     if (isImageRequest) {
       addMessage('assistant', '*Routing to Agent Engine for image generation...*');
       response = await callAgentEngine(text);
     } else if (isAgentEngineAgent && State.backend === 'stream-assist') {
-      // ADK/A2A agents on StreamAssist return empty responses — route via Agent Engine
+      // ADK agents on StreamAssist return empty responses — route via Agent Engine
       const aeMapping = AppConfig?.agent_engine_mapping || {};
       const aeResourceId = aeMapping[State.selectedAgent];
       if (aeResourceId) {

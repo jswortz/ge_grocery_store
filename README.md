@@ -30,7 +30,7 @@ This workshop integrates Google Cloud AI surfaces across multiple layers. See [d
 | **Document Generators** | [`src/docs_gen/`](src/docs_gen/) | ReportLab PDF generators for SOPs, brand guides, reports |
 | **Memory Bank** | Agent Engine built-in | Cross-session memory via `PreloadMemoryTool` (per-user preferences) |
 | **Model Armor** | Discovery Engine config | Content safety screening (hate speech, PII, prompt injection) |
-| **A2A Agent** | [`src/a2a_agent/`](src/a2a_agent/) | A2A-enabled agent for Cloud Run + Agent Engine deployment |
+| **A2A Agent** | [`src/a2a_agent/`](src/a2a_agent/) | A2A-enabled agent deployed to Cloud Run |
 | **Shopper Simulator** | [`src/simulator_agent/`](src/simulator_agent/) | World-model shopper simulation for endcap merchandising A/B testing |
 | **Evaluations** | [`evals/`](evals/) | ADK evaluation suites with user simulation for all agents |
 | **Infrastructure** | [`infra/`](infra/) | Shell scripts for Discovery Engine, BigQuery, and Model Armor provisioning |
@@ -217,9 +217,6 @@ python -m src.a2a_agent
 
 # Deploy to Cloud Run
 bash src/a2a_agent/deploy_to_cloud_run.sh
-
-# Deploy to Agent Engine
-python -m src.a2a_agent.deploy_to_agent_engine
 ```
 
 The agent exposes:
@@ -423,7 +420,6 @@ ge_grocery_store/
 │   │   ├── server.py              # A2A server (uvicorn)
 │   │   ├── Dockerfile             # Cloud Run container
 │   │   ├── deploy_to_cloud_run.sh # Cloud Run deployment
-│   │   ├── deploy_to_agent_engine.py  # Agent Engine deployment
 │   │   └── requirements.txt       # A2A agent dependencies
 │   ├── simulator_agent/
 │   │   ├── agent.py               # Shopper simulator orchestrator

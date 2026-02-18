@@ -165,11 +165,10 @@ class FrontendHandler(SimpleHTTPRequestHandler):
                         "resource_name": f"reasoningEngines/{project_cfg.get('simulator_agent_engine_id', '')}",
                     },
                     {
-                        "id": project_cfg.get("a2a_agent_engine_id", ""),
+                        "id": project_cfg.get("a2a_agent_id", ""),
                         "name": "A2A Grocery Agent",
                         "type": "a2a",
                         "model": models_cfg.get("adk", "gemini-3-pro-preview"),
-                        "resource_name": f"reasoningEngines/{project_cfg.get('a2a_agent_engine_id', '')}",
                         "a2a_url": project_cfg.get("a2a_cloud_run_url", ""),
                     },
                 ],
@@ -183,7 +182,6 @@ class FrontendHandler(SimpleHTTPRequestHandler):
                 }),
                 "agent_engine_mapping": {
                     project_cfg.get("agent_id", ""): AE_RESOURCE_ID,
-                    project_cfg.get("a2a_agent_id", ""): project_cfg.get("a2a_agent_engine_id", ""),
                 },
             }
             self._json_response(safe_config)

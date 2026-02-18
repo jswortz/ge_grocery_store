@@ -279,10 +279,6 @@ class TestDeploymentScripts:
         src = (ROOT / "src" / "mcp_agent" / "deploy_to_agent_engine.py").read_text()
         assert "GOOGLE_CLOUD_LOCATION" in src
 
-    def test_a2a_deploy_has_global_location(self):
-        src = (ROOT / "src" / "a2a_agent" / "deploy_to_agent_engine.py").read_text()
-        assert "GOOGLE_CLOUD_LOCATION" in src
-
     def test_simulator_deploy_has_global_location(self):
         src = (ROOT / "src" / "simulator_agent" / "deploy_to_agent_engine.py").read_text()
         assert "GOOGLE_CLOUD_LOCATION" in src

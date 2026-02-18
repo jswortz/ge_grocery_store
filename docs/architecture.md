@@ -296,7 +296,7 @@ Four agents are deployed across Agent Engine and Cloud Run:
 | Grocery Retail Assistant | Agent Engine | `4433744355123003392` | Gemini 3 Pro |
 | MCP Grocery Analyst | Agent Engine | `7481555402945986560` | Gemini 3 Pro |
 | Shopper Simulator | Agent Engine | `31475719368343552` | Gemini 3 Pro |
-| A2A Agent | Agent Engine + Cloud Run | `2240491336593571840` | Gemini 3 Pro |
+| A2A Agent | Cloud Run | N/A (Cloud Run only) | Gemini 3 Pro |
 
 All Agent Engine deployments have OpenTelemetry tracing enabled (`enable_tracing=True`) for Cloud Trace observability.
 
