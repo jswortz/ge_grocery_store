@@ -171,10 +171,13 @@ class TestMemoryRetrieval:
         memories = list(results)
         assert len(memories) > 0, "Should retrieve stored memories for the test user"
 
-        # Verify memory structure
-        for memory in memories:
-            assert hasattr(memory, "fact") or hasattr(memory, "name"), (
-                f"Memory should have fact or name attribute, got: {dir(memory)}"
+        # Verify memory structure — retrieve returns RetrieveMemoriesResponseRetrievedMemory
+        # which wraps Memory in a .memory attribute
+        for mem_result in memories:
+            # Access the inner Memory object (may be wrapped or direct)
+            inner = getattr(mem_result, "memory", mem_result)
+            assert hasattr(inner, "fact") or hasattr(inner, "name"), (
+                f"Memory should have fact or name attribute, got: {dir(inner)}"
             )
 
     def test_similarity_search(
