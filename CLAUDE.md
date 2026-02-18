@@ -41,6 +41,7 @@ cd src/mcp_agent && adk web
 
 # Launch frontend UI
 python -m src.frontend    # http://localhost:8080
+# If accessing over SSH, forward both ports: ssh -L 8080:localhost:8080 -L 8081:localhost:8081 <host>
 
 # Deploy ADK agent to Agent Engine
 cd src && adk deploy agent_engine \

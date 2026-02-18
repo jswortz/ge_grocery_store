@@ -108,6 +108,11 @@ A branded web interface for interacting with the deployed agents. See [Architect
 python -m src.frontend    # http://localhost:8080
 ```
 
+> **SSH port forwarding:** The Voice Ops tab uses a WebSocket server on port 8081. If you're accessing the frontend over SSH, forward both ports:
+> ```bash
+> ssh -L 8080:localhost:8080 -L 8081:localhost:8081 <remote-host>
+> ```
+
 Features:
 - **Three backend modes**: StreamAssist, Agent Engine, and Compare (side-by-side)
 - **Agent selector**: Dropdown to route StreamAssist queries to different registered agents

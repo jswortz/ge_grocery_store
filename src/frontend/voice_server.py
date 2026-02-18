@@ -288,13 +288,12 @@ async def handle_voice_session(websocket):
                         "partial": bool(event.partial),
                     }
                     await websocket.send(json.dumps(message))
-                elif part.text:
-                    # Model text: partial streaming chunks or audio transcription
+                elif part.text and event.partial:
+                    # Model partial response — send to avoid duplication
                     message = {
                         "mime_type": "text/plain",
                         "data": part.text,
                         "role": "model",
-                        "partial": bool(event.partial),
                     }
                     await websocket.send(json.dumps(message))
 
