@@ -1092,7 +1092,7 @@ details[open] .thoughts-toggle::before {
         <select id="agent-selector" onchange="selectAgent(this.value)" style="background:rgba(255,255,255,0.12);color:inherit;border:1px solid rgba(255,255,255,0.2);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;cursor:pointer;outline:none;">
           <option value="default_assistant">Default Assistant</option>
         </select>
-        <button onclick="toggleDataSources()" title="Data sources" style="background:none;border:none;color:inherit;cursor:pointer;opacity:0.6;font-size:11px;padding:2px 4px;">
+        <button id="data-sources-btn" onclick="toggleDataSources()" title="Data sources" style="background:none;border:none;color:inherit;cursor:pointer;opacity:0.6;font-size:11px;padding:2px 4px;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         </button>
         <button onclick="toggleArchPanel()" title="Architecture info" style="background:none;border:none;color:inherit;cursor:pointer;opacity:0.6;font-size:11px;padding:2px 4px;">
@@ -1247,7 +1247,7 @@ details[open] .thoughts-toggle::before {
             <span class="sq-sub">Creative &middot; Gemini Image</span>
           </span>
         </button>
-        <button class="sample-btn" onclick="sendSample('What is the customer lifetime value by loyalty tier?', {backend:'stream-assist'})">
+        <button class="sample-btn" onclick="sendSample('What is the customer lifetime value by loyalty tier?', {backend:'stream-assist', agentId:'14793816534468506603'})">
           <span class="sq-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
           </span>
@@ -1427,7 +1427,9 @@ function rebuildAgentSelector() {
       if (agent.type === 'assistant') continue;
       const opt = document.createElement('option');
       opt.value = agent.id;
-      const badge = typeLabels[agent.type] || agent.type;
+      // Differentiate Deep Research from Data Insights
+      let badge = typeLabels[agent.type] || agent.type;
+      if (agent.id === 'deep_research') badge = 'Research';
       opt.textContent = `${agent.name || agent.id} [${badge}]`;
       $selector.appendChild(opt);
     }
@@ -1601,9 +1603,12 @@ function buildArchTree() {
       _l('\u2502   ', false, 'Data Insights Agent', 'DATA', 'badge-data', hi('14793816534468506603'), 'BigQuery analytics'),
       _l('\u2502   ', false, 'Grocery Retail Agent', 'ADK', 'badge-agent', hi('17851962453813099770'), 'Agent Engine'),
       _l('\u2502   ', false, 'Grocery A2A Agent', 'A2A', 'badge-svc', hi('6222808436610094141'), 'Cloud Run'),
-      _l('\u2502   ', true, 'Deep Research', 'MANAGED', 'badge-model', hi('deep_research')),
+      _l('\u2502   ', true, 'Deep Research', 'RESEARCH', 'badge-svc', hi('deep_research'), 'Multi-source analysis'),
       _l('', false, 'sop-store', 'DATA STORE', 'badge-tool', false, 'SOPs (GCS)'),
-      _l('', true, 'brand-guidelines-store', 'DATA STORE', 'badge-tool', false, 'Brand docs (GCS)'),
+      _l('', false, 'brand-guidelines-store', 'DATA STORE', 'badge-tool', false, 'Brand docs (GCS)'),
+      _l('', false, 'Gmail', 'CONNECTOR', 'badge-data', false, 'Workspace'),
+      _l('', false, 'Google Calendar', 'CONNECTOR', 'badge-data', false, 'Workspace'),
+      _l('', true, 'Jira', 'CONNECTOR', 'badge-data', false, 'Third-party'),
     ].join('');
   }
 
@@ -1681,12 +1686,17 @@ function toggleArchPanel() {
 function updateAgentSelectorVisibility() {
   const $wrap = document.getElementById('agent-selector-wrap');
   const $dsPanel = document.getElementById('data-sources-panel');
+  const $dsBtn = document.getElementById('data-sources-btn');
   // Show agent selector for all backends except voice-ops
   const show = State.backend !== 'voice-ops';
   $wrap.style.display = show ? 'inline-flex' : 'none';
   // Only show data sources for StreamAssist
-  if (State.backend !== 'stream-assist') {
+  const isStreamAssist = State.backend === 'stream-assist';
+  if (!isStreamAssist) {
     $dsPanel.style.display = 'none';
+  }
+  if ($dsBtn) {
+    $dsBtn.style.display = isStreamAssist ? '' : 'none';
   }
   updateModelCard();
 }
@@ -2605,10 +2615,16 @@ function sendSample(text, opts) {
     rebuildAgentSelector();
     updateAgentSelectorVisibility();
   }
-  if (opts?.agentId && State.backend === 'agent-engine') {
-    State.selectedAgentEngineId = opts.agentId;
-    const $selector = document.getElementById('agent-selector');
-    $selector.value = opts.agentId;
+  if (opts?.agentId) {
+    if (State.backend === 'agent-engine') {
+      State.selectedAgentEngineId = opts.agentId;
+      const $selector = document.getElementById('agent-selector');
+      $selector.value = opts.agentId;
+    } else if (State.backend === 'stream-assist') {
+      State.selectedAgent = opts.agentId;
+      const $selector = document.getElementById('agent-selector');
+      $selector.value = opts.agentId;
+    }
   }
   $input.value = text;
   sendMessage();
@@ -2855,9 +2871,22 @@ function connectVoiceWebSocket(isAudio) {
  */
 async function toggleVoiceInput() {
   if (isRecording) {
+    // Stop any active recognition
+    if (State._activeRecognition) {
+      State._activeRecognition.abort();
+      State._activeRecognition = null;
+    }
     stopVoiceSession();
   } else {
-    await startVoiceSession();
+    // Use browser SpeechRecognition directly for the inline mic button.
+    // The full bidi streaming experience is available via the Voice Ops tab.
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      fallbackToSpeechRecognition();
+    } else {
+      // No browser speech support — try WebSocket bidi streaming
+      await startVoiceSession();
+    }
   }
 }
 
@@ -3011,7 +3040,8 @@ function speakText(text) {
 function fallbackToSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    console.warn('Neither WebSocket voice nor SpeechRecognition available');
+    console.warn('SpeechRecognition not available in this browser');
+    addMessage('assistant', 'Voice input is not supported in this browser. Please use Chrome on localhost or HTTPS.');
     return;
   }
 
@@ -3019,6 +3049,7 @@ function fallbackToSpeechRecognition() {
   recognition.continuous = false;
   recognition.interimResults = true;
   recognition.lang = AppConfig?.voice?.input_lang || 'en-US';
+  State._activeRecognition = recognition;
 
   recognition.onresult = (event) => {
     let transcript = '';
@@ -3029,20 +3060,26 @@ function fallbackToSpeechRecognition() {
     autoResize();
     if (event.results[event.results.length - 1].isFinal) {
       isRecording = false;
+      State._activeRecognition = null;
       document.getElementById('mic-btn').classList.remove('recording');
       $input.placeholder = 'Ask about SOPs, brand guidelines, analytics, or image generation...';
       sendMessage();
     }
   };
 
-  recognition.onerror = () => {
+  recognition.onerror = (e) => {
     isRecording = false;
+    State._activeRecognition = null;
     document.getElementById('mic-btn').classList.remove('recording');
     $input.placeholder = 'Ask about SOPs, brand guidelines, analytics, or image generation...';
+    if (e.error === 'not-allowed') {
+      addMessage('assistant', 'Microphone access was denied. Please allow microphone permissions and try again.');
+    }
   };
 
   recognition.onend = () => {
     isRecording = false;
+    State._activeRecognition = null;
     document.getElementById('mic-btn').classList.remove('recording');
     $input.placeholder = 'Ask about SOPs, brand guidelines, analytics, or image generation...';
   };
@@ -3051,9 +3088,10 @@ function fallbackToSpeechRecognition() {
     recognition.start();
     isRecording = true;
     document.getElementById('mic-btn').classList.add('recording');
-    $input.placeholder = 'Listening (fallback mode)...';
+    $input.placeholder = 'Listening...';
   } catch (err) {
-    console.warn('Fallback speech recognition failed:', err);
+    console.warn('Speech recognition failed to start:', err);
+    addMessage('assistant', 'Voice input failed to start. Make sure you are on localhost or HTTPS.');
   }
 }
 

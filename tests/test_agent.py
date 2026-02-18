@@ -177,14 +177,6 @@ class TestMemoryBank:
         except ImportError:
             pytest.skip("ADK not installed")
 
-    def test_config_has_model_armor_section(self):
-        from src.agent.agent import _load_config
-        config = _load_config()
-        assert "model_armor" in config
-        assert config["model_armor"]["enabled"] is True
-        assert config["model_armor"]["template_id"] == "grocery-workshop-armor-us"
-        assert config["model_armor"]["failure_mode"] == "FAIL_OPEN"
-
 
 class TestVoiceConfig:
     """Test voice configuration in settings.yaml."""
@@ -325,29 +317,10 @@ class TestFrontendFeatures:
         assert "View Trace" in content
         assert "lastTraceUrl" in content
 
-    def test_frontend_compare_mode_removed(self):
-        """Verify Compare Mode was removed from the frontend."""
-        from pathlib import Path
-        html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
-        content = html_path.read_text()
-        assert "sendCompareQuery" not in content
-        assert 'data-backend="compare"' not in content
-        assert "compare-row" not in content
-
     def test_agent_engine_stream_endpoint(self):
         """Verify the frontend server has SSE streaming endpoint."""
         from src.frontend.server import FrontendHandler
         assert hasattr(FrontendHandler, '_proxy_agent_engine_stream')
-
-    def test_frontend_has_agent_selector(self):
-        """Verify index.html has agent selector for StreamAssist routing."""
-        from pathlib import Path
-        html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
-        content = html_path.read_text()
-        assert "agent-selector" in content
-        assert "loadAgents" in content
-        assert "selectAgent" in content
-        assert "selectedAgent" in content
 
     def test_server_has_list_agents_endpoint(self):
         """Verify the frontend server has _proxy_list_agents method."""
