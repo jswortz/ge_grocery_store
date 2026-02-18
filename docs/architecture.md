@@ -122,6 +122,9 @@ The primary agent uses Google's [Agent Development Kit (ADK)](https://google.git
 
 Implementation: [`src/agent/agent.py`](../src/agent/agent.py)
 
+![Architecture Panel](img/18_frontend_architecture_panel.png)
+*Frontend architecture panel showing agent routing graph and tool invocations in real time*
+
 ### Agent Files
 
 | File | Purpose |
@@ -241,20 +244,28 @@ An alternative analytics approach using the [MCP Toolbox for Databases](https://
 
 A world-model simulation agent (`src/simulator_agent/`) that simulates shoppers walking store aisles and building carts. Evaluates endcap merchandising placement strategies.
 
+![Simulator Architecture](diagrams/09_simulator_architecture.png)
+
 **Architecture:**
-- Orchestrator agent (Gemini 3 Pro) creates concurrent shopper persona sub-agents
+- Orchestrator agent (Gemini 3 Flash, thinking enabled) creates concurrent shopper persona sub-agents
 - Each shopper walks the store layout, decides aisle-by-aisle, and builds a cart
 - Aggregate metrics: endcap conversion rate, incremental revenue, ROI
 
 **Components:**
-- 12 shopper personas (budget family, health enthusiast, quick-stop, weekend cook, elderly regular, etc.)
-- 3 store layouts (Downtown, Westside, Lakefront Market)
-- 4 merchandising scenarios (baseline, seasonal produce, snack impulse, health wellness)
+- 12 shopper personas with research-backed distribution weights (`config/shopper_personas.yaml`)
+- 9 endcap merchandising strategies (`config/endcap_strategies.yaml`)
+- 3 store layouts (Downtown, Westside, Lakefront Market — 8 aisles each)
+
+**Tools:**
+- `compare_endcap_strategies` — A/B test two strategies with same shopper distribution
+- `list_endcap_strategies` — Browse the strategy catalog
+- `generate_simulation_report` — Chart.js HTML reports (conversion charts, ROI waterfall)
+- `PreloadMemoryTool` — Cross-session user-scoped memory
 
 **Integration with main agent:**
 The root `grocery_assistant` agent delegates simulation requests via the `delegate_to_simulator` tool, which calls the Simulator Agent Engine directly using the `streamQuery` REST API.
 
-**Deployed resource:** `projects/679926387543/locations/us-central1/reasoningEngines/31475719368343552`
+**Deployed resource:** `projects/679926387543/locations/us-central1/reasoningEngines/7053256041508634624`
 
 ---
 
@@ -293,12 +304,18 @@ Four agents are deployed across Agent Engine and Cloud Run:
 
 | Agent | Platform | Resource ID | Model |
 |-------|----------|-------------|-------|
-| Grocery Retail Assistant | Agent Engine | `4433744355123003392` | Gemini 3 Pro |
-| MCP Grocery Analyst | Agent Engine | `7481555402945986560` | Gemini 3 Pro |
-| Shopper Simulator | Agent Engine | `31475719368343552` | Gemini 3 Pro |
+| Grocery Retail Assistant | Agent Engine | `3727910666648944640` | Gemini 3 Pro |
+| MCP Grocery Analyst | Agent Engine | `5787744546217525248` | Gemini 3 Pro |
+| Shopper Simulator | Agent Engine | `7053256041508634624` | Gemini 3 Pro |
 | A2A Agent | Cloud Run | N/A (Cloud Run only) | Gemini 3 Pro |
 
 All Agent Engine deployments have OpenTelemetry tracing enabled (`enable_tracing=True`) for Cloud Trace observability.
+
+![Agent Engine List](img/10_gcp_agent_engine_list.png)
+*GCP Console: Three deployed agents on Vertex AI Agent Engine*
+
+![Agent Engine Dashboard](img/11_gcp_agent_engine_dashboard.png)
+*GCP Console: Agent Engine overview with session counts and latency metrics*
 
 **Deployment command (main agent):**
 ```bash
@@ -341,6 +358,9 @@ Memory Bank provides shared memory across agent sessions so the agent remembers 
 - No separate resource provisioning needed — Memory Bank is a built-in feature of Agent Engine
 - Frontend shows memory count via tooltip with `GET /api/memory/status`
 
+![Memory Bank](img/14_gcp_agent_engine_memory_bank.png)
+*GCP Console: Agent Engine Memory Bank entries showing user-scoped memories*
+
 **Configuration** (`config/settings.yaml`):
 ```yaml
 memory:
@@ -366,6 +386,9 @@ Model Armor provides content safety screening on the Discovery Engine `grocery-w
 ### Architecture
 
 See the [Memory Bank & Model Armor diagram](diagrams/08_memory_model_armor.png) above for the full architecture.
+
+![Model Armor Template](img/15_gcp_model_armor_template.png)
+*GCP Console: Model Armor template with RAI, PI/Jailbreak, SDP, and Malicious URI filters*
 
 **Failure mode:** `FAIL_OPEN` — if Model Armor is unavailable, queries pass through to avoid blocking production traffic.
 

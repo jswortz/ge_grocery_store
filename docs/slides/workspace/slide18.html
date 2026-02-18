@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+  background: #ffffff;
+}
+.header { background: #4285F4; padding: 20pt 40pt; }
+.header h1 { color: #ffffff; font-size: 24pt; margin: 0; }
+.content { flex: 1; padding: 25pt 40pt; display: flex; gap: 30pt; }
+.left { flex: 1; }
+.right { flex: 1; }
+h3 { color: #3C4043; font-size: 16pt; margin: 0 0 15pt 0; }
+ul { margin: 0; padding: 0 0 0 16pt; }
+li { color: #3C4043; font-size: 12pt; margin: 0 0 10pt 0; line-height: 1.4; }
+.cta-box {
+  background: #E8F0FE;
+  border-radius: 6pt;
+  padding: 15pt;
+  margin: 15pt 0 0 0;
+  text-align: center;
+}
+.cta-box h4 { color: #4285F4; font-size: 18pt; margin: 0 0 6pt 0; }
+.cta-box p { color: #5F6368; font-size: 11pt; margin: 0; }
+.links {
+  margin: 15pt 0 0 0;
+}
+.links p { color: #5F6368; font-size: 11pt; margin: 0 0 6pt 0; }
+.links b { color: #4285F4; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Next Steps</h1>
+</div>
+<div class="content">
+  <div class="left">
+    <h3>POC Scoping</h3>
+    <ul>
+      <li><b>Technical deep-dive</b> — walk through the architecture documentation with your engineering team</li>
+      <li><b>Identify your problem</b> — find your equivalent of Sarah's endcap challenge</li>
+      <li><b>Customize</b> — update config/settings.yaml with your retailer name and branding</li>
+      <li><b>Deploy</b> — provision resources in your own GCP project</li>
+    </ul>
+  </div>
+  <div class="right">
+    <h3>Resources</h3>
+    <div class="links">
+      <p><b>Workshop Guide</b> — docs/workshop_guide.md</p>
+      <p><b>Architecture</b> — docs/architecture.md</p>
+      <p><b>Setup Guide</b> — docs/setup.md</p>
+      <p><b>Evaluation Guide</b> — docs/evaluation_guide.md</p>
+    </div>
+    <div class="cta-box">
+      <h4>Google Cloud</h4>
+      <p>Gemini Enterprise | Agent Engine | ADK</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

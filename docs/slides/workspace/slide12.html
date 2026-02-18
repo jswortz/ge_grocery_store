@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+  background: #ffffff;
+}
+.header { background: #EA4335; padding: 20pt 40pt; }
+.header h1 { color: #ffffff; font-size: 24pt; margin: 0; }
+.header p { color: rgba(255,255,255,0.9); font-size: 12pt; margin: 4pt 0 0 0; }
+.content { flex: 1; padding: 20pt 40pt; }
+h3 { color: #3C4043; font-size: 16pt; margin: 0 0 15pt 0; }
+.stats-row {
+  display: flex; gap: 15pt; margin: 0 0 20pt 0;
+}
+.stat {
+  flex: 1;
+  text-align: center;
+  padding: 15pt;
+  border-radius: 6pt;
+}
+.stat-blue { background: #E8F0FE; border-top: 3pt solid #4285F4; }
+.stat-green { background: #E8F5E9; border-top: 3pt solid #34A853; }
+.stat-total { background: #F3E5F5; border-top: 3pt solid #9C27B0; }
+.stat h4 { font-size: 32pt; margin: 0; }
+.stat-blue h4 { color: #4285F4; }
+.stat-green h4 { color: #34A853; }
+.stat-total h4 { color: #9C27B0; }
+.stat p { color: #5F6368; font-size: 11pt; margin: 6pt 0 0 0; }
+ul { margin: 0; padding: 0 0 0 20pt; }
+li { color: #3C4043; font-size: 12pt; margin: 0 0 8pt 0; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Act 4: ADK Evaluation Framework</h1>
+  <p>Automated Testing — Quality Assurance at Scale</p>
+</div>
+<div class="content">
+  <h3>Test Coverage</h3>
+  <div class="stats-row">
+    <div class="stat stat-blue">
+      <h4>300</h4>
+      <p>Unit Tests</p>
+    </div>
+    <div class="stat stat-green">
+      <h4>78</h4>
+      <p>Integration Tests</p>
+    </div>
+    <div class="stat stat-total">
+      <h4>378</h4>
+      <p>Total Tests</p>
+    </div>
+  </div>
+  <ul>
+    <li><b>User simulation</b> — ADK eval framework with synthetic user scenarios</li>
+    <li><b>Tool trajectory validation</b> — verify correct tool calls in sequence</li>
+    <li><b>Hallucination detection</b> — ensure grounded responses from Discovery Engine</li>
+    <li><b>CI/CD integration</b> — GitHub Actions runs unit tests on every push/PR (Python 3.10-3.12)</li>
+  </ul>
+</div>
+</body>
+</html>

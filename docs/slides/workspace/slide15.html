@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+  background: #ffffff;
+}
+.header { background: #3C4043; padding: 16pt 40pt; }
+.header h1 { color: #ffffff; font-size: 22pt; margin: 0; }
+.header p { color: rgba(255,255,255,0.8); font-size: 12pt; margin: 4pt 0 0 0; }
+.content { flex: 1; padding: 10pt 40pt; display: flex; gap: 20pt; }
+.left { flex: 1; }
+.right { flex: 1; display: flex; align-items: center; justify-content: center; }
+h3 { color: #3C4043; font-size: 16pt; margin: 0 0 12pt 0; }
+.agent-card {
+  background: #F8F9FA;
+  border-radius: 6pt;
+  padding: 10pt 12pt;
+  margin: 0 0 8pt 0;
+  border-left: 4pt solid #4285F4;
+}
+.agent-card-green { border-left-color: #34A853; }
+.agent-card-yellow { border-left-color: #FBBC04; }
+.agent-card-red { border-left-color: #EA4335; }
+.agent-card h4 { color: #3C4043; font-size: 12pt; margin: 0 0 2pt 0; }
+.agent-card p { color: #5F6368; font-size: 9pt; margin: 0; font-family: 'Courier New', monospace; }
+.img-placeholder {
+  background: #F1F3F4;
+  border: 1pt solid #DADCE0;
+  border-radius: 6pt;
+  width: 260pt;
+  height: 200pt;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img-placeholder p { color: #9AA0A6; font-size: 10pt; margin: 0; text-align: center; }
+.img-placeholder img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4pt; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Agent Engine Console</h1>
+  <p>Deployed Agents — Vertex AI Agent Engine</p>
+</div>
+<div class="content">
+  <div class="left">
+    <h3>4 Production Agents</h3>
+    <div class="agent-card">
+      <h4>Grocery Retail Assistant</h4>
+      <p>Agent Engine | 3727910666648944640</p>
+    </div>
+    <div class="agent-card agent-card-green">
+      <h4>MCP Grocery Analyst</h4>
+      <p>Agent Engine | 5787744546217525248</p>
+    </div>
+    <div class="agent-card agent-card-yellow">
+      <h4>Shopper Simulator</h4>
+      <p>Agent Engine | 7053256041508634624</p>
+    </div>
+    <div class="agent-card agent-card-red">
+      <h4>A2A Agent</h4>
+      <p>Cloud Run | grocery-a2a-agent</p>
+    </div>
+    <p><b>All agents have OTel tracing enabled for Cloud Trace observability</b></p>
+  </div>
+  <div class="right">
+    <div class="img-placeholder">
+      <img src="file:///usr/local/google/home/jwortz/ge_grocery_store/docs/img/10_gcp_agent_engine_list.png" alt="10_gcp_agent_engine_list.png">
+    </div>
+  </div>
+</div>
+</body>
+</html>

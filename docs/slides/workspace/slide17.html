@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+  background: #ffffff;
+}
+.header { background: #34A853; padding: 20pt 40pt; }
+.header h1 { color: #ffffff; font-size: 24pt; margin: 0; }
+.content { flex: 1; padding: 20pt 40pt; }
+h3 { color: #3C4043; font-size: 16pt; margin: 0 0 15pt 0; }
+.step {
+  display: flex; align-items: flex-start; gap: 12pt;
+  margin: 0 0 12pt 0;
+}
+.step-num {
+  background: #34A853;
+  color: #ffffff;
+  width: 24pt; height: 24pt;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12pt; font-weight: bold;
+  flex-shrink: 0;
+}
+.step-content p { color: #3C4043; font-size: 12pt; margin: 0; }
+.step-content .cmd { color: #5F6368; font-size: 10pt; font-family: 'Courier New', monospace; margin: 2pt 0 0 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Getting Started</h1>
+</div>
+<div class="content">
+  <h3>Quick Start</h3>
+  <div class="step">
+    <div class="step-num"><p>1</p></div>
+    <div class="step-content">
+      <p><b>Install dependencies</b></p>
+      <p class="cmd">pip install -e ".[dev]"</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num"><p>2</p></div>
+    <div class="step-content">
+      <p><b>Run unit tests</b> (no GCP credentials needed)</p>
+      <p class="cmd">python -m pytest tests/test_agent.py tests/test_mcp_agent.py tests/test_a2a_agent.py -v</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num"><p>3</p></div>
+    <div class="step-content">
+      <p><b>Provision Discovery Engine</b> and data stores</p>
+      <p class="cmd">bash infra/provision_engine.sh && bash infra/provision_datastore.sh</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num"><p>4</p></div>
+    <div class="step-content">
+      <p><b>Deploy agents</b> to Agent Engine</p>
+      <p class="cmd">cd src && adk deploy agent_engine --project=YOUR_PROJECT agent</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num"><p>5</p></div>
+    <div class="step-content">
+      <p><b>Launch frontend</b></p>
+      <p class="cmd">python -m src.frontend    # http://localhost:8080</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

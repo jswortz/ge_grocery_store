@@ -4,6 +4,7 @@ A customer-facing workshop demonstrating **Gemini Enterprise** (powered by the D
 
 **Documentation:**
 - [Workshop Guide](docs/workshop_guide.md) — Hands-on walkthrough for potential Gemini Enterprise buyers
+- [Workshop Slides](docs/slides/) — Customer-facing presentation deck
 - [Setup Guide](docs/setup.md) — Step-by-step provisioning instructions
 - [Architecture](docs/architecture.md) — System design, data flow, component details, and [diagrams](docs/diagrams/)
 - [Evaluation Guide](docs/evaluation_guide.md) — Agent evaluation best practices and configuration
@@ -15,6 +16,13 @@ A customer-facing workshop demonstrating **Gemini Enterprise** (powered by the D
 This workshop integrates Google Cloud AI surfaces across multiple layers. See [docs/architecture.md](docs/architecture.md) for detailed diagrams.
 
 ![System Architecture](docs/diagrams/01_system_architecture.png)
+
+| | |
+|---|---|
+| ![Frontend Chat](docs/img/22_frontend_adk_top_products.png) | ![Simulator](docs/img/24_frontend_simulator_personas.png) |
+| *ADK agent: top products chart* | *Simulator: 12 shopper personas* |
+| ![Agent Engine](docs/img/10_gcp_agent_engine_list.png) | ![Cloud Trace](docs/img/12_gcp_cloud_trace_flow.png) |
+| *Agent Engine: deployed agents* | *Cloud Trace: agent call flow* |
 
 ### Key Components
 
@@ -92,7 +100,7 @@ retailer:
 project:
   id: "wortz-project-352116"
   engine_id: "grocery-workshop-engine"
-  agent_engine_id: "3323818153208709120"  # Deployed ADK agent
+  agent_engine_id: "3727910666648944640"  # Deployed ADK agent
 bigquery:
   project: "wortz-project-352116"
   dataset: "ge_grocery_demo"
@@ -114,12 +122,11 @@ python -m src.frontend    # http://localhost:8080
 > ```
 
 Features:
-- **Three backend modes**: StreamAssist, Agent Engine, and Compare (side-by-side)
+- **Three tabs**: StreamAssist, Agent Engine & A2A, Voice Ops
 - **Agent selector**: Dropdown to route StreamAssist queries to different registered agents
 - **Voice input**: Gemini Live (Puck) via WebSocket with browser TTS fallback
 - **Model Armor safety demo**: Interactive buttons demonstrating content safety filters
 - **Memory Bank**: Cross-session memory with per-user tooltip showing memory count
-- **Compare mode**: Side-by-side StreamAssist vs Agent Engine responses
 - **Cloud Trace integration**: Deeplinks and latency/tool-count metrics for Agent Engine
 - ValueFresh Market branding (green/gold/white color scheme)
 - Markdown rendering with inline image support for Gemini 3 Pro Image output
@@ -148,7 +155,7 @@ The agent uses a **multi-agent architecture** with Google's [Agent Development K
 |-------|------|---------|
 | `gemini-3-pro-preview` | Orchestration, complex reasoning | Root agent, MCP agent, Simulator |
 | `gemini-3-flash-preview` | Fast sub-agent tasks | analytics_agent, image_agent |
-| `gemini-3-flash-preview` | Native image generation | image_gen_tool |
+| `gemini-3-pro-image-preview` | Native image generation | image_gen_tool |
 
 ### Agent Capabilities
 
@@ -240,6 +247,8 @@ Key files:
 
 A world-model simulation agent that simulates shoppers walking store aisles and building carts. Evaluates endcap merchandising placement strategies. Accessible from the main agent via the `delegate_to_simulator` tool.
 
+![Simulator Architecture](docs/diagrams/09_simulator_architecture.png)
+
 ```bash
 # Local development
 cd src/simulator_agent && adk web
@@ -269,9 +278,9 @@ Four agents are deployed across **Vertex AI Agent Engine** and **Cloud Run**:
 
 | Agent | Platform | Resource ID | Purpose |
 |-------|----------|-------------|---------|
-| Grocery Retail Assistant | Agent Engine | `3323818153208709120` | Main multi-agent orchestrator |
-| MCP Grocery Analyst | Agent Engine | `8287066417547706368` | BigQuery analytics via MCP Toolbox |
-| Shopper Simulator | Agent Engine | `256585331992690688` | Endcap merchandising A/B simulation |
+| Grocery Retail Assistant | Agent Engine | `3727910666648944640` | Main multi-agent orchestrator |
+| MCP Grocery Analyst | Agent Engine | `5787744546217525248` | BigQuery analytics via MCP Toolbox |
+| Shopper Simulator | Agent Engine | `7053256041508634624` | Endcap merchandising A/B simulation |
 | A2A Agent | Cloud Run | `grocery-a2a-agent` | A2A protocol inter-agent communication |
 
 All Agent Engine deployments have OpenTelemetry tracing enabled for Cloud Trace observability.
@@ -309,7 +318,7 @@ credentials.refresh(Request())
 
 url = ("https://us-central1-aiplatform.googleapis.com/v1/"
        "projects/679926387543/locations/us-central1/"
-       "reasoningEngines/3323818153208709120:streamQuery")
+       "reasoningEngines/3727910666648944640:streamQuery")
 
 resp = requests.post(url,
     headers={"Authorization": f"Bearer {credentials.token}",
@@ -369,18 +378,21 @@ python -m pytest tests/test_agent.py::TestBQTool::test_generate_sql_top_products
 
 | File | Type | Tests | What it tests |
 |------|------|-------|---------------|
-| [`test_agent.py`](tests/test_agent.py) | Unit | 50 | System prompts, SQL gen, tool configs, memory, voice, frontend, agent selector |
-| [`test_stream_assist.py`](tests/test_stream_assist.py) | Unit + Integration | 14 | StreamAssist client, response parsing, error handling |
-| [`test_mcp_agent.py`](tests/test_mcp_agent.py) | Unit | 34 | MCP agent config, schema, instructions, toolbox path |
-| [`test_a2a_agent.py`](tests/test_a2a_agent.py) | Unit | 24 | A2A agent config, AgentCard, skills, Cloud Run files |
-| [`test_model_armor.py`](tests/test_model_armor.py) | Unit + Integration | 15 | Model Armor config, API schema, live template |
-| [`test_discovery_engine.py`](tests/test_discovery_engine.py) | Integration | 4 | Discovery Engine SearchService (SOP + brand stores) |
-| [`test_agent_engine.py`](tests/test_agent_engine.py) | Integration | 5 | Deployed ADK agent via Agent Engine REST API |
+| [`test_agent.py`](tests/test_agent.py) | Unit | 53 | System prompts, SQL gen, tool configs, memory, voice, frontend, agent refactor, simulator scenario validation |
+| [`test_stream_assist.py`](tests/test_stream_assist.py) | Unit + Integration | 14 + 1 | StreamAssist client, parsing, error handling, infra scripts |
+| [`test_mcp_agent.py`](tests/test_mcp_agent.py) | Unit | 34 | MCP agent config, schema, instructions, toolbox path resolution |
+| [`test_a2a_agent.py`](tests/test_a2a_agent.py) | Unit | 41 | A2A agent config, AgentCard, skills, Cloud Run files, model location, deployment config, simulator GE registration, report generator |
+| [`test_frontend.py`](tests/test_frontend.py) | Unit | 52 | Compare-tab removal, Imagen labels, data-source toggle, agent selector, routing, voice, architecture panel, model card, thinking display, simulator labels, report endpoint |
+| [`test_frontend_e2e.py`](tests/test_frontend_e2e.py) | Unit | 75 | Tabs, agent selector, data stores, voice ops, streaming, multi-turn, deployment scripts, E2E page load, API endpoints |
+| [`test_evals.py`](tests/test_evals.py) | Unit | 40 | Eval config and scenario JSON structure for all eval directories |
+| [`test_model_armor.py`](tests/test_model_armor.py) | Unit + Integration | 10 + 5 | Model Armor config, API schema, live template and assistant |
+| [`test_discovery_engine.py`](tests/test_discovery_engine.py) | Integration | 4 | Discovery Engine SearchService against SOP and brand data stores |
+| [`test_agent_engine.py`](tests/test_agent_engine.py) | Integration | 10 | Deployed ADK, MCP, Simulator, and A2A agents via Agent Engine REST API |
 | [`test_bigquery.py`](tests/test_bigquery.py) | Integration | 12 | Schema existence, data quality, forbidden name checks |
 | [`test_memory_bank.py`](tests/test_memory_bank.py) | Integration | 9 | Memory Bank service, user-scoped memory persistence |
 | [`test_acceptance.py`](tests/test_acceptance.py) | Integration | 6 | Acceptance criteria via StreamAssist (greeting, SOP, brand) |
 
-**Current status: 138 unit tests + 47 integration tests**
+**Current status: 300 unit + 78 integration = 378 total tests**
 
 ---
 
@@ -449,7 +461,7 @@ ge_grocery_store/
 │   ├── grocery_assistant/         # Root agent evals
 │   ├── mcp_analyst/               # MCP agent evals
 │   └── simulator/                 # Simulator evals
-├── tests/                         # 168+ tests (see Testing)
+├── tests/                         # 378 tests (see Testing)
 ├── .github/workflows/
 │   └── unit-tests.yml             # GitHub Actions CI
 ├── pyproject.toml                 # Python project config

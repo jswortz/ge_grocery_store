@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+  background: #ffffff;
+}
+.header { background: #4285F4; padding: 16pt 40pt; }
+.header h1 { color: #ffffff; font-size: 22pt; margin: 0; }
+.header p { color: rgba(255,255,255,0.9); font-size: 12pt; margin: 4pt 0 0 0; }
+.content { flex: 1; padding: 10pt 40pt; display: flex; gap: 20pt; }
+.left { flex: 1; }
+.right { flex: 1; display: flex; align-items: center; justify-content: center; }
+h3 { color: #3C4043; font-size: 16pt; margin: 0 0 12pt 0; }
+ul { margin: 0; padding: 0 0 0 16pt; }
+li { color: #3C4043; font-size: 10pt; margin: 0 0 5pt 0; line-height: 1.3; }
+.palette {
+  display: flex; gap: 8pt; margin: 12pt 0;
+}
+.swatch {
+  width: 40pt; height: 40pt; border-radius: 4pt;
+}
+.swatch-green { background: #2e7d32; }
+.swatch-gold { background: #f9a825; }
+.swatch-white { background: #ffffff; border: 1pt solid #DADCE0; }
+.img-placeholder {
+  background: #F1F3F4;
+  border: 1pt solid #DADCE0;
+  border-radius: 6pt;
+  width: 260pt;
+  height: 200pt;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img-placeholder p { color: #9AA0A6; font-size: 10pt; margin: 0; text-align: center; }
+.img-placeholder img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4pt; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Act 2: Image Generation</h1>
+  <p>Gemini 3 Pro Image — Brand-Compliant Product Imagery</p>
+</div>
+<div class="content">
+  <div class="left">
+    <h3>Native Image Generation</h3>
+    <ul>
+      <li><b>gemini-3-pro-image-preview</b> model for native image output</li>
+      <li><b>Brand palette enforcement</b> — green, gold, and white color scheme</li>
+      <li><b>Inline rendering</b> — images display directly in the chat interface</li>
+      <li><b>GCS storage</b> — generated images saved and served via proxy</li>
+      <li><b>Agent routing</b> — root agent transfers to image_agent sub-agent</li>
+    </ul>
+    <div class="palette">
+      <div class="swatch swatch-green"></div>
+      <div class="swatch swatch-gold"></div>
+      <div class="swatch swatch-white"></div>
+    </div>
+    <p><b>Brand color palette</b></p>
+  </div>
+  <div class="right">
+    <div class="img-placeholder">
+      <img src="file:///usr/local/google/home/jwortz/ge_grocery_store/docs/img/28_frontend_image_gen_banana.png" alt="28_frontend_image_gen_banana.png">
+    </div>
+  </div>
+</div>
+</body>
+</html>

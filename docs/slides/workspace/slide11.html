@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+  background: #ffffff;
+}
+.header { background: #EA4335; padding: 16pt 40pt; }
+.header h1 { color: #ffffff; font-size: 22pt; margin: 0; }
+.header p { color: rgba(255,255,255,0.9); font-size: 12pt; margin: 4pt 0 0 0; }
+.content { flex: 1; padding: 10pt 40pt; display: flex; gap: 20pt; }
+.left { flex: 1; }
+.right { flex: 1; display: flex; align-items: center; justify-content: center; }
+h3 { color: #3C4043; font-size: 16pt; margin: 0 0 12pt 0; }
+.filter-item {
+  display: flex; align-items: center; gap: 10pt;
+  margin: 0 0 10pt 0;
+  padding: 8pt 12pt;
+  background: #FBE9E7;
+  border-radius: 6pt;
+}
+.filter-icon {
+  width: 8pt; height: 8pt; border-radius: 50%;
+  background: #EA4335;
+}
+.filter-item p { color: #3C4043; font-size: 11pt; margin: 0; }
+.filter-item b { color: #EA4335; }
+.fail-mode {
+  background: #F8F9FA;
+  border-left: 4pt solid #EA4335;
+  padding: 10pt 12pt;
+  margin: 12pt 0 0 0;
+}
+.fail-mode p { color: #3C4043; font-size: 11pt; margin: 0; }
+.img-placeholder {
+  background: #F1F3F4;
+  border: 1pt solid #DADCE0;
+  border-radius: 6pt;
+  width: 260pt;
+  height: 200pt;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img-placeholder p { color: #9AA0A6; font-size: 10pt; margin: 0; text-align: center; }
+.img-placeholder img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4pt; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Act 4: Model Armor</h1>
+  <p>Content Safety Filters — Enterprise-Grade Protection</p>
+</div>
+<div class="content">
+  <div class="left">
+    <h3>Active Filters</h3>
+    <div class="filter-item">
+      <div class="filter-icon"></div>
+      <p><b>RAI Harm Filter</b> — hate speech, violence, sexual content, dangerous content</p>
+    </div>
+    <div class="filter-item">
+      <div class="filter-icon"></div>
+      <p><b>PI and Jailbreak Filter</b> — prompt injection and jailbreak attempts</p>
+    </div>
+    <div class="filter-item">
+      <div class="filter-icon"></div>
+      <p><b>SDP Basic Filter</b> — PII detection (names, emails, phone numbers)</p>
+    </div>
+    <div class="filter-item">
+      <div class="filter-icon"></div>
+      <p><b>Malicious URI Filter</b> — blocks malicious URLs in prompts/responses</p>
+    </div>
+    <div class="fail-mode">
+      <p><b>Failure Mode: FAIL_OPEN</b> — if Model Armor is unavailable, queries pass through to avoid blocking production</p>
+    </div>
+  </div>
+  <div class="right">
+    <div class="img-placeholder">
+      <img src="file:///usr/local/google/home/jwortz/ge_grocery_store/docs/img/15_gcp_model_armor_template.png" alt="15_gcp_model_armor_template.png">
+    </div>
+  </div>
+</div>
+</body>
+</html>

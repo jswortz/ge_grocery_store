@@ -53,6 +53,15 @@ This workshop shows how Google Cloud's agent platform solves **all six of Sarah'
 
 **Key takeaway:** AI-powered A/B testing of physical store layouts -- test merchandising strategies before deploying them.
 
+![Simulator Personas](img/24_frontend_simulator_personas.png)
+*12 shopper personas with distinct shopping behaviors and preferences*
+
+![Simulator Results](img/29_frontend_simulator_results_table.png)
+*Structured simulation results with per-persona conversion metrics*
+
+![A/B Comparison](img/26_frontend_simulator_ab_comparison.png)
+*Side-by-side comparison of Seasonal Produce vs. Snack Impulse endcap strategies*
+
 **Demo:**
 ```bash
 cd src/simulator_agent && adk web
@@ -76,6 +85,15 @@ cd src/simulator_agent && adk web
 6. Image agent creates brand-compliant imagery using Gemini 3 Pro Image with the green/gold/white palette
 
 **Key takeaway:** Grounded enterprise search ensures brand compliance. Intelligent agent routing handles multi-step creative workflows.
+
+![Brand Color Guidelines](img/30_frontend_streamassist_brand_colors.png)
+*StreamAssist returns grounded brand guidelines with document citations*
+
+![Product Image Generation](img/28_frontend_image_gen_banana.png)
+*Gemini 3 Pro Image generates brand-compliant Nano Banana Pro product imagery*
+
+![SOP Retrieval](img/16_frontend_streamassist_sop.png)
+*StreamAssist retrieving closing procedures from SOP data store*
 
 **Demo:**
 ```bash
@@ -107,6 +125,15 @@ python -m src.frontend    # Open http://localhost:8080
 
 **Key takeaway:** Self-service analytics for managers -- no SQL knowledge required. The agent translates natural language to BigQuery queries.
 
+![ADK Top Products](img/22_frontend_adk_top_products.png)
+*ADK agent querying top 5 products with Chart.js visualization*
+
+![MCP Top Products](img/23_frontend_mcp_top_products.png)
+*MCP agent generating arbitrary SQL for the same query*
+
+![Loyalty Distribution](img/09_ge_streamassist_loyalty_pie_chart.png)
+*Customer loyalty tier distribution via Data Insights Agent*
+
 **Demo:**
 ```bash
 python -m src.frontend    # Open http://localhost:8080
@@ -131,7 +158,7 @@ python -m src.frontend    # Open http://localhost:8080
 1. Model Armor screens all prompts and responses at the Discovery Engine level
 2. Filters: RAI harm (hate/violence), prompt injection/jailbreak, PII detection (SDP), malicious URLs
 3. Failure mode: `FAIL_OPEN` -- if Model Armor is unavailable, queries pass through to avoid blocking production
-4. 320 automated tests validate agent quality across all capabilities
+4. 378 automated tests validate agent quality across all capabilities
 
 **Key takeaway:** Enterprise-grade content safety and quality assurance -- applied at the infrastructure level, not in application code.
 
@@ -146,11 +173,14 @@ python -m src.frontend    # Open http://localhost:8080
 
 **Frontend safety demo:** The frontend has dedicated "Test Safety Guardrails" buttons that auto-switch to StreamAssist (where Model Armor is active) and send test prompts. The safety banner shows which specific filter was triggered (e.g., "Model Armor: PI & Jailbreak Filter -- prompt injection attempt blocked").
 
+![Model Armor Template](img/15_gcp_model_armor_template.png)
+*GCP Console: Model Armor template configuration with active filters*
+
 **Google Cloud value:** Model Armor is applied at the Discovery Engine level -- no code changes needed. The ADK evaluation framework validates agent quality with user simulation, tool trajectory checks, and hallucination detection.
 
 ```bash
 # Run the evaluation suite
-python -m pytest tests/ --collect-only -q   # 278 unit + 42 integration tests
+python -m pytest tests/ --collect-only -q   # 300 unit + 78 integration = 378 total tests
 ```
 
 ---
@@ -166,6 +196,9 @@ python -m pytest tests/ --collect-only -q   # 278 unit + 42 integration tests
 4. Receives structured results: conversion rates, ROI projections
 
 **Key takeaway:** Composable AI services -- any agent in the organization can discover and use Sarah's simulator through a standard protocol.
+
+![A2A Agent Switch](img/20_frontend_a2a_agent_switch.png)
+*Frontend A2A agent selection with greeting and agent discovery*
 
 **Demo:**
 ```bash
@@ -199,6 +232,12 @@ curl https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app/.well-known/agent.json
 **The platform value:**
 Sarah didn't build 6 separate systems. She used **one platform** -- Google Cloud's agent ecosystem -- where Discovery Engine, Agent Engine, BigQuery, Gemini 3 Pro Image, Memory Bank, Model Armor, A2A, and the ADK evaluation framework all work together. The config-driven design means switching retailers requires changing one YAML file.
 
+![Agent Engine Deployed Agents](img/10_gcp_agent_engine_list.png)
+*GCP Console: Three deployed agents on Agent Engine*
+
+![Agent Engine Dashboard](img/11_gcp_agent_engine_dashboard.png)
+*GCP Console: Agent Engine overview with session counts and latency metrics*
+
 ---
 
 ## Next Steps
@@ -214,6 +253,9 @@ Sarah didn't build 6 separate systems. She used **one platform** -- Google Cloud
 
 ![System Architecture](diagrams/01_system_architecture.png)
 
+![Architecture Panel](img/18_frontend_architecture_panel.png)
+*Frontend architecture panel showing agent routing and tool invocations*
+
 See the [full architecture documentation](architecture.md) for detailed diagrams of each layer.
 
 ---
@@ -223,9 +265,9 @@ See the [full architecture documentation](architecture.md) for detailed diagrams
 | Resource | Type | ID |
 |----------|------|-----|
 | Discovery Engine | Search App | `grocery-workshop-engine` (global) |
-| Agent Engine (Main) | Reasoning Engine | `4433744355123003392` (us-central1) |
-| Agent Engine (MCP) | Reasoning Engine | `7481555402945986560` (us-central1) |
-| Agent Engine (Simulator) | Reasoning Engine | `31475719368343552` (us-central1) |
+| Agent Engine (Main) | Reasoning Engine | `3727910666648944640` (us-central1) |
+| Agent Engine (MCP) | Reasoning Engine | `5787744546217525248` (us-central1) |
+| Agent Engine (Simulator) | Reasoning Engine | `7053256041508634624` (us-central1) |
 | Cloud Run (A2A) | Service | `grocery-a2a-agent` (us-central1) |
 | Model Armor | Template | `grocery-workshop-armor-us` (us multi-region) |
 | BigQuery | Dataset | `wortz-project-352116.ge_grocery_demo` |
@@ -237,19 +279,20 @@ See the [full architecture documentation](architecture.md) for detailed diagrams
 
 | Suite | Tests | Type | What It Validates |
 |-------|-------|------|-------------------|
-| `test_agent.py` | 55 | Unit | System prompts, SQL gen, tool configs, memory, voice, frontend, agent refactor |
-| `test_stream_assist.py` | 24 | Unit + Integration | StreamAssist client, parsing, error handling, frontend routing, data store specs |
-| `test_mcp_agent.py` | 34 | Unit | MCP agent config, schema, instructions |
-| `test_a2a_agent.py` | 30 | Unit | A2A agent config, AgentCard, skills, simulator, report generator |
-| `test_frontend.py` | 50 | Unit | Compare-tab removal, Imagen labels, data-source toggle, agent selector, routing, voice, architecture panel, model card, thinking display |
-| `test_frontend_e2e.py` | 76 | Unit | Tabs, agent selector, data stores, voice ops, streaming, multi-turn, deployment scripts, E2E page load, API endpoints |
-| `test_model_armor.py` | 15 | Unit + Integration | Model Armor config, API schema, live validation |
-| `test_discovery_engine.py` | 4 | Integration | Discovery Engine search against live stores |
-| `test_agent_engine.py` | 5 | Integration | Deployed agent via Agent Engine REST API |
-| `test_bigquery.py` | 12 | Integration | BigQuery schema, data quality |
-| `test_memory_bank.py` | 9 | Integration | Memory Bank service, user-scoped persistence |
-| `test_acceptance.py` | 6 | Integration | End-to-end acceptance criteria |
+| `test_agent.py` | 53 | Unit | System prompts, SQL gen, tool configs, memory, voice, frontend, agent refactor, simulator scenario validation |
+| `test_stream_assist.py` | 14 + 1 | Unit + Integration | StreamAssist client, parsing, error handling, infra scripts |
+| `test_mcp_agent.py` | 34 | Unit | MCP agent config, schema, instructions, toolbox path resolution |
+| `test_a2a_agent.py` | 41 | Unit | A2A agent config, AgentCard, skills, Cloud Run files, model location, deployment config, simulator GE registration, report generator |
+| `test_frontend.py` | 52 | Unit | Compare-tab removal, Imagen labels, data-source toggle, agent selector, routing, voice, architecture panel, model card, thinking display, simulator labels, report endpoint |
+| `test_frontend_e2e.py` | 75 | Unit | Tabs, agent selector, data stores, voice ops, streaming, multi-turn, deployment scripts, E2E page load, API endpoints |
+| `test_evals.py` | 40 | Unit | Eval config and scenario JSON structure for all eval directories |
+| `test_model_armor.py` | 10 + 5 | Unit + Integration | Model Armor config, API schema, live template and assistant |
+| `test_discovery_engine.py` | 4 | Integration | Discovery Engine SearchService against SOP and brand data stores |
+| `test_agent_engine.py` | 10 | Integration | Deployed ADK, MCP, Simulator, and A2A agents via Agent Engine REST API |
+| `test_bigquery.py` | 12 | Integration | BigQuery schema, data quality, forbidden name checks |
+| `test_memory_bank.py` | 9 | Integration | Memory Bank service, user-scoped memory persistence |
+| `test_acceptance.py` | 6 | Integration | End-to-end acceptance criteria (greeting, SOP retrieval, brand guidelines) via StreamAssist |
 
-**Total: 278 unit + 42 integration tests (320 total)**
+**Total: 300 unit + 78 integration = 378 total tests**
 
 GitHub Actions runs unit tests on every push/PR across Python 3.10-3.12 with coverage reporting.

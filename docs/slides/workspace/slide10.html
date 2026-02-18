@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+  background: #ffffff;
+}
+.header { background: #FBBC04; padding: 16pt 40pt; }
+.header h1 { color: #3C4043; font-size: 22pt; margin: 0; }
+.header p { color: rgba(60,64,67,0.8); font-size: 12pt; margin: 4pt 0 0 0; }
+.content { flex: 1; padding: 10pt 40pt; display: flex; gap: 20pt; }
+.left { flex: 1; }
+.right { flex: 1; display: flex; align-items: center; justify-content: center; }
+h3 { color: #3C4043; font-size: 16pt; margin: 0 0 12pt 0; }
+ul { margin: 0; padding: 0 0 0 16pt; }
+li { color: #3C4043; font-size: 10pt; margin: 0 0 4pt 0; line-height: 1.3; }
+.compare-box {
+  display: flex; gap: 8pt; margin: 10pt 0 0 0;
+}
+.compare-item {
+  flex: 1;
+  background: #F8F9FA;
+  border-radius: 6pt;
+  padding: 8pt;
+  text-align: center;
+}
+.compare-item h4 { color: #FBBC04; font-size: 20pt; margin: 0; }
+.compare-item p { color: #5F6368; font-size: 9pt; margin: 2pt 0 0 0; }
+.img-placeholder {
+  background: #F1F3F4;
+  border: 1pt solid #DADCE0;
+  border-radius: 6pt;
+  width: 260pt;
+  height: 200pt;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img-placeholder p { color: #9AA0A6; font-size: 10pt; margin: 0; text-align: center; }
+.img-placeholder img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4pt; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Act 3: MCP Toolbox</h1>
+  <p>MCP Agent — Arbitrary SQL via MCP for Databases</p>
+</div>
+<div class="content">
+  <div class="left">
+    <h3>9 BigQuery Tools via MCP</h3>
+    <ul>
+      <li><b>execute_sql</b> — LLM generates arbitrary SQL (not pattern-matched)</li>
+      <li><b>list_table_ids / get_table_info</b> — schema discovery</li>
+      <li><b>forecast</b> — time series forecasting</li>
+      <li><b>analyze_contribution</b> — metric contribution analysis</li>
+      <li><b>ask_data_insights</b> — AI-powered data analysis</li>
+      <li><b>search_catalog</b> — find tables, views, models</li>
+    </ul>
+    <div class="compare-box">
+      <div class="compare-item">
+        <h4>1</h4>
+        <p>Tool (ADK Agent)</p>
+      </div>
+      <div class="compare-item">
+        <h4>9</h4>
+        <p>Tools (MCP Agent)</p>
+      </div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="img-placeholder">
+      <img src="file:///usr/local/google/home/jwortz/ge_grocery_store/docs/img/23_frontend_mcp_top_products.png" alt="23_frontend_mcp_top_products.png">
+    </div>
+  </div>
+</div>
+</body>
+</html>
