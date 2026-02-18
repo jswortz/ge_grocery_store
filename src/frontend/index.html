@@ -1650,6 +1650,7 @@ function buildArchTree() {
       _l('', true, 'A2A Protocol', 'A2A', 'badge-svc', false, 'Cloud Run'),
       _l('    ', true, 'sop_agent', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
       _l('        ', false, 'DiscoveryEngineSearchTool', 'TOOL', 'badge-tool', false, 'SOPs + Brand'),
+      _l('        ', false, 'delegate_to_simulator', 'TOOL', 'badge-tool', false, 'Simulator Agent Engine'),
       _l('        ', true, 'image_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash'),
       _l('            ', true, 'generate_product_image', 'TOOL', 'badge-tool', false, 'Gemini Image'),
     ].join('');
@@ -2475,7 +2476,11 @@ function addErrorMessage(errorText) {
 
 function showLoading() {
   hideWelcome();
-  const backendLabel = State.backend === 'stream-assist' ? 'StreamAssist' : 'Agent Engine & A2A';
+  let backendLabel = 'StreamAssist';
+  if (State.backend !== 'stream-assist') {
+    const ae = State.agentEngines.find(a => a.id === State.selectedAgentEngineId);
+    backendLabel = ae?.name || 'Agent Engine';
+  }
   const el = document.createElement('div');
   el.className = 'message assistant';
   el.id = 'loading-msg';
