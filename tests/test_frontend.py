@@ -323,11 +323,15 @@ class TestAgentEngineThinkingDisplay:
 class TestDataSourceSelectorVisibility:
 
     def test_data_sources_hidden_for_non_stream_assist(self, html_content):
-        """Data sources panel should be hidden for non-StreamAssist backends."""
+        """Data sources panel and button should be hidden for non-StreamAssist backends."""
         fn_section = html_content[html_content.find("function updateAgentSelectorVisibility"):]
         fn_end = fn_section.find("\nfunction updateModelCard")
         fn_body = fn_section[:fn_end] if fn_end > 0 else fn_section[:500]
-        assert "State.backend !== 'stream-assist'" in fn_body
+        assert "stream-assist" in fn_body
+        # Button should have an ID for visibility control
+        assert 'id="data-sources-btn"' in html_content
+        # Button visibility should be toggled based on backend
+        assert "data-sources-btn" in fn_body
 
 
 # ================================================================

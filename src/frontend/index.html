@@ -1092,7 +1092,7 @@ details[open] .thoughts-toggle::before {
         <select id="agent-selector" onchange="selectAgent(this.value)" style="background:rgba(255,255,255,0.12);color:inherit;border:1px solid rgba(255,255,255,0.2);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;cursor:pointer;outline:none;">
           <option value="default_assistant">Default Assistant</option>
         </select>
-        <button onclick="toggleDataSources()" title="Data sources" style="background:none;border:none;color:inherit;cursor:pointer;opacity:0.6;font-size:11px;padding:2px 4px;">
+        <button id="data-sources-btn" onclick="toggleDataSources()" title="Data sources" style="background:none;border:none;color:inherit;cursor:pointer;opacity:0.6;font-size:11px;padding:2px 4px;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         </button>
         <button onclick="toggleArchPanel()" title="Architecture info" style="background:none;border:none;color:inherit;cursor:pointer;opacity:0.6;font-size:11px;padding:2px 4px;">
@@ -1681,12 +1681,17 @@ function toggleArchPanel() {
 function updateAgentSelectorVisibility() {
   const $wrap = document.getElementById('agent-selector-wrap');
   const $dsPanel = document.getElementById('data-sources-panel');
+  const $dsBtn = document.getElementById('data-sources-btn');
   // Show agent selector for all backends except voice-ops
   const show = State.backend !== 'voice-ops';
   $wrap.style.display = show ? 'inline-flex' : 'none';
   // Only show data sources for StreamAssist
-  if (State.backend !== 'stream-assist') {
+  const isStreamAssist = State.backend === 'stream-assist';
+  if (!isStreamAssist) {
     $dsPanel.style.display = 'none';
+  }
+  if ($dsBtn) {
+    $dsBtn.style.display = isStreamAssist ? '' : 'none';
   }
   updateModelCard();
 }
@@ -2855,9 +2860,22 @@ function connectVoiceWebSocket(isAudio) {
  */
 async function toggleVoiceInput() {
   if (isRecording) {
+    // Stop any active recognition
+    if (State._activeRecognition) {
+      State._activeRecognition.abort();
+      State._activeRecognition = null;
+    }
     stopVoiceSession();
   } else {
-    await startVoiceSession();
+    // Use browser SpeechRecognition directly for the inline mic button.
+    // The full bidi streaming experience is available via the Voice Ops tab.
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      fallbackToSpeechRecognition();
+    } else {
+      // No browser speech support — try WebSocket bidi streaming
+      await startVoiceSession();
+    }
   }
 }
 
@@ -3011,7 +3029,8 @@ function speakText(text) {
 function fallbackToSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    console.warn('Neither WebSocket voice nor SpeechRecognition available');
+    console.warn('SpeechRecognition not available in this browser');
+    addMessage('assistant', 'Voice input is not supported in this browser. Please use Chrome on localhost or HTTPS.');
     return;
   }
 
@@ -3019,6 +3038,7 @@ function fallbackToSpeechRecognition() {
   recognition.continuous = false;
   recognition.interimResults = true;
   recognition.lang = AppConfig?.voice?.input_lang || 'en-US';
+  State._activeRecognition = recognition;
 
   recognition.onresult = (event) => {
     let transcript = '';
@@ -3029,20 +3049,26 @@ function fallbackToSpeechRecognition() {
     autoResize();
     if (event.results[event.results.length - 1].isFinal) {
       isRecording = false;
+      State._activeRecognition = null;
       document.getElementById('mic-btn').classList.remove('recording');
       $input.placeholder = 'Ask about SOPs, brand guidelines, analytics, or image generation...';
       sendMessage();
     }
   };
 
-  recognition.onerror = () => {
+  recognition.onerror = (e) => {
     isRecording = false;
+    State._activeRecognition = null;
     document.getElementById('mic-btn').classList.remove('recording');
     $input.placeholder = 'Ask about SOPs, brand guidelines, analytics, or image generation...';
+    if (e.error === 'not-allowed') {
+      addMessage('assistant', 'Microphone access was denied. Please allow microphone permissions and try again.');
+    }
   };
 
   recognition.onend = () => {
     isRecording = false;
+    State._activeRecognition = null;
     document.getElementById('mic-btn').classList.remove('recording');
     $input.placeholder = 'Ask about SOPs, brand guidelines, analytics, or image generation...';
   };
@@ -3051,9 +3077,10 @@ function fallbackToSpeechRecognition() {
     recognition.start();
     isRecording = true;
     document.getElementById('mic-btn').classList.add('recording');
-    $input.placeholder = 'Listening (fallback mode)...';
+    $input.placeholder = 'Listening...';
   } catch (err) {
-    console.warn('Fallback speech recognition failed:', err);
+    console.warn('Speech recognition failed to start:', err);
+    addMessage('assistant', 'Voice input failed to start. Make sure you are on localhost or HTTPS.');
   }
 }
 
