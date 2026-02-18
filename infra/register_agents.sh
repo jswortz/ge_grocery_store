@@ -28,6 +28,8 @@ PROJECT_ID=$(python3 -c "import yaml; c=yaml.safe_load(open('${PROJECT_ROOT}/con
 PROJECT_NUMBER=$(python3 -c "import yaml; c=yaml.safe_load(open('${PROJECT_ROOT}/config/settings.yaml')); print(c['project']['number'])")
 ENGINE_ID=$(python3 -c "import yaml; c=yaml.safe_load(open('${PROJECT_ROOT}/config/settings.yaml')); print(c['project']['engine_id'])")
 AGENT_ENGINE_ID=$(python3 -c "import yaml; c=yaml.safe_load(open('${PROJECT_ROOT}/config/settings.yaml')); print(c['project']['agent_engine_id'])")
+MCP_ENGINE_ID=$(python3 -c "import yaml; c=yaml.safe_load(open('${PROJECT_ROOT}/config/settings.yaml')); print(c['project']['mcp_agent_engine_id'])")
+SIMULATOR_ENGINE_ID=$(python3 -c "import yaml; c=yaml.safe_load(open('${PROJECT_ROOT}/config/settings.yaml')); print(c['project']['simulator_agent_engine_id'])")
 A2A_CLOUD_RUN_URL=$(python3 -c "import yaml; c=yaml.safe_load(open('${PROJECT_ROOT}/config/settings.yaml')); print(c['project']['a2a_cloud_run_url'])")
 
 TOKEN=$(gcloud auth print-access-token)
@@ -64,7 +66,61 @@ ADK_RESPONSE=$(curl -s -X POST \
 ADK_AGENT_ID=$(echo "${ADK_RESPONSE}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('name','').split('/')[-1])" 2>/dev/null || echo "FAILED")
 echo "ADK Agent registered: ${ADK_AGENT_ID}"
 
-# ---- Step 2: Register A2A Agent (Cloud Run) ----
+# ---- Step 2: Register MCP Agent (Agent Engine) ----
+echo ""
+echo "--- Registering MCP Agent (Agent Engine) ---"
+echo "Reasoning Engine: ${MCP_ENGINE_ID}"
+
+MCP_RESPONSE=$(curl -s -X POST \
+  "${BASE_URL}" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -H "X-Goog-User-Project: ${PROJECT_ID}" \
+  -d '{
+    "displayName": "MCP Grocery Analyst",
+    "description": "BigQuery analytics agent using MCP Toolbox for Databases. Generates arbitrary SQL queries against the grocery retail star schema for advanced analytics.",
+    "adkAgentDefinition": {
+      "provisionedReasoningEngine": {
+        "reasoningEngine": "projects/'"${PROJECT_NUMBER}"'/locations/us-central1/reasoningEngines/'"${MCP_ENGINE_ID}"'"
+      }
+    },
+    "state": "ENABLED",
+    "sharingConfig": {
+      "scope": "ALL_USERS"
+    }
+  }')
+
+MCP_AGENT_ID=$(echo "${MCP_RESPONSE}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('name','').split('/')[-1])" 2>/dev/null || echo "FAILED")
+echo "MCP Agent registered: ${MCP_AGENT_ID}"
+
+# ---- Step 3: Register Simulator Agent (Agent Engine) ----
+echo ""
+echo "--- Registering Simulator Agent (Agent Engine) ---"
+echo "Reasoning Engine: ${SIMULATOR_ENGINE_ID}"
+
+SIM_RESPONSE=$(curl -s -X POST \
+  "${BASE_URL}" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -H "X-Goog-User-Project: ${PROJECT_ID}" \
+  -d '{
+    "displayName": "Shopper Simulator",
+    "description": "World-model shopper simulation agent for endcap merchandising A/B testing. Simulates shoppers walking store aisles, building carts, and evaluating product placement strategies.",
+    "adkAgentDefinition": {
+      "provisionedReasoningEngine": {
+        "reasoningEngine": "projects/'"${PROJECT_NUMBER}"'/locations/us-central1/reasoningEngines/'"${SIMULATOR_ENGINE_ID}"'"
+      }
+    },
+    "state": "ENABLED",
+    "sharingConfig": {
+      "scope": "ALL_USERS"
+    }
+  }')
+
+SIM_AGENT_ID=$(echo "${SIM_RESPONSE}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('name','').split('/')[-1])" 2>/dev/null || echo "FAILED")
+echo "Simulator Agent registered: ${SIM_AGENT_ID}"
+
+# ---- Step 4: Register A2A Agent (Cloud Run) ----
 echo ""
 echo "--- Registering A2A Agent (Cloud Run) ---"
 echo "Cloud Run URL: ${A2A_CLOUD_RUN_URL}"
@@ -105,7 +161,7 @@ A2A_RESPONSE=$(curl -s -X POST \
 A2A_AGENT_ID=$(echo "${A2A_RESPONSE}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('name','').split('/')[-1])" 2>/dev/null || echo "FAILED")
 echo "A2A Agent registered: ${A2A_AGENT_ID}"
 
-# ---- Step 3: List all registered agents ----
+# ---- Step 5: List all registered agents ----
 echo ""
 echo "=== All Registered Agents ==="
 curl -s -X GET "${BASE_URL}" \
@@ -133,4 +189,6 @@ echo "=== Registration Complete ==="
 echo ""
 echo "Update config/settings.yaml with:"
 echo "  agent_id: \"${ADK_AGENT_ID}\""
+echo "  mcp_agent_id: \"${MCP_AGENT_ID}\""
+echo "  simulator_agent_id: \"${SIM_AGENT_ID}\""
 echo "  a2a_agent_id: \"${A2A_AGENT_ID}\""

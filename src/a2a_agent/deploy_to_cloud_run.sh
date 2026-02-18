@@ -33,7 +33,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --cpu=1 \
   --min-instances=0 \
   --max-instances=3 \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=TRUE"
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=global,GOOGLE_GENAI_USE_VERTEXAI=TRUE"
 
 # Get the service URL
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" \
