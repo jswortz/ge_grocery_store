@@ -16,6 +16,7 @@ import logging
 import os
 import sys
 from http.server import HTTPServer, SimpleHTTPRequestHandler
+from socketserver import ThreadingMixIn
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
@@ -842,7 +843,10 @@ def main():
     except Exception as exc:
         logger.warning("Voice server not started: %s", exc)
 
-    server = HTTPServer(("0.0.0.0", PORT), FrontendHandler)
+    class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+        daemon_threads = True
+
+    server = ThreadedHTTPServer(("0.0.0.0", PORT), FrontendHandler)
     logger.info("%s frontend serving on http://localhost:%d", retailer_name, PORT)
     logger.info("Static files from %s", STATIC_DIR)
     try:

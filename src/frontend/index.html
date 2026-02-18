@@ -1247,7 +1247,7 @@ details[open] .thoughts-toggle::before {
             <span class="sq-sub">Creative &middot; Gemini Image</span>
           </span>
         </button>
-        <button class="sample-btn" onclick="sendSample('What is the customer lifetime value by loyalty tier?', {backend:'stream-assist'})">
+        <button class="sample-btn" onclick="sendSample('What is the customer lifetime value by loyalty tier?', {backend:'stream-assist', agentId:'14793816534468506603'})">
           <span class="sq-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
           </span>
@@ -1427,7 +1427,9 @@ function rebuildAgentSelector() {
       if (agent.type === 'assistant') continue;
       const opt = document.createElement('option');
       opt.value = agent.id;
-      const badge = typeLabels[agent.type] || agent.type;
+      // Differentiate Deep Research from Data Insights
+      let badge = typeLabels[agent.type] || agent.type;
+      if (agent.id === 'deep_research') badge = 'Research';
       opt.textContent = `${agent.name || agent.id} [${badge}]`;
       $selector.appendChild(opt);
     }
@@ -1601,7 +1603,7 @@ function buildArchTree() {
       _l('\u2502   ', false, 'Data Insights Agent', 'DATA', 'badge-data', hi('14793816534468506603'), 'BigQuery analytics'),
       _l('\u2502   ', false, 'Grocery Retail Agent', 'ADK', 'badge-agent', hi('17851962453813099770'), 'Agent Engine'),
       _l('\u2502   ', false, 'Grocery A2A Agent', 'A2A', 'badge-svc', hi('6222808436610094141'), 'Cloud Run'),
-      _l('\u2502   ', true, 'Deep Research', 'MANAGED', 'badge-model', hi('deep_research')),
+      _l('\u2502   ', true, 'Deep Research', 'RESEARCH', 'badge-svc', hi('deep_research'), 'Multi-source analysis'),
       _l('', false, 'sop-store', 'DATA STORE', 'badge-tool', false, 'SOPs (GCS)'),
       _l('', false, 'brand-guidelines-store', 'DATA STORE', 'badge-tool', false, 'Brand docs (GCS)'),
       _l('', false, 'Gmail', 'CONNECTOR', 'badge-data', false, 'Workspace'),
@@ -2613,10 +2615,16 @@ function sendSample(text, opts) {
     rebuildAgentSelector();
     updateAgentSelectorVisibility();
   }
-  if (opts?.agentId && State.backend === 'agent-engine') {
-    State.selectedAgentEngineId = opts.agentId;
-    const $selector = document.getElementById('agent-selector');
-    $selector.value = opts.agentId;
+  if (opts?.agentId) {
+    if (State.backend === 'agent-engine') {
+      State.selectedAgentEngineId = opts.agentId;
+      const $selector = document.getElementById('agent-selector');
+      $selector.value = opts.agentId;
+    } else if (State.backend === 'stream-assist') {
+      State.selectedAgent = opts.agentId;
+      const $selector = document.getElementById('agent-selector');
+      $selector.value = opts.agentId;
+    }
   }
   $input.value = text;
   sendMessage();
