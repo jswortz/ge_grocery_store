@@ -97,8 +97,8 @@ python -m src.frontend    # Open http://localhost:8080
 
 **What happens:**
 1. Sarah asks: *"What are the top 5 products by revenue?"*
-2. Root agent routes to `analytics_agent`
-3. Analytics agent generates SQL, queries the 12K-row BigQuery star schema
+2. In StreamAssist, she selects the **Data Insights Agent** from the agent selector dropdown
+3. The Data Insights Agent generates SQL, queries the 12K-row BigQuery star schema
 4. Sarah asks: *"Show me sales by store -- which location has the most traffic?"*
 5. Agent compares Downtown Market, Westside Market, and Lakefront Market performance
 
@@ -106,11 +106,13 @@ python -m src.frontend    # Open http://localhost:8080
 
 **Demo:**
 ```bash
-# Agent Engine tab: Ask analytics questions
+python -m src.frontend    # Open http://localhost:8080
+# StreamAssist tab: Select "Data Insights Agent" from the agent selector dropdown
 # Try: "What are store sales by location?" or "Show me loyalty tier spending"
+# Alternatively, use the MCP agent (Agent Engine tab) for arbitrary SQL via MCP Toolbox
 ```
 
-**Google Cloud value:** BigQuery handles the 12K+ transaction star schema. The MCP Toolbox alternative lets the LLM generate arbitrary SQL (not just pattern-matched queries) with 9 BigQuery tools.
+**Google Cloud value:** BigQuery handles the 12K+ transaction star schema. The StreamAssist Data Insights Agent provides managed analytics routing. The MCP Toolbox alternative lets the LLM generate arbitrary SQL (not just pattern-matched queries) with 9 BigQuery tools.
 
 > **Notice:** Sarah asks about "my stores" and the agent recalls her Downtown Market preference from Act 1 -- Memory Bank at work, invisibly.
 
@@ -216,9 +218,9 @@ See the [full architecture documentation](architecture.md) for detailed diagrams
 | Resource | Type | ID |
 |----------|------|-----|
 | Discovery Engine | Search App | `grocery-workshop-engine` (global) |
-| Agent Engine (Main) | Reasoning Engine | `3323818153208709120` (us-central1) |
-| Agent Engine (MCP) | Reasoning Engine | `8287066417547706368` (us-central1) |
-| Agent Engine (Simulator) | Reasoning Engine | `256585331992690688` (us-central1) |
+| Agent Engine (Main) | Reasoning Engine | `4433744355123003392` (us-central1) |
+| Agent Engine (MCP) | Reasoning Engine | `7481555402945986560` (us-central1) |
+| Agent Engine (Simulator) | Reasoning Engine | `31475719368343552` (us-central1) |
 | Cloud Run (A2A) | Service | `grocery-a2a-agent` (us-central1) |
 | Model Armor | Template | `grocery-workshop-armor-us` (us multi-region) |
 | BigQuery | Dataset | `wortz-project-352116.ge_grocery_demo` |
