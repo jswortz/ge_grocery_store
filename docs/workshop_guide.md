@@ -31,7 +31,7 @@ This workshop shows how Google Cloud's agent platform solves **all six of Sarah'
 | **Discovery Engine** | Enterprise search over SOPs and brand docs | Look up brand guidelines for promotion compliance |
 | **Agent Engine** | Multi-agent AI orchestration | Route between analytics, search, and image generation |
 | **BigQuery + MCP** | Natural language data analytics | Analyze sales trends by store and product |
-| **Imagen** | Brand-compliant product imagery | Generate marketing visuals for the endcap display |
+| **Gemini 3 Pro Image** | Brand-compliant product imagery | Generate marketing visuals for the endcap display |
 | **Memory Bank** | Cross-session user memory | Agent remembers Sarah's store and preferences |
 | **Model Armor** | Content safety and PII protection | Ensure customer data stays private in analytics |
 | **A2A Protocol** | Agent-to-agent communication | Other teams discover and invoke Sarah's simulator |
@@ -63,7 +63,7 @@ cd src/simulator_agent && adk web
 
 ---
 
-### Act 2: Brand Compliance + Creative (Discovery Engine + Imagen)
+### Act 2: Brand Compliance + Creative (Discovery Engine + Gemini 3 Pro Image)
 
 **Sarah's problem:** *"Now I need marketing materials for the endcap. But they have to follow our brand guidelines exactly."*
 
@@ -73,19 +73,22 @@ cd src/simulator_agent && adk web
 3. StreamAssist returns a grounded answer with citations to specific pages
 4. Sarah asks: *"Generate a product image for Nano Banana Pro that follows our brand guidelines"*
 5. Root agent routes to `image_agent` via `transfer_to_agent`
-6. Image agent creates brand-compliant imagery using Imagen with the green/gold/white palette
+6. Image agent creates brand-compliant imagery using Gemini 3 Pro Image with the green/gold/white palette
 
 **Key takeaway:** Grounded enterprise search ensures brand compliance. Intelligent agent routing handles multi-step creative workflows.
 
 **Demo:**
 ```bash
 python -m src.frontend    # Open http://localhost:8080
-# StreamAssist tab: Ask about brand guidelines (use agent selector to route to specific assistants)
+# StreamAssist tab: Ask about brand guidelines (use agent selector dropdown to route to specific assistants)
 # Agent Engine tab: Ask for product image generation (images render inline in chat)
-# Compare tab: See both backends side-by-side for the same query
+# Use the Agent Engine selector to switch between Main, MCP, and Simulator agents
+# The side-by-side architecture panel shows agent routing and tool invocations in real time
 ```
 
-**Google Cloud value:** Discovery Engine provides grounded responses with document citations -- not hallucinated content. Gemini 3 Pro Image generates images that respect brand constraints. The Compare mode lets you see StreamAssist vs Agent Engine responses side-by-side.
+**Google Cloud value:** Discovery Engine provides grounded responses with document citations -- not hallucinated content. Gemini 3 Pro Image generates images that respect brand constraints. The Agent Engine selector lets you switch between deployed agents (Main, MCP, Simulator) to demonstrate different orchestration patterns, while the architecture panel shows the agent routing graph in real time.
+
+> **Tip:** Simple conversational queries like "hello" or "how are you?" are handled by a client-side greeting handler in the frontend -- no backend round-trip needed. This keeps the demo responsive and avoids wasting API calls on non-substantive queries.
 
 > **Notice:** The agent remembers Sarah's earlier context about the Nano Banana Pro promotion. Memory Bank stores her preferences across sessions -- no re-introduction needed.
 
@@ -108,9 +111,11 @@ python -m src.frontend    # Open http://localhost:8080
 ```bash
 # Agent Engine tab: Ask analytics questions
 # Try: "What are store sales by location?" or "Show me loyalty tier spending"
+# Analytics responses with tabular data automatically render as interactive Chart.js
+# visualizations (bar, pie, line charts) directly in the chat interface
 ```
 
-**Google Cloud value:** BigQuery handles the 12K+ transaction star schema. The MCP Toolbox alternative lets the LLM generate arbitrary SQL (not just pattern-matched queries) with 9 BigQuery tools.
+**Google Cloud value:** BigQuery handles the 12K+ transaction star schema. The MCP Toolbox alternative lets the LLM generate arbitrary SQL (not just pattern-matched queries) with 9 BigQuery tools. Query results are visualized inline via Chart.js, turning raw data into interactive charts without leaving the conversation.
 
 > **Notice:** Sarah asks about "my stores" and the agent recalls her Downtown Market preference from Act 1 -- Memory Bank at work, invisibly.
 
@@ -190,7 +195,7 @@ curl https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app/.well-known/agent.json
 - Result: Confident deployment to all 3 stores with data-backed projections
 
 **The platform value:**
-Sarah didn't build 6 separate systems. She used **one platform** -- Google Cloud's agent ecosystem -- where Discovery Engine, Agent Engine, BigQuery, Imagen, Memory Bank, Model Armor, A2A, and the ADK evaluation framework all work together. The config-driven design means switching retailers requires changing one YAML file.
+Sarah didn't build 6 separate systems. She used **one platform** -- Google Cloud's agent ecosystem -- where Discovery Engine, Agent Engine, BigQuery, Gemini 3 Pro Image, Memory Bank, Model Armor, A2A, and the ADK evaluation framework all work together. The config-driven design means switching retailers requires changing one YAML file.
 
 ---
 
