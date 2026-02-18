@@ -1,11 +1,13 @@
-"""Main ADK agent definition for the grocery retail assistant.
+"""Main ADK agent definition for the grocery retail SOP & brand assistant.
 
 Uses a multi-agent architecture:
-- root_agent: Orchestrator with DiscoveryEngineSearchTool (searches both
-  SOP and brand guideline data stores via the engine) and sub-agents for
-  function tools
-- analytics_agent: FunctionTool for BigQuery queries
+- root_agent (sop_agent): Orchestrator with DiscoveryEngineSearchTool
+  (searches both SOP and brand guideline data stores via the engine)
+  and sub-agents for function tools
 - image_agent: FunctionTool for product image generation
+
+Analytics is handled by the Data Insights Agent on StreamAssist or the
+MCP agent on Agent Engine — not by this agent.
 
 We use DiscoveryEngineSearchTool (a FunctionTool subclass) directly instead
 of VertexAiSearchTool because VertexAiSearchTool adds a built-in Gemini
@@ -93,7 +95,6 @@ def create_agent():
     from google.genai.types import ThinkingConfig
 
     from .prompts.system_prompts import get_main_agent_instruction
-    from .tools.bq_tool import create_bq_tool
     from .tools.image_gen_tool import create_image_gen_tool
 
     config = _load_config()
@@ -166,25 +167,6 @@ def create_agent():
     # Sub-agents for function tools
     sub_agents = []
 
-    # Analytics sub-agent (Flash for fast SQL generation)
-    analytics_agent = LlmAgent(
-        name="analytics_agent",
-        model=adk_fast,
-        planner=planner,
-        instruction=(
-            f"You are the data analytics specialist for {retailer}. "
-            "Use the query_grocery_data tool to answer questions about sales, "
-            "products, stores, customers, and employees. Present results clearly "
-            "with specific numbers."
-        ),
-        description=(
-            "Answers data questions about sales, products, stores, and customers "
-            "by querying the BigQuery star schema."
-        ),
-        tools=[create_bq_tool()],
-    )
-    sub_agents.append(analytics_agent)
-
     # Image generation sub-agent (Flash for coordination, Gemini Image for actual gen)
     image_agent = LlmAgent(
         name="image_agent",
@@ -209,14 +191,14 @@ def create_agent():
 
     # Root orchestrator with search tools + sub-agents for function tools
     agent = LlmAgent(
-        name="grocery_assistant",
+        name="sop_agent",
         model=adk_model,
         planner=planner,
         instruction=get_main_agent_instruction(),
         description=(
             "AI assistant for grocery retail operations. Searches SOPs and "
             "brand guidelines directly, and delegates to sub-agents for "
-            "analytics and image generation."
+            "image generation and shopper simulation."
         ),
         tools=root_tools,
         sub_agents=sub_agents,

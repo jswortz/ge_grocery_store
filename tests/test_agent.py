@@ -24,7 +24,13 @@ class TestSystemPrompts:
         instruction = get_main_agent_instruction()
         assert "Standard Operating Procedures" in instruction
         assert "Brand" in instruction
-        assert "BigQuery" in instruction or "analytics" in instruction.lower()
+        assert "Image Generation" in instruction or "image" in instruction.lower()
+
+    def test_main_instruction_no_analytics_section(self):
+        from src.agent.prompts.system_prompts import get_main_agent_instruction
+        instruction = get_main_agent_instruction()
+        assert "Product Information & Analytics" not in instruction
+        assert "BigQuery analytics tool" not in instruction
 
     def test_sop_description(self):
         from src.agent.prompts.system_prompts import get_sop_agent_description
@@ -469,5 +475,31 @@ class TestVoiceServer:
             assert run_config.speech_config.voice_config is not None
             prebuilt = run_config.speech_config.voice_config.prebuilt_voice_config
             assert prebuilt.voice_name == "Puck"
+
+
+class TestAgentRefactor:
+    """Tests for the analytics_agent removal and sop_agent rename."""
+
+    def test_agent_name_is_sop_agent(self):
+        """Root agent should be named sop_agent."""
+        import inspect
+        from src.agent import agent as agent_module
+        source = inspect.getsource(agent_module.create_agent)
+        assert 'name="sop_agent"' in source
+
+    def test_no_analytics_sub_agent(self):
+        """analytics_agent should not be created in agent.py."""
+        import inspect
+        from src.agent import agent as agent_module
+        source = inspect.getsource(agent_module.create_agent)
+        assert 'name="analytics_agent"' not in source
+        assert "create_bq_tool" not in source
+
+    def test_image_agent_still_present(self):
+        """image_agent sub-agent should still be present."""
+        import inspect
+        from src.agent import agent as agent_module
+        source = inspect.getsource(agent_module.create_agent)
+        assert 'name="image_agent"' in source
 
 

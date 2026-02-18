@@ -43,11 +43,13 @@ def _server() -> str:
 class TestFrontendTabs:
     """Verify tab layout and naming in the frontend HTML."""
 
-    def test_four_tabs_present(self):
+    def test_three_tabs_present(self):
         html = _html()
-        expected_backends = ["stream-assist", "agent-engine", "compare", "voice-ops"]
+        expected_backends = ["stream-assist", "agent-engine", "voice-ops"]
         for backend in expected_backends:
             assert f'data-backend="{backend}"' in html, f"Missing tab: {backend}"
+        # Compare tab was removed
+        assert 'data-backend="compare"' not in html
 
     def test_agent_engine_tab_includes_a2a(self):
         html = _html()
@@ -219,25 +221,6 @@ class TestServerVoiceIntegration:
         assert "live_location" in src or "us-east4" in src
 
 
-class TestFrontendCompareMode:
-    """Verify compare mode behaviour."""
-
-    def test_compare_backend_exists(self):
-        html = _html()
-        assert 'data-backend="compare"' in html
-
-    def test_compare_creates_session(self):
-        """Compare mode should create StreamAssist sessions too."""
-        html = _html()
-        # The ensureSession function should handle compare mode
-        assert "compare" in html
-
-    def test_compare_layout_has_two_panels(self):
-        html = _html()
-        assert "compare-cell stream-assist" in html
-        assert "compare-cell agent-engine" in html
-
-
 class TestFrontendStreaming:
     """Verify Agent Engine SSE streaming."""
 
@@ -277,11 +260,6 @@ class TestMultiTurnCapability:
         """Voice ops transcript appends (not replaces) each message."""
         html = _html()
         assert "voiceOpsTranscript +=" in html
-
-    def test_compare_mode_dual_multi_turn(self):
-        """Compare mode sends to both backends, supporting multi-turn."""
-        html = _html()
-        assert "sendCompareQuery" in html
 
     def test_frontend_favicon(self):
         """Frontend has a favicon link tag."""
@@ -363,7 +341,7 @@ class TestE2EPageLoad:
             assert title and len(title) > 0
             browser.close()
 
-    def test_four_tabs_visible(self):
+    def test_three_tabs_visible(self):
         sync_playwright = _get_playwright()
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -371,7 +349,7 @@ class TestE2EPageLoad:
             page.goto("http://localhost:8080")
             page.wait_for_load_state("networkidle")
             tabs = page.locator(".tab-btn").all()
-            assert len(tabs) == 4
+            assert len(tabs) == 3
             browser.close()
 
     def test_agent_engine_tab_text_includes_a2a(self):
@@ -445,7 +423,8 @@ class TestE2EAgentSelector:
                 assert len(selected_logs) >= 1
             browser.close()
 
-    def test_agent_selector_hidden_on_agent_engine_tab(self):
+    def test_agent_selector_visible_on_agent_engine_tab(self):
+        """Agent selector shows on Agent Engine tab to pick between deployed agents."""
         sync_playwright = _get_playwright()
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -457,7 +436,7 @@ class TestE2EAgentSelector:
             page.wait_for_timeout(300)
             wrap = page.locator("#agent-selector-wrap")
             display = wrap.evaluate("el => getComputedStyle(el).display")
-            assert display == "none"
+            assert display != "none"
             browser.close()
 
 
@@ -640,19 +619,6 @@ class TestE2ETabSwitching:
             # Chat area should be visible
             chat = page.locator("#chat-area")
             assert chat.is_visible()
-            browser.close()
-
-    def test_switch_to_compare(self):
-        sync_playwright = _get_playwright()
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto("http://localhost:8080")
-            page.wait_for_load_state("networkidle")
-            page.locator('button[data-backend="compare"]').click()
-            page.wait_for_timeout(300)
-            label = page.locator("#mode-label").text_content()
-            assert "Compare" in label
             browser.close()
 
     def test_switch_to_voice_hides_chat(self):

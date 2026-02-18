@@ -133,7 +133,7 @@ def create_runner():
 
     return Runner(
         agent=agent,
-        app_name="grocery_assistant",
+        app_name="sop_agent",
         session_service=session_service,
         memory_service=memory_service,
     )

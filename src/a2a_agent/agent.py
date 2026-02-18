@@ -1,6 +1,6 @@
 """A2A-enabled grocery retail agent.
 
-Wraps the existing ADK grocery_assistant agent with the A2A (Agent-to-Agent)
+Wraps the existing ADK sop_agent agent with the A2A (Agent-to-Agent)
 protocol so it can be discovered and invoked by other agents. Designed for
 deployment to Cloud Run.
 
@@ -61,7 +61,7 @@ def _load_config() -> dict:
 def create_agent():
     """Create the ADK agent for A2A serving.
 
-    Returns the same grocery_assistant agent used in src/agent/agent.py
+    Returns the same sop_agent agent used in src/agent/agent.py
     but configured for A2A serving via Cloud Run.
     """
     from google.adk.agents import LlmAgent
@@ -154,7 +154,7 @@ def create_agent():
     )
 
     agent = LlmAgent(
-        name="grocery_assistant",
+        name="sop_agent",
         model=adk_model,
         planner=planner,
         instruction=f"""You are an AI assistant for {retailer}, a grocery retail company.

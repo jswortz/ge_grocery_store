@@ -306,7 +306,15 @@ Endcap Displays:
         f"  - {key}: {s['name']}" for key, s in _STRATEGIES.items()
     )
 
-    # Build shopper sub-agents for all personas
+    # Build shopper sub-agents using clone() pattern for proper deep-copy
+    base_shopper = LlmAgent(
+        name="shopper_template",
+        model=model,
+        planner=planner,
+        instruction="template",
+        description="template",
+    )
+
     shopper_agents = []
     for p in _PERSONAS:
         instruction = f"""You are simulating a shopper at {retailer}'s {store_name}.
@@ -349,13 +357,11 @@ Respond with valid JSON matching this schema:
 }}"""
 
         shopper_agents.append(
-            LlmAgent(
-                name=f"shopper_{p['id']}",
-                model=model,
-                planner=planner,
-                instruction=instruction,
-                description=f"Simulated shopper: {p['name']} at {store_name}",
-            )
+            base_shopper.clone(update={
+                "name": f"shopper_{p['id']}",
+                "instruction": instruction,
+                "description": f"Simulated shopper: {p['name']} at {store_name}",
+            })
         )
 
     orchestrator = LlmAgent(

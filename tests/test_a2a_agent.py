@@ -137,7 +137,7 @@ class TestA2AAgentCreation(unittest.TestCase):
             from src.a2a_agent.agent import create_agent
             agent = create_agent()
             assert agent is not None
-            assert agent.name == "grocery_assistant"
+            assert agent.name == "sop_agent"
 
     def test_create_agent_has_sub_agents(self):
         with patch.dict(sys.modules, self._mock_tool_modules()):

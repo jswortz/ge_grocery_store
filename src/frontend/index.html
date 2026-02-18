@@ -19,6 +19,9 @@
 <!-- DOMPurify for safe HTML -->
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 
+<!-- Chart.js for data visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
 <style>
 /* ================================================================
    DESIGN TOKENS
@@ -525,6 +528,55 @@ body {
 }
 
 .message.user .msg-meta { text-align: right; }
+
+/* Collapsible thoughts section */
+.thoughts-section {
+  margin: 0 0 6px;
+  border: 1px solid var(--vf-gray-200);
+  border-radius: 8px;
+  background: var(--vf-gray-50);
+  overflow: hidden;
+}
+.thoughts-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vf-gray-600);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.thoughts-toggle::-webkit-details-marker { display: none; }
+.thoughts-toggle::before {
+  content: '\25B6';
+  font-size: 8px;
+  transition: transform 0.2s;
+}
+details[open] .thoughts-toggle::before {
+  transform: rotate(90deg);
+}
+.thoughts-toggle svg { color: var(--vf-gray-500); flex-shrink: 0; }
+.thoughts-content {
+  padding: 8px 12px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--vf-gray-600);
+  border-top: 1px solid var(--vf-gray-200);
+  max-height: 300px;
+  overflow-y: auto;
+}
+.thoughts-content p { margin: 0 0 6px; }
+.thoughts-content p:last-child { margin-bottom: 0; }
+.thoughts-content code {
+  background: rgba(0,0,0,0.05);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.thoughts-content strong { color: var(--vf-gray-700); }
 
 /* Markdown styles inside assistant bubbles */
 .msg-bubble h1, .msg-bubble h2, .msg-bubble h3 {
@@ -1588,10 +1640,8 @@ function buildArchTree() {
     if (aeType === 'a2a') return [
       _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
       _l('', true, 'A2A Protocol', 'A2A', 'badge-svc', false, 'Cloud Run'),
-      _l('    ', true, 'grocery_assistant', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
+      _l('    ', true, 'sop_agent', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
       _l('        ', false, 'DiscoveryEngineSearchTool', 'TOOL', 'badge-tool', false, 'SOPs + Brand'),
-      _l('        ', false, 'analytics_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash'),
-      _l('        \u2502   ', true, 'query_grocery_data', 'TOOL', 'badge-tool', false, 'BigQuery'),
       _l('        ', true, 'image_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash'),
       _l('            ', true, 'generate_product_image', 'TOOL', 'badge-tool', false, 'Gemini Image'),
     ].join('');
@@ -1599,12 +1649,10 @@ function buildArchTree() {
     // Default: ADK agent
     return [
       _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
-      _l('', true, 'grocery_assistant', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
+      _l('', true, 'sop_agent', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
       _l('    ', false, 'DiscoveryEngineSearchTool', 'TOOL', 'badge-tool', false, 'SOPs + Brand Guidelines'),
       _l('    ', false, 'PreloadMemoryTool', 'TOOL', 'badge-tool', false, 'Memory Bank'),
       _l('    ', false, 'delegate_to_simulator', 'TOOL', 'badge-tool', false, 'Simulator Agent Engine'),
-      _l('    ', false, 'analytics_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash-preview'),
-      _l('    \u2502   ', true, 'query_grocery_data', 'TOOL', 'badge-tool', false, 'BigQuery'),
       _l('    ', true, 'image_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash-preview'),
       _l('        ', true, 'generate_product_image', 'TOOL', 'badge-tool', false, 'Gemini Image'),
     ].join('');
@@ -1636,7 +1684,10 @@ function updateAgentSelectorVisibility() {
   // Show agent selector for all backends except voice-ops
   const show = State.backend !== 'voice-ops';
   $wrap.style.display = show ? 'inline-flex' : 'none';
-  if (!show) $dsPanel.style.display = 'none';
+  // Only show data sources for StreamAssist
+  if (State.backend !== 'stream-assist') {
+    $dsPanel.style.display = 'none';
+  }
   updateModelCard();
 }
 
@@ -1717,7 +1768,7 @@ marked.setOptions({
 function renderMarkdown(text) {
   const raw = marked.parse(text);
   return DOMPurify.sanitize(raw, {
-    ADD_TAGS: ['table', 'thead', 'tbody', 'tr', 'th', 'td', 'img', 'svg', 'rect', 'path', 'circle', 'line'],
+    ADD_TAGS: ['table', 'thead', 'tbody', 'tr', 'th', 'td', 'img', 'svg', 'rect', 'path', 'circle', 'line', 'canvas', 'div'],
     ADD_ATTR: ['target', 'src', 'alt', 'width', 'height', 'style', 'viewBox', 'fill', 'stroke', 'stroke-width', 'rx', 'ry', 'x', 'y', 'd', 'cx', 'cy', 'r', 'x1', 'y1', 'x2', 'y2'],
   });
 }
@@ -1980,7 +2031,7 @@ async function callStreamAssist(text) {
 function parseStreamAssistResponse(data) {
   const chunks = Array.isArray(data) ? data : [data];
   const texts = [];
-  const chartFiles = [];  // Track chart image references
+  const thoughts = [];
 
   for (const chunk of chunks) {
     // Primary: extract from grounded content replies
@@ -1989,12 +2040,30 @@ function parseStreamAssistResponse(data) {
         const gc = reply.groundedContent || {};
         const content = gc.content || {};
         const isThought = content.thought || false;
-        if (!isThought && content.text) {
+        if (isThought && content.text) {
+          thoughts.push(content.text);
+        } else if (!isThought && content.text) {
           texts.push(content.text);
         }
-        // Detect chart file references (Data Insights Agent outputs)
-        if (!isThought && content.file && content.file.mimeType === 'image/png') {
-          chartFiles.push(content.file);
+      }
+    }
+    // Also extract thoughts from diagnosticInfo planner steps
+    if (chunk.answer && chunk.answer.diagnosticInfo) {
+      const steps = chunk.answer.diagnosticInfo.plannerSteps || [];
+      for (const step of steps) {
+        if (step.planStep && step.planStep.parts) {
+          for (const part of step.planStep.parts) {
+            if (part.functionCall) {
+              thoughts.push(`**Tool Call:** ${part.functionCall.functionName}(${JSON.stringify(part.functionCall.args || {})})`);
+            }
+          }
+        }
+        if (step.toolPartialResponseStep) {
+          const pr = step.toolPartialResponseStep.functionCallPartialResponse;
+          if (pr && pr.text && !texts.includes(pr.text)) {
+            // This is typically the agent's intermediate reasoning
+            thoughts.push(`**Agent Response:** ${pr.text.substring(0, 500)}${pr.text.length > 500 ? '...' : ''}`);
+          }
         }
       }
     }
@@ -2012,21 +2081,130 @@ function parseStreamAssistResponse(data) {
     }
   }
 
-  // If charts were generated, insert a visual chart placeholder before the text
-  if (chartFiles.length > 0) {
-    const chartHtml = `<div style="background:linear-gradient(135deg,#1a237e 0%,#0d47a1 100%);border-radius:10px;padding:16px 20px;margin:8px 0 12px;color:#fff;font-size:13px;">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#82b1ff" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
-    <span style="font-weight:600;letter-spacing:0.3px;">Chart Generated by Data Insights Agent</span>
-  </div>
-  <div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;font-size:12px;color:rgba(255,255,255,0.7);line-height:1.5;">
-    View the interactive chart visualization in the <a href="https://console.cloud.google.com/gen-app-builder/engines/grocery-workshop-engine/preview?project=wortz-project-352116" target="_blank" style="color:#82b1ff;text-decoration:underline;">Gemini Enterprise Console</a>
-  </div>
-</div>`;
-    texts.unshift(chartHtml);
-  }
+  const text = texts.join('\n') || 'No response received. Try asking about store operations, brand guidelines, or product information.';
+  // Deduplicate thoughts (remove thoughts that are identical to the final text)
+  const uniqueThoughts = thoughts.filter(t => {
+    const clean = t.replace(/\*\*(Tool Call|Agent Response):\*\*\s*/, '').trim();
+    return !texts.some(txt => txt.trim() === clean);
+  });
+  return { text, thoughts: uniqueThoughts };
+}
 
-  return texts.join('\n') || 'No response received. Try asking about store operations, brand guidelines, or product information.';
+// ================================================================
+// CHART RENDERING (BigQuery + Chart.js)
+// ================================================================
+const CHART_QUERY_PATTERN = /\b(graph|chart|plot|visuali|trend|over time|by (day|month|week|store|category)|top\s+\d*\s*(product|item|seller)|sales breakdown|revenue breakdown|payment.*method|loyalty.*tier)/i;
+
+function isChartQuery(text) {
+  return CHART_QUERY_PATTERN.test(text);
+}
+
+async function fetchAndRenderChart(userQuery, messageEl) {
+  try {
+    const resp = await fetch('/api/bigquery/chart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: userQuery }),
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data.rows || data.rows.length === 0 || data.error) return;
+
+    // Create chart container
+    const chartContainer = document.createElement('div');
+    chartContainer.style.cssText = 'background:#fff;border-radius:10px;padding:16px;margin:12px 0 4px;border:1px solid #e0e0e0;';
+
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-size:13px;font-weight:600;color:#1b5e20;margin-bottom:10px;display:flex;align-items:center;gap:6px;';
+    titleEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>${data.title || 'Chart'}`;
+    chartContainer.appendChild(titleEl);
+
+    const canvasWrapper = document.createElement('div');
+    canvasWrapper.style.cssText = 'position:relative;height:260px;';
+    const canvas = document.createElement('canvas');
+    canvasWrapper.appendChild(canvas);
+    chartContainer.appendChild(canvasWrapper);
+
+    // Insert chart before the text content in the bubble
+    const bubble = messageEl.querySelector('.msg-bubble');
+    if (bubble) {
+      bubble.insertBefore(chartContainer, bubble.firstChild);
+    }
+
+    // Render Chart.js
+    const labels = data.rows.map(r => r[0]);
+    const values = data.rows.map(r => typeof r[1] === 'number' ? r[1] : parseFloat(r[1]) || 0);
+    const chartType = data.chart_type || 'bar';
+
+    const chartColors = {
+      line: { bg: 'rgba(46,125,50,0.1)', border: '#2e7d32' },
+      bar: { bg: 'rgba(46,125,50,0.6)', border: '#2e7d32' },
+      pie: {
+        bg: ['#2e7d32','#f9a825','#1565c0','#e53935','#7b1fa2','#00897b','#ef6c00','#5c6bc0','#c62828','#2e7d32'],
+        border: '#fff',
+      },
+    };
+    const colors = chartColors[chartType] || chartColors.bar;
+
+    const datasets = [{
+      label: data.columns[1] || 'Value',
+      data: values,
+      backgroundColor: chartType === 'pie' ? colors.bg : colors.bg,
+      borderColor: chartType === 'pie' ? colors.border : colors.border,
+      borderWidth: chartType === 'pie' ? 2 : 2,
+      tension: 0.3,
+      fill: chartType === 'line',
+      pointRadius: chartType === 'line' ? 2 : undefined,
+      pointHoverRadius: chartType === 'line' ? 5 : undefined,
+    }];
+
+    // If there are 3+ columns, add second dataset (e.g., count + amount)
+    if (data.columns.length >= 3 && chartType !== 'pie') {
+      const values2 = data.rows.map(r => typeof r[2] === 'number' ? r[2] : parseFloat(r[2]) || 0);
+      datasets.push({
+        label: data.columns[2],
+        data: values2,
+        backgroundColor: 'rgba(249,168,37,0.6)',
+        borderColor: '#f9a825',
+        borderWidth: 2,
+        yAxisID: 'y1',
+      });
+    }
+
+    new Chart(canvas, {
+      type: chartType,
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: datasets.length > 1 || chartType === 'pie', position: 'bottom', labels: { font: { size: 11 } } },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        scales: chartType === 'pie' ? {} : {
+          x: {
+            ticks: { maxRotation: 45, font: { size: 10 }, maxTicksLimit: 15 },
+            grid: { display: false },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { font: { size: 10 } },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+          },
+          ...(datasets.length >= 2 ? {
+            y1: {
+              position: 'right',
+              beginAtZero: true,
+              ticks: { font: { size: 10 } },
+              grid: { display: false },
+            },
+          } : {}),
+        },
+      },
+    });
+  } catch (err) {
+    console.warn('Chart rendering failed:', err);
+  }
 }
 
 async function callAgentEngine(text, overrideResourceId) {
@@ -2079,6 +2257,7 @@ async function callAgentEngine(text, overrideResourceId) {
 
 function parseAgentEngineResponse(rawText) {
   const texts = [];
+  const thoughts = [];
   for (const line of rawText.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
@@ -2086,13 +2265,21 @@ function parseAgentEngineResponse(rawText) {
       const event = JSON.parse(trimmed);
       const parts = (event.content && event.content.parts) || [];
       for (const part of parts) {
-        if (part.text) texts.push(part.text);
+        if (part.thought && part.text) {
+          thoughts.push(part.text);
+        } else if (part.text && !part.thought_signature) {
+          texts.push(part.text);
+        }
+        if (part.functionCall) {
+          thoughts.push(`**Tool Call:** ${part.functionCall.name}`);
+        }
       }
     } catch (e) {
       // skip non-JSON lines
     }
   }
-  return texts.join('\n') || 'No response received.';
+  const text = texts.join('\n') || 'No response received.';
+  return { text, thoughts };
 }
 
 // ================================================================
@@ -2104,7 +2291,7 @@ function hideWelcome() {
   }
 }
 
-function addMessage(role, text) {
+function addMessage(role, text, thoughts) {
   hideWelcome();
 
   const ts = new Date();
@@ -2118,6 +2305,19 @@ function addMessage(role, text) {
     : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
   const bubbleContent = role === 'assistant' ? renderMarkdown(text) : escapeHtml(text);
+
+  // Build collapsible thoughts section if thoughts are present
+  let thoughtsHtml = '';
+  if (thoughts && thoughts.length > 0) {
+    const thoughtContent = thoughts.map(t => renderMarkdown(t)).join('<hr style="border:none;border-top:1px solid rgba(0,0,0,0.06);margin:6px 0;">');
+    thoughtsHtml = `<details class="thoughts-section">
+      <summary class="thoughts-toggle">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        Thoughts (${thoughts.length})
+      </summary>
+      <div class="thoughts-content">${thoughtContent}</div>
+    </details>`;
+  }
   const timeStr = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const agentLabel = State.backend === 'stream-assist'
     ? (State.selectedAgent !== 'default_assistant'
@@ -2196,6 +2396,7 @@ function addMessage(role, text) {
     <div class="msg-avatar">${avatarContent}</div>
     <div class="msg-body">
       ${safetyBanner}
+      ${thoughtsHtml}
       <div class="msg-bubble">${bubbleContent}</div>
       <div class="msg-meta">${timeStr}${sourceLabel}${perfBadge}${traceLink}</div>
     </div>
@@ -2263,6 +2464,47 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Streaming message helpers for voice transcript mirroring
+function addStreamingMessage(role) {
+  hideWelcome();
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `message ${role}`;
+  msgDiv.dataset.streaming = 'true';
+  const avatarContent = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1.41-3.53C10.43 15 14 12 17 8z"/></svg>';
+  msgDiv.innerHTML = `
+    <div class="msg-avatar">${avatarContent}</div>
+    <div class="msg-body">
+      <div class="msg-bubble"></div>
+      <div class="msg-meta" style="color:var(--vf-gold-500);">streaming...</div>
+    </div>
+  `;
+  $chatArea.appendChild(msgDiv);
+  scrollToBottom();
+  return msgDiv;
+}
+
+function updateStreamingMessage(el, text) {
+  if (!el) return;
+  const bubble = el.querySelector('.msg-bubble');
+  if (bubble) bubble.innerHTML = renderMarkdown(text);
+  scrollToBottom();
+}
+
+function finalizeStreamingMessage(el, text) {
+  if (!el) return;
+  delete el.dataset.streaming;
+  const bubble = el.querySelector('.msg-bubble');
+  if (bubble) bubble.innerHTML = renderMarkdown(text);
+  const meta = el.querySelector('.msg-meta');
+  if (meta) {
+    const ts = new Date();
+    State.messages.push({ role: 'assistant', text, ts });
+    meta.textContent = `${ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Voice Ops`;
+    meta.style.color = '';
+  }
+  scrollToBottom();
+}
+
 // ================================================================
 // SEND LOGIC
 // ================================================================
@@ -2283,16 +2525,43 @@ async function sendMessage() {
     // Auto-route image generation requests to Agent Engine
     const isImageRequest = State.backend === 'stream-assist' &&
       /\b(generate|create|make|design)\b.*\b(image|photo|picture|imagery|product image)\b/i.test(text);
+
+    // Check if selected StreamAssist agent is ADK/A2A and should route via Agent Engine
+    const selectedAgentInfo = State.availableAgents.find(a => a.id === State.selectedAgent);
+    const isAgentEngineAgent = selectedAgentInfo &&
+      (selectedAgentInfo.type === 'adk' || selectedAgentInfo.type === 'a2a');
+
     if (isImageRequest) {
       addMessage('assistant', '*Routing to Agent Engine for image generation...*');
       response = await callAgentEngine(text);
+    } else if (isAgentEngineAgent && State.backend === 'stream-assist') {
+      // ADK/A2A agents on StreamAssist return empty responses — route via Agent Engine
+      const aeMapping = AppConfig?.agent_engine_mapping || {};
+      const aeResourceId = aeMapping[State.selectedAgent];
+      if (aeResourceId) {
+        response = await callAgentEngine(text, aeResourceId);
+      } else {
+        response = await callAgentEngine(text);
+      }
     } else if (State.backend === 'stream-assist') {
       response = await callStreamAssist(text);
     } else {
       response = await callAgentEngine(text);
     }
     hideLoading();
-    addMessage('assistant', response);
+
+    // StreamAssist returns {text, thoughts}, Agent Engine returns a plain string
+    const responseText = typeof response === 'object' ? response.text : response;
+    const responseThoughts = typeof response === 'object' ? (response.thoughts || []) : [];
+    addMessage('assistant', responseText, responseThoughts);
+
+    // Render chart if this was a chart-related query
+    if (isChartQuery(text)) {
+      const lastMsgEl = $chatArea.querySelector('.message:last-child');
+      if (lastMsgEl) {
+        fetchAndRenderChart(text, lastMsgEl);
+      }
+    }
   } catch (err) {
     hideLoading();
     let friendlyMessage = err.message;
@@ -2909,6 +3178,7 @@ let voiceOpsRecorderNode = null;
 let voiceOpsMicStream = null;
 let isVoiceOpsActive = false;
 let voiceOpsTranscript = '';
+let voiceOpsChatStreamEl = null;  // streaming message element in main chat
 
 async function initVoiceOpsPlayer() {
   if (voiceOpsPlayerNode) return;
@@ -2973,8 +3243,9 @@ function connectVoiceOpsWebSocket(isAudio = true) {
           voiceOpsTranscript += `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px;border-left:3px solid var(--vf-gold-500);"><span style="font-size:11px;color:var(--vf-gold-500);font-weight:600;display:block;margin-bottom:4px;">Assistant</span><span style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.5;">${renderMarkdown(currentText)}</span></div>`;
           $transcript.innerHTML = voiceOpsTranscript;
           $transcript.scrollTop = $transcript.scrollHeight;
-          // Mirror completed assistant turn to main chat area
-          addMessage('assistant', currentText);
+          // Finalize streaming message in main chat
+          finalizeStreamingMessage(voiceOpsChatStreamEl, currentText);
+          voiceOpsChatStreamEl = null;
           currentText = '';
         }
         return;
@@ -2982,6 +3253,11 @@ function connectVoiceOpsWebSocket(isAudio = true) {
 
       if (msg.interrupted) {
         currentText = '';
+        // Remove incomplete streaming message from main chat
+        if (voiceOpsChatStreamEl) {
+          voiceOpsChatStreamEl.remove();
+          voiceOpsChatStreamEl = null;
+        }
         if (voiceOpsPlayerNode) {
           voiceOpsPlayerNode.port.postMessage({ command: 'endOfAudio' });
         }
@@ -2993,13 +3269,18 @@ function connectVoiceOpsWebSocket(isAudio = true) {
         voiceOpsPlayerNode.port.postMessage(base64ToArrayBuffer(msg.data));
       }
 
-      // Text: append to streaming transcript
+      // Text: append to streaming transcript + mirror to main chat
       if (msg.mime_type === 'text/plain' && msg.data) {
         currentText += msg.data;
-        // Show live streaming text
+        // Show live streaming text in voice overlay
         $transcript.innerHTML = voiceOpsTranscript +
           `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:3px solid rgba(249,168,37,0.4);"><span style="font-size:11px;color:var(--vf-gold-500);font-weight:600;display:block;margin-bottom:4px;">Assistant</span><span style="color:rgba(255,255,255,0.75);font-size:13px;line-height:1.5;">${renderMarkdown(currentText)}</span></div>`;
         $transcript.scrollTop = $transcript.scrollHeight;
+        // Mirror to main chat area
+        if (!voiceOpsChatStreamEl) {
+          voiceOpsChatStreamEl = addStreamingMessage('assistant');
+        }
+        updateStreamingMessage(voiceOpsChatStreamEl, currentText);
       }
     } catch (e) {
       console.warn('Voice ops parse error:', e);

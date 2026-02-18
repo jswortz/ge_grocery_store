@@ -283,7 +283,7 @@ Guidelines:
 """
 
     agent = LlmAgent(
-        name="grocery_assistant",
+        name="sop_agent",
         model=_ADK_MODEL,
         planner=planner,
         instruction=instruction,

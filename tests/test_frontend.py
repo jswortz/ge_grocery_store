@@ -186,16 +186,25 @@ class TestImageAutoRouting:
 # ================================================================
 class TestVoiceTranscriptMirroring:
 
-    def test_voice_ops_mirrors_assistant_to_chat(self, html_content):
-        """Voice ops turn_complete should mirror to main chat."""
-        # Find the turn_complete handler and check it calls addMessage
+    def test_voice_ops_streams_assistant_to_chat(self, html_content):
+        """Voice ops text/plain should stream to main chat via streaming helpers."""
+        assert "addStreamingMessage" in html_content
+        assert "updateStreamingMessage" in html_content
+        assert "finalizeStreamingMessage" in html_content
+
+    def test_voice_ops_finalizes_on_turn_complete(self, html_content):
+        """Voice ops turn_complete should finalize the streaming message."""
         turn_complete_section = html_content[html_content.find("msg.turn_complete"):]
-        assert "addMessage('assistant', currentText)" in turn_complete_section
+        assert "finalizeStreamingMessage(voiceOpsChatStreamEl, currentText)" in turn_complete_section
 
     def test_voice_ops_mirrors_user_to_chat(self, html_content):
         """_sendVoiceOpsTextMessage should mirror user to main chat."""
         fn_section = html_content[html_content.find("function _sendVoiceOpsTextMessage"):]
         assert "addMessage('user', text)" in fn_section
+
+    def test_voice_ops_chat_stream_element_declared(self, html_content):
+        """voiceOpsChatStreamEl variable should be declared."""
+        assert "voiceOpsChatStreamEl" in html_content
 
 
 # ================================================================
@@ -226,9 +235,9 @@ class TestArchitecturePanel:
         """toggleArchPanel function should exist."""
         assert "function toggleArchPanel()" in html_content
 
-    def test_arch_descriptions_defined(self, html_content):
-        """ARCH_DESCRIPTIONS should be defined with all backends."""
-        assert "ARCH_DESCRIPTIONS" in html_content
+    def test_arch_tree_builder_defined(self, html_content):
+        """buildArchTree function should handle all backends."""
+        assert "buildArchTree" in html_content
         assert "'stream-assist'" in html_content
         assert "'agent-engine'" in html_content
 
@@ -276,3 +285,107 @@ class TestForbiddenNames:
         lower = server_content.lower()
         assert "kroger" not in lower
         assert "heb" not in lower.split()
+
+
+# ================================================================
+# 11. Agent Engine Thinking Display
+# ================================================================
+class TestAgentEngineThinkingDisplay:
+
+    def test_parse_agent_engine_response_returns_object(self, html_content):
+        """parseAgentEngineResponse should return {text, thoughts} object."""
+        fn_section = html_content[html_content.find("function parseAgentEngineResponse"):]
+        fn_end = fn_section.find("\n// ==")
+        fn_body = fn_section[:fn_end] if fn_end > 0 else fn_section[:500]
+        assert "const thoughts = []" in fn_body
+        assert "return { text, thoughts }" in fn_body
+
+    def test_parse_agent_engine_response_filters_thoughts(self, html_content):
+        """parseAgentEngineResponse should filter out thought parts."""
+        fn_section = html_content[html_content.find("function parseAgentEngineResponse"):]
+        fn_end = fn_section.find("\n// ==")
+        fn_body = fn_section[:fn_end] if fn_end > 0 else fn_section[:500]
+        assert "part.thought" in fn_body
+        assert "thought_signature" in fn_body
+
+    def test_parse_agent_engine_response_captures_function_calls(self, html_content):
+        """parseAgentEngineResponse should capture functionCall as thoughts."""
+        fn_section = html_content[html_content.find("function parseAgentEngineResponse"):]
+        fn_end = fn_section.find("\n// ==")
+        fn_body = fn_section[:fn_end] if fn_end > 0 else fn_section[:500]
+        assert "functionCall" in fn_body
+        assert "Tool Call" in fn_body
+
+
+# ================================================================
+# 12. Data Source Selectors Hidden for Non-StreamAssist
+# ================================================================
+class TestDataSourceSelectorVisibility:
+
+    def test_data_sources_hidden_for_non_stream_assist(self, html_content):
+        """Data sources panel should be hidden for non-StreamAssist backends."""
+        fn_section = html_content[html_content.find("function updateAgentSelectorVisibility"):]
+        fn_end = fn_section.find("\nfunction updateModelCard")
+        fn_body = fn_section[:fn_end] if fn_end > 0 else fn_section[:500]
+        assert "State.backend !== 'stream-assist'" in fn_body
+
+
+# ================================================================
+# 13. StreamAssist ADK/A2A Auto-Routing
+# ================================================================
+class TestStreamAssistAutoRouting:
+
+    def test_adk_a2a_agent_detection(self, html_content):
+        """sendMessage should detect ADK/A2A agents for auto-routing."""
+        assert "isAgentEngineAgent" in html_content
+        assert "selectedAgentInfo.type === 'adk'" in html_content or \
+               "selectedAgentInfo.type === 'a2a'" in html_content
+
+    def test_agent_engine_mapping_in_server(self, server_content):
+        """Server /api/config should include agent_engine_mapping."""
+        assert "agent_engine_mapping" in server_content
+
+    def test_auto_route_uses_mapping(self, html_content):
+        """Auto-routing should look up resource ID from mapping."""
+        assert "agent_engine_mapping" in html_content
+        assert "aeMapping" in html_content
+
+
+# ================================================================
+# 14. Agent Refactor — sop_agent
+# ================================================================
+class TestAgentRefactor:
+
+    def test_agent_name_is_sop_agent(self):
+        """Root agent should be named sop_agent."""
+        from pathlib import Path
+        agent_py = (Path(__file__).resolve().parent.parent
+                    / "src" / "agent" / "agent.py").read_text()
+        assert 'name="sop_agent"' in agent_py
+
+    def test_no_analytics_sub_agent(self):
+        """analytics_agent should not be in agent.py."""
+        from pathlib import Path
+        agent_py = (Path(__file__).resolve().parent.parent
+                    / "src" / "agent" / "agent.py").read_text()
+        assert 'name="analytics_agent"' not in agent_py
+        assert "from .tools.bq_tool import create_bq_tool" not in agent_py
+
+    def test_image_agent_still_present(self):
+        """image_agent should still exist."""
+        from pathlib import Path
+        agent_py = (Path(__file__).resolve().parent.parent
+                    / "src" / "agent" / "agent.py").read_text()
+        assert 'name="image_agent"' in agent_py
+
+    def test_system_prompt_no_analytics_section(self):
+        """System prompt should not have analytics section."""
+        from src.agent.prompts.system_prompts import get_main_agent_instruction
+        instruction = get_main_agent_instruction()
+        assert "Product Information & Analytics" not in instruction
+        assert "BigQuery analytics tool" not in instruction
+
+    def test_frontend_arch_tree_uses_sop_agent(self, html_content):
+        """Frontend architecture tree should show sop_agent not grocery_assistant."""
+        assert "'sop_agent'" in html_content
+        assert "'grocery_assistant'" not in html_content

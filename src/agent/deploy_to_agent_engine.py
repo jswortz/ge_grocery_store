@@ -297,7 +297,7 @@ Guidelines:
 """
 
     agent = LlmAgent(
-        name="grocery_assistant",
+        name="sop_agent",
         model=_ADK_MODEL,
         planner=planner,
         instruction=instruction,
@@ -330,7 +330,7 @@ def deploy():
 
     app = agent_engines.AdkApp(
         agent=agent,
-        app_name="grocery_assistant_app",
+        app_name="sop_agent_app",
         enable_tracing=True,
     )
 

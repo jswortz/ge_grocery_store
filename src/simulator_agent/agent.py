@@ -329,6 +329,10 @@ def create_agent(
 ):
     """Create the simulator orchestrator agent with shopper sub-agents.
 
+    Uses the ADK clone() pattern to create shopper agents from a base
+    template, ensuring proper deep-copy of planner, model config, and
+    all base properties.
+
     Args:
         store_name: Which store to simulate (Downtown/Westside/Lakefront Market)
         scenario_key: Endcap merchandising scenario (see config/endcap_strategies.yaml)
@@ -346,9 +350,20 @@ def create_agent(
     # Select shoppers weighted by distribution
     selected_personas = _select_personas_by_distribution(num_shoppers)
 
-    # Create shopper sub-agents
+    # Create base shopper template and clone for each persona
+    base_shopper = LlmAgent(
+        name="shopper_template",
+        model=adk_model,
+        planner=_create_planner(),
+        instruction="template",
+        description="template",
+    )
     shopper_agents = [
-        create_shopper_agent(persona, store_name, scenario_key)
+        base_shopper.clone(update={
+            "name": f"shopper_{persona['id']}",
+            "instruction": _build_shopper_instruction(persona, store_name, scenario_key),
+            "description": f"Simulated shopper: {persona['name']} at {store_name}",
+        })
         for persona in selected_personas
     ]
 

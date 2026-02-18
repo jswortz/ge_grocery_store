@@ -111,6 +111,8 @@ class FrontendHandler(SimpleHTTPRequestHandler):
             self._proxy_agent_engine_query()
         elif path == "/api/agent-engine/stream":
             self._proxy_agent_engine_stream()
+        elif path == "/api/bigquery/chart":
+            self._proxy_bigquery_chart()
         else:
             self._json_error(404, "Not found")
 
@@ -178,6 +180,10 @@ class FrontendHandler(SimpleHTTPRequestHandler):
                     "output_rate": 1.0,
                     "output_pitch": 1.0,
                 }),
+                "agent_engine_mapping": {
+                    project_cfg.get("agent_id", ""): AE_RESOURCE_ID,
+                    project_cfg.get("a2a_agent_id", ""): project_cfg.get("a2a_agent_engine_id", ""),
+                },
             }
             self._json_response(safe_config)
             return
@@ -530,6 +536,201 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         except Exception as exc:
             logger.warning("Memory status check failed: %s", exc)
             self._json_response({"count": 0, "user_id": user_id, "snippets": []})
+
+    # --- BigQuery chart data proxy --------------------------------------
+
+    def _proxy_bigquery_chart(self):
+        """POST /api/bigquery/chart -> execute SQL and return rows as JSON.
+
+        Accepts: {"query": "user's natural language query"}
+        Returns: {"columns": [...], "rows": [[...], ...], "chart_type": "line|bar|pie"}
+
+        Maps common analytics questions to SQL queries against ge_grocery_demo.
+        """
+        from google.cloud import bigquery
+
+        body = self._read_body()
+        payload = json.loads(body) if body else {}
+        user_query = payload.get("query", "").lower()
+
+        bq_project = CONFIG.get("bigquery", {}).get("project", DE_PROJECT)
+        bq_dataset = CONFIG.get("bigquery", {}).get("dataset", "ge_grocery_demo")
+        table_prefix = f"`{bq_project}.{bq_dataset}`"
+
+        # Map user queries to SQL + chart config
+        sql, chart_type, chart_title = self._map_query_to_sql(
+            user_query, table_prefix
+        )
+
+        if not sql:
+            self._json_response({
+                "columns": [], "rows": [],
+                "chart_type": "bar",
+                "title": "Chart not available",
+                "error": "Could not generate chart for this query",
+            })
+            return
+
+        try:
+            client = bigquery.Client(project=bq_project)
+            query_job = client.query(sql)
+            results = query_job.result()
+
+            columns = [field.name for field in results.schema]
+            rows = [list(row.values()) for row in results]
+            # Convert non-serializable types
+            clean_rows = []
+            for row in rows:
+                clean_row = []
+                for val in row:
+                    if hasattr(val, 'isoformat'):
+                        clean_row.append(val.isoformat())
+                    elif isinstance(val, (int, float, str, bool)) or val is None:
+                        clean_row.append(val)
+                    else:
+                        clean_row.append(str(val))
+                clean_rows.append(clean_row)
+
+            self._json_response({
+                "columns": columns,
+                "rows": clean_rows,
+                "chart_type": chart_type,
+                "title": chart_title,
+            })
+        except Exception as exc:
+            logger.warning("BigQuery chart query failed: %s", exc)
+            self._json_response({
+                "columns": [], "rows": [],
+                "chart_type": "bar",
+                "title": "Query error",
+                "error": str(exc),
+            })
+
+    @staticmethod
+    def _map_query_to_sql(query, table_prefix):
+        """Map a natural language query to a SQL query, chart type, and title."""
+        import re
+
+        # Sales/revenue over time
+        if re.search(r'(sales|revenue|total.?amount)\b.*\b(over time|by (day|date|month|week)|trend|daily|monthly|weekly)', query):
+            if 'month' in query:
+                return (
+                    f"SELECT FORMAT_TIMESTAMP('%Y-%m', transaction_ts) AS month, "
+                    f"ROUND(SUM(total_amount), 2) AS total_sales "
+                    f"FROM {table_prefix}.fact_transactions "
+                    f"GROUP BY month ORDER BY month",
+                    "bar", "Monthly Sales Revenue"
+                )
+            return (
+                f"SELECT DATE(transaction_ts) AS date, "
+                f"ROUND(SUM(total_amount), 2) AS total_sales "
+                f"FROM {table_prefix}.fact_transactions "
+                f"GROUP BY date ORDER BY date",
+                "line", "Daily Sales Revenue"
+            )
+
+        # Transactions over time
+        if re.search(r'(transaction|order)s?\b.*\b(over time|by (day|date|month|week)|trend|daily|monthly|weekly)', query):
+            if 'month' in query:
+                return (
+                    f"SELECT FORMAT_TIMESTAMP('%Y-%m', transaction_ts) AS month, "
+                    f"COUNT(*) AS transaction_count "
+                    f"FROM {table_prefix}.fact_transactions "
+                    f"GROUP BY month ORDER BY month",
+                    "bar", "Monthly Transaction Count"
+                )
+            return (
+                f"SELECT DATE(transaction_ts) AS date, "
+                f"COUNT(*) AS transaction_count "
+                f"FROM {table_prefix}.fact_transactions "
+                f"GROUP BY date ORDER BY date",
+                "line", "Daily Transaction Count"
+            )
+
+        # Top products (by revenue or quantity)
+        if re.search(r'top.*(product|item|seller)', query):
+            limit = 10
+            if re.search(r'top\s+(\d+)', query):
+                limit = int(re.search(r'top\s+(\d+)', query).group(1))
+            if 'quantity' in query or 'units' in query or 'sold' in query:
+                return (
+                    f"SELECT p.product_name, SUM(t.quantity) AS total_quantity "
+                    f"FROM {table_prefix}.fact_transactions t "
+                    f"JOIN {table_prefix}.dim_product p USING(product_id) "
+                    f"GROUP BY p.product_name ORDER BY total_quantity DESC LIMIT {limit}",
+                    "bar", f"Top {limit} Products by Quantity Sold"
+                )
+            return (
+                f"SELECT p.product_name, ROUND(SUM(t.total_amount), 2) AS total_revenue "
+                f"FROM {table_prefix}.fact_transactions t "
+                f"JOIN {table_prefix}.dim_product p USING(product_id) "
+                f"GROUP BY p.product_name ORDER BY total_revenue DESC LIMIT {limit}",
+                "bar", f"Top {limit} Products by Revenue"
+            )
+
+        # Sales by store
+        if re.search(r'(sales|revenue)\b.*\b(by|per|each)\s+store', query):
+            return (
+                f"SELECT s.store_name, ROUND(SUM(t.total_amount), 2) AS total_sales "
+                f"FROM {table_prefix}.fact_transactions t "
+                f"JOIN {table_prefix}.dim_store s USING(store_id) "
+                f"GROUP BY s.store_name ORDER BY total_sales DESC",
+                "bar", "Sales by Store"
+            )
+
+        # Sales by category
+        if re.search(r'(sales|revenue)\b.*\b(by|per|each)\s+(category|department)', query):
+            return (
+                f"SELECT p.category, ROUND(SUM(t.total_amount), 2) AS total_sales "
+                f"FROM {table_prefix}.fact_transactions t "
+                f"JOIN {table_prefix}.dim_product p USING(product_id) "
+                f"GROUP BY p.category ORDER BY total_sales DESC",
+                "bar", "Sales by Category"
+            )
+
+        # Payment methods
+        if re.search(r'payment.*(method|type|breakdown|mix)', query):
+            return (
+                f"SELECT payment_method, COUNT(*) AS count, "
+                f"ROUND(SUM(total_amount), 2) AS total "
+                f"FROM {table_prefix}.fact_transactions "
+                f"GROUP BY payment_method ORDER BY total DESC",
+                "pie", "Payment Method Distribution"
+            )
+
+        # Loyalty tier analysis
+        if re.search(r'(loyalty|tier|customer)\b.*\b(breakdown|distribution|spend|revenue)', query):
+            return (
+                f"SELECT c.loyalty_tier, COUNT(DISTINCT c.customer_id) AS customers, "
+                f"ROUND(SUM(t.total_amount), 2) AS total_spend "
+                f"FROM {table_prefix}.fact_transactions t "
+                f"JOIN {table_prefix}.dim_customer c USING(customer_id) "
+                f"GROUP BY c.loyalty_tier ORDER BY total_spend DESC",
+                "bar", "Customer Loyalty Tier Analysis"
+            )
+
+        # Sales by employee
+        if re.search(r'(sales|revenue|performance)\b.*\b(by|per|each)\s+(employee|staff|cashier)', query):
+            return (
+                f"SELECT CONCAT(e.first_name, ' ', e.last_name) AS employee, "
+                f"e.role, ROUND(SUM(t.total_amount), 2) AS total_sales "
+                f"FROM {table_prefix}.fact_transactions t "
+                f"JOIN {table_prefix}.dim_employee e USING(employee_id) "
+                f"GROUP BY employee, e.role ORDER BY total_sales DESC",
+                "bar", "Sales by Employee"
+            )
+
+        # Generic "graph" or "chart" request - default to daily sales
+        if re.search(r'(graph|chart|plot|visuali)', query):
+            return (
+                f"SELECT DATE(transaction_ts) AS date, "
+                f"ROUND(SUM(total_amount), 2) AS total_sales "
+                f"FROM {table_prefix}.fact_transactions "
+                f"GROUP BY date ORDER BY date",
+                "line", "Daily Sales Overview"
+            )
+
+        return None, None, None
 
     # --- GCS image proxy ------------------------------------------------
 
