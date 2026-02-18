@@ -1199,79 +1199,61 @@ details[open] .thoughts-toggle::before {
       <h2>How can I help you today?</h2>
       <p>Ask about sales analytics, brand guidelines, store operations, product imagery, or market trends.</p>
 
-      <!-- Capability pills -->
-      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;">
-        <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:var(--vf-green-100);color:var(--vf-green-800);border-radius:100px;font-size:12px;font-weight:500;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-          Analytics
-        </span>
-        <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:var(--vf-green-100);color:var(--vf-green-800);border-radius:100px;font-size:12px;font-weight:500;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          Search
-        </span>
-        <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:var(--vf-gold-100);color:var(--vf-gold-700);border-radius:100px;font-size:12px;font-weight:500;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-          Creative
-        </span>
-        <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:var(--vf-gold-100);color:var(--vf-gold-700);border-radius:100px;font-size:12px;font-weight:500;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
-          Trends
-        </span>
-      </div>
+      <p style="font-size:12px;color:var(--vf-gray-500);margin-bottom:16px;">Each prompt routes to a specific agent. The badge shows the backend and agent.</p>
 
       <div class="sample-queries">
-        <button class="sample-btn" onclick="sendSample('What are the top 5 products by revenue?', {backend:'agent-engine'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Top products by revenue</span>
-            <span class="sq-sub">Analytics &middot; BigQuery</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('What are the brand color guidelines and typography standards?')">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-green-700)" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="17" r="2"/><circle cx="6" cy="12" r="3"/><path d="M12 22s8-4 8-12c0-2.21-1.79-4-4-4a4 4 0 0 0-4 4c0 8-8 12-8 12"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Brand color guidelines</span>
-            <span class="sq-sub">Search &middot; Gemini Enterprise</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('Generate a product image for Nano Banana Pro that follows our brand guidelines', {backend:'agent-engine'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Generate product image</span>
-            <span class="sq-sub">Creative &middot; Gemini Image</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('What is the customer lifetime value by loyalty tier?', {backend:'stream-assist', agentId:'14793816534468506603'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Customer lifetime value (CLTV)</span>
-            <span class="sq-sub">Analytics &middot; Data Insights Agent</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('Simulate 5 shoppers at Downtown Market with the seasonal produce endcap strategy', {backend:'agent-engine'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Simulate shopper traffic</span>
-            <span class="sq-sub">Simulation &middot; Shopper Simulator</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('What are the closing procedures for frontline associates?')">
+        <button class="sample-btn" onclick="sendSample('What are the closing procedures for frontline associates?', {backend:'stream-assist'})">
           <span class="sq-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-green-700)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           </span>
           <span class="sq-text">
             <span class="sq-label">Store closing procedures</span>
-            <span class="sq-sub">Search &middot; SOP Documents</span>
+            <span class="sq-sub">StreamAssist &rarr; Default Assistant &middot; SOP search</span>
+          </span>
+        </button>
+        <button class="sample-btn" onclick="sendSample('What are the top 5 products by revenue?', {backend:'agent-engine', agentId:'3727910666648944640'})">
+          <span class="sq-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+          </span>
+          <span class="sq-text">
+            <span class="sq-label">Top products by revenue</span>
+            <span class="sq-sub">Agent Engine &rarr; Grocery Retail Assistant &middot; BigQuery</span>
+          </span>
+        </button>
+        <button class="sample-btn" onclick="sendSample('Generate a product image for Nano Banana Pro that follows our brand guidelines', {backend:'agent-engine', agentId:'3727910666648944640'})">
+          <span class="sq-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </span>
+          <span class="sq-text">
+            <span class="sq-label">Generate product image</span>
+            <span class="sq-sub">Agent Engine &rarr; Grocery Retail Assistant &middot; Gemini Image</span>
+          </span>
+        </button>
+        <button class="sample-btn" onclick="sendSample('Simulate 5 shoppers at Downtown Market with the seasonal produce endcap strategy', {backend:'agent-engine', agentId:'7053256041508634624'})">
+          <span class="sq-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <span class="sq-text">
+            <span class="sq-label">Simulate shopper traffic</span>
+            <span class="sq-sub">Agent Engine &rarr; Shopper Simulator</span>
+          </span>
+        </button>
+        <button class="sample-btn" onclick="sendSample('What is the customer lifetime value by loyalty tier?', {backend:'agent-engine', agentId:'5787744546217525248'})">
+          <span class="sq-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </span>
+          <span class="sq-text">
+            <span class="sq-label">Customer lifetime value (CLTV)</span>
+            <span class="sq-sub">Agent Engine &rarr; MCP Grocery Analyst &middot; BigQuery</span>
+          </span>
+        </button>
+        <button class="sample-btn" onclick="sendSample('What are the brand color guidelines and typography standards?', {backend:'stream-assist', agentId:'175588409381140878'})">
+          <span class="sq-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-green-700)" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="17" r="2"/><circle cx="6" cy="12" r="3"/><path d="M12 22s8-4 8-12c0-2.21-1.79-4-4-4a4 4 0 0 0-4 4c0 8-8 12-8 12"/></svg>
+          </span>
+          <span class="sq-text">
+            <span class="sq-label">Brand color guidelines</span>
+            <span class="sq-sub">StreamAssist &rarr; A2A Grocery Agent &middot; SOP search</span>
           </span>
         </button>
       </div>
@@ -2058,6 +2040,17 @@ function parseStreamAssistResponse(data) {
         } else if (!isThought && content.text) {
           texts.push(content.text);
         }
+        // Handle parts-based responses (A2A agents may use this format)
+        if (!isThought && content.parts) {
+          for (const part of content.parts) {
+            if (part.text) {
+              texts.push(part.text);
+            }
+            if (part.inlineData && part.inlineData.mimeType && part.inlineData.data) {
+              texts.push(`![Generated Image](data:${part.inlineData.mimeType};base64,${part.inlineData.data})`);
+            }
+          }
+        }
       }
     }
     // Also extract thoughts from diagnosticInfo planner steps
@@ -2574,10 +2567,13 @@ async function sendMessage() {
 
   try {
     let response;
-    // Check if selected StreamAssist agent is ADK and should route via Agent Engine
-    // Note: A2A agents go through StreamAssist (registered on Discovery Engine via agent card)
+    // Check if selected StreamAssist agent has an Agent Engine deployment
+    // Use the mapping as primary signal (more reliable than type detection
+    // since Discovery Engine list API may not return adkAgentDefinition)
     const selectedAgentInfo = State.availableAgents.find(a => a.id === State.selectedAgent);
-    const isAgentEngineAgent = selectedAgentInfo && selectedAgentInfo.type === 'adk';
+    const aeMapping = AppConfig?.agent_engine_mapping || {};
+    const aeResourceId = State.selectedAgent && aeMapping[State.selectedAgent];
+    const isAgentEngineAgent = aeResourceId || (selectedAgentInfo && selectedAgentInfo.type === 'adk');
     const isA2aAgent = selectedAgentInfo && selectedAgentInfo.type === 'a2a';
 
     // Auto-route image generation requests to Agent Engine (only for default assistant,
@@ -2587,9 +2583,7 @@ async function sendMessage() {
       /\b(generate|create|make|design)\b.*\b(image|photo|picture|imagery|product image)\b/i.test(text);
 
     if (isAgentEngineAgent && State.backend === 'stream-assist') {
-      // ADK agents on StreamAssist return empty responses — route via Agent Engine
-      const aeMapping = AppConfig?.agent_engine_mapping || {};
-      const aeResourceId = aeMapping[State.selectedAgent];
+      // Agents with Agent Engine deployments return empty via StreamAssist — route directly
       if (aeResourceId) {
         response = await callAgentEngine(text, aeResourceId);
       } else {
