@@ -3436,15 +3436,15 @@ async function startVoiceOpsSession() {
     }
   } catch (err) {
     console.error('Voice ops start failed:', err);
-    const errMsg = String(err);
-    if (errMsg.includes('Permission') || errMsg.includes('NotAllowed') || errMsg.includes('getUserMedia')) {
-      $status.textContent = 'Microphone access denied. Allow mic permissions or use suggestion buttons.';
-    } else if (errMsg.includes('Timeout') || errMsg.includes('No WS')) {
-      $status.textContent = 'Connection failed. Check that the voice server is running.';
+    stopVoiceOpsSession();
+    const errMsg = (err instanceof Event) ? 'WebSocket connection failed' : String(err.message || err);
+    if (errMsg.includes('Permission') || errMsg.includes('NotAllowed') || errMsg.includes('getUserMedia') || errMsg.includes('NotFound')) {
+      $status.textContent = 'No microphone found. Connect a mic or use the suggestion buttons below.';
+    } else if (errMsg.includes('Timeout') || errMsg.includes('No WS') || errMsg.includes('WebSocket')) {
+      $status.textContent = 'Voice server connection failed. Check that the voice server is running on port 8081.';
     } else {
       $status.textContent = 'Failed to start: ' + errMsg;
     }
-    stopVoiceOpsSession();
   }
 }
 
