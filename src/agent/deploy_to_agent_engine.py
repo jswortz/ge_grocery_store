@@ -27,7 +27,7 @@ _ENGINE_ID = os.environ.get("ENGINE_ID", "grocery-workshop-engine")
 _GCS_BUCKET = os.environ.get("GCS_BUCKET", "wortz-project-352116-ge-workshop")
 _IMAGEN_MODEL = os.environ.get("IMAGEN_MODEL", "gemini-3-pro-image-preview")
 # Simulator Agent Engine resource ID for A2A delegation
-_SIMULATOR_AE_ID = os.environ.get("SIMULATOR_AE_ID", "1774087300184014848")
+_SIMULATOR_AE_ID = os.environ.get("SIMULATOR_AE_ID", "7053256041508634624")
 
 
 def find_agent_by_display_name(display_name: str) -> str:
