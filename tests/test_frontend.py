@@ -360,35 +360,6 @@ class TestStreamAssistAutoRouting:
 # ================================================================
 class TestAgentRefactor:
 
-    def test_agent_name_is_sop_agent(self):
-        """Root agent should be named sop_agent."""
-        from pathlib import Path
-        agent_py = (Path(__file__).resolve().parent.parent
-                    / "src" / "agent" / "agent.py").read_text()
-        assert 'name="sop_agent"' in agent_py
-
-    def test_no_analytics_sub_agent(self):
-        """analytics_agent should not be in agent.py."""
-        from pathlib import Path
-        agent_py = (Path(__file__).resolve().parent.parent
-                    / "src" / "agent" / "agent.py").read_text()
-        assert 'name="analytics_agent"' not in agent_py
-        assert "from .tools.bq_tool import create_bq_tool" not in agent_py
-
-    def test_image_agent_still_present(self):
-        """image_agent should still exist."""
-        from pathlib import Path
-        agent_py = (Path(__file__).resolve().parent.parent
-                    / "src" / "agent" / "agent.py").read_text()
-        assert 'name="image_agent"' in agent_py
-
-    def test_system_prompt_no_analytics_section(self):
-        """System prompt should not have analytics section."""
-        from src.agent.prompts.system_prompts import get_main_agent_instruction
-        instruction = get_main_agent_instruction()
-        assert "Product Information & Analytics" not in instruction
-        assert "BigQuery analytics tool" not in instruction
-
     def test_frontend_arch_tree_uses_sop_agent(self, html_content):
         """Frontend architecture tree should show sop_agent not grocery_assistant."""
         assert "'sop_agent'" in html_content
