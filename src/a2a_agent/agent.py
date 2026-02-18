@@ -84,7 +84,6 @@ def create_agent():
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from agent.tools.bq_tool import create_bq_tool
     from agent.tools.image_gen_tool import create_image_gen_tool
-    from agent.tools.a2a_tool import create_a2a_tool
 
     root_tools = []
 
@@ -123,12 +122,6 @@ def create_agent():
         root_tools.append(PreloadMemoryTool())
     except ImportError:
         pass
-
-    # Add simulator delegation tool (Agent Engine cross-agent call)
-    try:
-        root_tools.append(create_a2a_tool())
-    except Exception as e:
-        print(f"Warning: Could not create simulator tool: {e}")
 
     # Sub-agents (Flash for fast delegation)
     analytics_agent = LlmAgent(
@@ -170,18 +163,14 @@ You help associates, managers, and stakeholders with:
 2. Brand-Compliant Marketing Content - Generate brand-aligned materials
 3. Product Information & Analytics - Answer data questions using BigQuery
 4. Product Image Generation - Create product imagery
-5. Shopper Simulation - When users ask to simulate shopper behavior, test
-   merchandising strategies, or evaluate endcap placements, use the
-   delegate_to_simulator tool. Available stores: Downtown Market, Westside
-   Market, Lakefront Market.
 
 Guidelines:
 - Always ground responses in data from tools.
 - Be concise and actionable.""",
         description=(
             "AI assistant for grocery retail operations. Searches SOPs and "
-            "brand guidelines, and delegates to sub-agents for analytics, "
-            "image generation, and shopper simulation."
+            "brand guidelines, and delegates to sub-agents for analytics "
+            "and image generation."
         ),
         tools=root_tools,
         sub_agents=[analytics_agent, image_agent],
@@ -239,11 +228,6 @@ def get_agent_card() -> dict:
                 "id": "image-generation",
                 "name": "Product Image Generation",
                 "description": "Generate brand-compliant product imagery using Gemini Image",
-            },
-            {
-                "id": "shopper-simulation",
-                "name": "Shopper Simulation",
-                "description": "Simulate shopper behavior and test endcap merchandising strategies via Agent Engine",
             },
         ],
     }

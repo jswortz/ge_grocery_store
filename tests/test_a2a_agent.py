@@ -81,7 +81,6 @@ class TestAgentCard(unittest.TestCase):
         assert "brand-guidelines" in skill_ids
         assert "sales-analytics" in skill_ids
         assert "image-generation" in skill_ids
-        assert "shopper-simulation" in skill_ids
 
     def test_agent_card_skills_have_descriptions(self):
         from src.a2a_agent.agent import get_agent_card
@@ -125,12 +124,9 @@ class TestA2AAgentCreation(unittest.TestCase):
         mock_bq_module.create_bq_tool.return_value = MagicMock()
         mock_img_module = MagicMock()
         mock_img_module.create_image_gen_tool.return_value = MagicMock()
-        mock_a2a_module = MagicMock()
-        mock_a2a_module.create_a2a_tool.return_value = MagicMock()
         return {
             "agent.tools.bq_tool": mock_bq_module,
             "agent.tools.image_gen_tool": mock_img_module,
-            "agent.tools.a2a_tool": mock_a2a_module,
             "google.adk.tools.discovery_engine_search_tool": MagicMock(),
             "google.cloud.discoveryengine_v1beta": MagicMock(),
             "google.adk.tools.preload_memory_tool": MagicMock(),
@@ -151,11 +147,6 @@ class TestA2AAgentCreation(unittest.TestCase):
             assert "analytics_agent" in sub_agent_names
             assert "image_agent" in sub_agent_names
 
-    def test_create_agent_instruction_mentions_simulator(self):
-        with patch.dict(sys.modules, self._mock_tool_modules()):
-            from src.a2a_agent.agent import create_agent
-            agent = create_agent()
-            assert "delegate_to_simulator" in agent.instruction
 
 
 class TestA2AFiles(unittest.TestCase):
