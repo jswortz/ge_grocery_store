@@ -2221,6 +2221,12 @@ async function fetchAndRenderChart(userQuery, messageEl) {
 }
 
 async function callAgentEngine(text, overrideResourceId) {
+  // Check if the selected agent is an A2A agent (Cloud Run, not Agent Engine)
+  const selectedAe = State.agentEngines.find(a => a.id === State.selectedAgentEngineId);
+  if (!overrideResourceId && selectedAe?.type === 'a2a') {
+    return callA2AAgent(text);
+  }
+
   const payload = {
     input: {
       message: text,
@@ -2268,6 +2274,24 @@ async function callAgentEngine(text, overrideResourceId) {
   }
 }
 
+async function callA2AAgent(text) {
+  const resp = await fetch('/api/a2a/query', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: text }),
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`A2A Agent error ${resp.status}: ${err}`);
+  }
+  const data = await resp.json();
+  State.lastTraceUrl = null;
+  State.lastLatencyMs = data.metadata?.latency_ms || null;
+  State.lastToolCount = null;
+  // A2A proxy returns pre-parsed text (not NDJSON), so return directly
+  return { text: data.content || 'No response received.', thoughts: [] };
+}
+
 function parseAgentEngineResponse(rawText) {
   const texts = [];
   const thoughts = [];
@@ -2280,7 +2304,7 @@ function parseAgentEngineResponse(rawText) {
       for (const part of parts) {
         if (part.thought && part.text) {
           thoughts.push(part.text);
-        } else if (part.text && !part.thought_signature) {
+        } else if (part.text && !part.thought) {
           texts.push(part.text);
         }
         if (part.functionCall) {
@@ -3216,7 +3240,7 @@ async function callAgentEngineStreaming(text) {
                     const aeEvent = JSON.parse(event.data);
                     const parts = (aeEvent.content && aeEvent.content.parts) || [];
                     for (const part of parts) {
-                      if (part.text) texts.push(part.text);
+                      if (part.text && !part.thought) texts.push(part.text);
                     }
                   } catch (e) {
                     // Non-JSON line, skip

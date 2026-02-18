@@ -329,12 +329,14 @@ class TestAgentEngineThinkingDisplay:
         assert "return { text, thoughts }" in fn_body
 
     def test_parse_agent_engine_response_filters_thoughts(self, html_content):
-        """parseAgentEngineResponse should filter out thought parts."""
+        """parseAgentEngineResponse should filter on part.thought (not thought_signature)."""
         fn_section = html_content[html_content.find("function parseAgentEngineResponse"):]
         fn_end = fn_section.find("\n// ==")
         fn_body = fn_section[:fn_end] if fn_end > 0 else fn_section[:500]
         assert "part.thought" in fn_body
-        assert "thought_signature" in fn_body
+        # thought_signature is a crypto signature on real responses — filtering on
+        # it discards actual text. The correct filter is part.thought.
+        assert "thought_signature" not in fn_body
 
     def test_parse_agent_engine_response_captures_function_calls(self, html_content):
         """parseAgentEngineResponse should capture functionCall as thoughts."""

@@ -72,6 +72,9 @@ AE_BASE = (
     f"/reasoningEngines/{AE_RESOURCE_ID}"
 )
 
+# A2A Agent (Cloud Run)
+A2A_URL = os.environ.get("A2A_CLOUD_RUN_URL", CONFIG.get("project", {}).get("a2a_cloud_run_url", ""))
+
 # ---------------------------------------------------------------------------
 # Auth helper
 # ---------------------------------------------------------------------------
@@ -112,6 +115,8 @@ class FrontendHandler(SimpleHTTPRequestHandler):
             self._proxy_agent_engine_query()
         elif path == "/api/agent-engine/stream":
             self._proxy_agent_engine_stream()
+        elif path == "/api/a2a/query":
+            self._proxy_a2a_query()
         elif path == "/api/bigquery/chart":
             self._proxy_bigquery_chart()
         else:
@@ -504,6 +509,75 @@ class FrontendHandler(SimpleHTTPRequestHandler):
                 self.wfile.flush()
             except Exception:
                 pass
+
+    # --- A2A Agent proxy ------------------------------------------------
+
+    def _proxy_a2a_query(self):
+        """POST /api/a2a/query -> A2A Cloud Run agent via JSON-RPC message/send."""
+        import time
+        import uuid
+        import requests as req
+
+        body = self._read_body()
+        payload = json.loads(body) if body else {}
+        message_text = payload.get("message", "")
+
+        if not A2A_URL:
+            self._json_error(500, "A2A Cloud Run URL not configured")
+            return
+
+        # Build JSON-RPC 2.0 request for A2A message/send
+        a2a_payload = {
+            "jsonrpc": "2.0",
+            "id": str(uuid.uuid4()),
+            "method": "message/send",
+            "params": {
+                "message": {
+                    "messageId": str(uuid.uuid4()),
+                    "role": "user",
+                    "parts": [{"kind": "text", "text": message_text}],
+                }
+            },
+        }
+
+        headers = {
+            "Authorization": f"Bearer {_get_token()}",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            t0 = time.monotonic()
+            resp = req.post(A2A_URL, headers=headers, json=a2a_payload, timeout=120)
+            latency_ms = int((time.monotonic() - t0) * 1000)
+            resp.raise_for_status()
+
+            data = resp.json()
+            result = data.get("result", {})
+
+            # Extract text from A2A response artifacts
+            texts = []
+            for artifact in result.get("artifacts", []):
+                for part in artifact.get("parts", []):
+                    if part.get("kind") == "text" and not part.get("metadata", {}).get("adk_thought"):
+                        texts.append(part.get("text", ""))
+
+            # Also check result.parts (some A2A implementations use flat parts)
+            for part in result.get("parts", []):
+                if part.get("kind") == "text" and not part.get("metadata", {}).get("adk_thought"):
+                    texts.append(part.get("text", ""))
+
+            response_text = "\n".join(texts) if texts else "No response received."
+
+            self._json_response({
+                "content": response_text,
+                "metadata": {
+                    "latency_ms": latency_ms,
+                    "a2a": True,
+                },
+            })
+        except Exception as exc:
+            logger.exception("A2A query failed")
+            self._json_error(502, str(exc))
 
     # --- Memory Bank proxy ----------------------------------------------
 
