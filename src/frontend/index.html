@@ -3286,6 +3286,8 @@ let voiceOpsMicStream = null;
 let isVoiceOpsActive = false;
 let voiceOpsTranscript = '';
 let voiceOpsChatStreamEl = null;  // streaming message element in main chat
+let voiceOpsUserStreamEl = null;  // streaming user bubble in main chat
+let voiceOpsUserText = '';        // accumulated user transcription
 
 async function initVoiceOpsPlayer() {
   if (voiceOpsPlayerNode) return;
@@ -3345,12 +3347,18 @@ function connectVoiceOpsWebSocket(isAudio = true) {
       const msg = JSON.parse(event.data);
 
       if (msg.turn_complete) {
-        // Finalize the current turn
+        // Finalize user transcription bubble if open
+        if (voiceOpsUserStreamEl && voiceOpsUserText) {
+          voiceOpsTranscript += `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:3px solid var(--vf-green-600);"><span style="font-size:11px;color:var(--vf-green-600);font-weight:600;display:block;margin-bottom:4px;">You</span><span style="color:rgba(255,255,255,0.9);font-size:13px;">${escapeHtml(voiceOpsUserText)}</span></div>`;
+          finalizeStreamingMessage(voiceOpsUserStreamEl, voiceOpsUserText, 'user');
+          voiceOpsUserStreamEl = null;
+          voiceOpsUserText = '';
+        }
+        // Finalize assistant bubble if open
         if (currentText) {
           voiceOpsTranscript += `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px;border-left:3px solid var(--vf-gold-500);"><span style="font-size:11px;color:var(--vf-gold-500);font-weight:600;display:block;margin-bottom:4px;">Assistant</span><span style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.5;">${renderMarkdown(currentText)}</span></div>`;
           $transcript.innerHTML = voiceOpsTranscript;
           $transcript.scrollTop = $transcript.scrollHeight;
-          // Finalize streaming message in main chat
           finalizeStreamingMessage(voiceOpsChatStreamEl, currentText);
           voiceOpsChatStreamEl = null;
           currentText = '';
@@ -3359,8 +3367,14 @@ function connectVoiceOpsWebSocket(isAudio = true) {
       }
 
       if (msg.interrupted) {
+        // Clean up user transcription state
+        voiceOpsUserText = '';
+        if (voiceOpsUserStreamEl) {
+          voiceOpsUserStreamEl.remove();
+          voiceOpsUserStreamEl = null;
+        }
+        // Clean up assistant state
         currentText = '';
-        // Remove incomplete streaming message from main chat
         if (voiceOpsChatStreamEl) {
           voiceOpsChatStreamEl.remove();
           voiceOpsChatStreamEl = null;
@@ -3376,9 +3390,36 @@ function connectVoiceOpsWebSocket(isAudio = true) {
         voiceOpsPlayerNode.port.postMessage(base64ToArrayBuffer(msg.data));
       }
 
-      // Text: append to streaming transcript + mirror to main chat
-      if (msg.mime_type === 'text/plain' && msg.data) {
-        currentText += msg.data;
+      // User transcription: display in a user-styled bubble
+      if (msg.mime_type === 'text/plain' && msg.data && msg.role === 'user') {
+        voiceOpsUserText += msg.data;
+        // Show live user text in voice overlay
+        $transcript.innerHTML = voiceOpsTranscript +
+          `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:3px solid var(--vf-green-600);"><span style="font-size:11px;color:var(--vf-green-600);font-weight:600;display:block;margin-bottom:4px;">You</span><span style="color:rgba(255,255,255,0.75);font-size:13px;">${escapeHtml(voiceOpsUserText)}</span></div>`;
+        $transcript.scrollTop = $transcript.scrollHeight;
+        // Mirror to main chat as user bubble
+        if (!voiceOpsUserStreamEl) {
+          voiceOpsUserStreamEl = addStreamingMessage('user');
+        }
+        updateStreamingMessage(voiceOpsUserStreamEl, voiceOpsUserText);
+        return;
+      }
+
+      // Model text: display in assistant bubble (streaming append)
+      if (msg.mime_type === 'text/plain' && msg.data && msg.role !== 'user') {
+        // Finalize user bubble when model starts responding
+        if (voiceOpsUserStreamEl && voiceOpsUserText) {
+          voiceOpsTranscript += `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:3px solid var(--vf-green-600);"><span style="font-size:11px;color:var(--vf-green-600);font-weight:600;display:block;margin-bottom:4px;">You</span><span style="color:rgba(255,255,255,0.9);font-size:13px;">${escapeHtml(voiceOpsUserText)}</span></div>`;
+          finalizeStreamingMessage(voiceOpsUserStreamEl, voiceOpsUserText, 'user');
+          voiceOpsUserStreamEl = null;
+          voiceOpsUserText = '';
+        }
+        // Partial: append incrementally. Non-partial (audio transcription): replace to avoid duplication.
+        if (msg.partial === false && !currentText) {
+          currentText = msg.data;
+        } else {
+          currentText += msg.data;
+        }
         // Show live streaming text in voice overlay
         $transcript.innerHTML = voiceOpsTranscript +
           `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:3px solid rgba(249,168,37,0.4);"><span style="font-size:11px;color:var(--vf-gold-500);font-weight:600;display:block;margin-bottom:4px;">Assistant</span><span style="color:rgba(255,255,255,0.75);font-size:13px;line-height:1.5;">${renderMarkdown(currentText)}</span></div>`;
@@ -3471,6 +3512,8 @@ function stopVoiceOpsSession() {
   }
 
   isVoiceOpsActive = false;
+  voiceOpsUserStreamEl = null;
+  voiceOpsUserText = '';
   const $ring = document.getElementById('voice-ops-ring');
   $ring.parentElement.classList.remove('voice-active');
   document.getElementById('voice-ops-status').textContent = 'Tap the microphone to start a voice session';
