@@ -182,6 +182,8 @@ class FrontendHandler(SimpleHTTPRequestHandler):
                 }),
                 "agent_engine_mapping": {
                     project_cfg.get("agent_id", ""): AE_RESOURCE_ID,
+                    project_cfg.get("simulator_agent_id", ""): project_cfg.get("simulator_agent_engine_id", ""),
+                    project_cfg.get("mcp_agent_id", ""): project_cfg.get("mcp_agent_engine_id", ""),
                 },
             }
             self._json_response(safe_config)
