@@ -304,15 +304,13 @@ class TestFrontendFeatures:
         source = inspect.getsource(server.FrontendHandler._proxy_memory_status)
         assert "snippets" in source
 
-    def test_frontend_has_safety_demo_buttons(self):
-        """Verify index.html has Model Armor safety demo buttons."""
+    def test_frontend_no_safety_demo_buttons(self):
+        """Verify index.html does not have Model Armor safety demo buttons."""
         from pathlib import Path
         html_path = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
         content = html_path.read_text()
-        assert "safety-demo" in content
-        assert "Model Armor" in content
-        assert "Prompt injection" in content
-        assert "sendSafetySample" in content
+        assert "safety-demo" not in content
+        assert "sendSafetySample" not in content
 
     def test_frontend_has_memory_tooltip(self):
         """Verify index.html has memory tooltip UI."""

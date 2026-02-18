@@ -116,9 +116,13 @@ class TestDataSourceToggle:
         # The old code returned [] when size === 0; new code should NOT
         assert "_none_" in html_content
 
-    def test_all_selected_returns_empty(self, html_content):
-        """When all stores selected, should return empty (no filter)."""
-        assert "State.selectedDataStores.size === State.allDataStoreIds.length" in html_content
+    def test_all_selected_returns_explicit_list(self, html_content):
+        """When all stores selected, should return explicit list (not empty)."""
+        # The old early-return of [] when all selected is removed;
+        # all selected stores are always sent explicitly so workspace
+        # connectors (Gmail, Calendar, Jira) are included.
+        assert "State.selectedDataStores.size === State.allDataStoreIds.length" not in html_content
+        assert "Array.from(State.selectedDataStores).map" in html_content
 
 
 # ================================================================
