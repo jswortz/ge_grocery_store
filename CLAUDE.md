@@ -90,9 +90,9 @@ Central config loader in `src/agent/agent.py:_load_config()` reads `config/setti
 
 ### Deployed resources
 
-- **Agent Engine (Main)**: `reasoningEngines/7806659001046794240` — Grocery Retail Assistant (OTel enabled)
-- **Agent Engine (MCP)**: `reasoningEngines/3942570520762908672` — MCP Grocery Analyst (OTel enabled)
-- **Agent Engine (Simulator)**: `reasoningEngines/9159990689071628288` — Shopper Simulator (OTel enabled)
+- **Agent Engine (Main)**: `reasoningEngines/4433744355123003392` — Grocery Retail Assistant (OTel enabled)
+- **Agent Engine (MCP)**: `reasoningEngines/7481555402945986560` — MCP Grocery Analyst (OTel enabled)
+- **Agent Engine (Simulator)**: `reasoningEngines/31475719368343552` — Shopper Simulator (OTel enabled)
 - **Cloud Run (A2A)**: `https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app` — A2A protocol agent
 - **Discovery Engine**: `grocery-workshop-engine` (global, SEARCH_TIER_ENTERPRISE)
 - **Model Armor**: `grocery-workshop-armor-us` template (us multi-region, applied to Discovery Engine assistant)
@@ -110,12 +110,14 @@ Dataset `ge_grocery_demo` in `wortz-project-352116`:
 
 DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_data.sql`.
 
-### Test structure (139 unit + 47 integration)
+### Test structure (279 unit + 41 integration)
 
-- `tests/test_agent.py` (51) and `tests/test_stream_assist.py` (14) — **unit tests**, run without GCP access, use mocks
+- `tests/test_agent.py` (55) and `tests/test_stream_assist.py` (24) — **unit tests**, run without GCP access, use mocks
 - `tests/test_mcp_agent.py` (34) — **unit tests**, validates MCP agent config, schema context, instructions, toolbox path resolution
-- `tests/test_a2a_agent.py` (24) — **unit tests**, validates A2A agent config, AgentCard, skills, Cloud Run files, simulator agent
+- `tests/test_a2a_agent.py` (30) — **unit tests**, validates A2A agent config, AgentCard, skills, Cloud Run files, simulator agent
 - `tests/test_model_armor.py` (10 unit + 5 integration) — validates Model Armor config, API schema, live template and assistant
+- `tests/test_frontend.py` (50) — **unit tests**, validates frontend server routes, config endpoint, proxy logic
+- `tests/test_frontend_e2e.py` (76) — **unit tests**, validates frontend HTML, JavaScript, UI components, agent selector
 - `tests/test_discovery_engine.py` (4) — **integration**, validates Discovery Engine SearchService directly against SOP and brand data stores
 - `tests/test_agent_engine.py` (5) — **integration**, validates deployed ADK agent via Agent Engine REST API (SOP search, analytics, brand guidelines)
 - `tests/test_bigquery.py` (12) — **integration**, validates schema and forbidden names against live BigQuery
