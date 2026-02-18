@@ -90,9 +90,9 @@ Central config loader in `src/agent/agent.py:_load_config()` reads `config/setti
 
 ### Deployed resources
 
-- **Agent Engine (Main)**: `reasoningEngines/7806659001046794240` — Grocery Retail Assistant (OTel enabled)
-- **Agent Engine (MCP)**: `reasoningEngines/3942570520762908672` — MCP Grocery Analyst (OTel enabled)
-- **Agent Engine (Simulator)**: `reasoningEngines/9159990689071628288` — Shopper Simulator (OTel enabled)
+- **Agent Engine (Main)**: `reasoningEngines/3727910666648944640` — Grocery Retail Assistant (OTel enabled)
+- **Agent Engine (MCP)**: `reasoningEngines/5787744546217525248` — MCP Grocery Analyst (OTel enabled)
+- **Agent Engine (Simulator)**: `reasoningEngines/7053256041508634624` — Shopper Simulator w/ endcap A/B testing (OTel enabled)
 - **Cloud Run (A2A)**: `https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app` — A2A protocol agent
 - **Discovery Engine**: `grocery-workshop-engine` (global, SEARCH_TIER_ENTERPRISE)
 - **Model Armor**: `grocery-workshop-armor-us` template (us multi-region, applied to Discovery Engine assistant)
@@ -119,6 +119,8 @@ DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_dat
 - `tests/test_frontend.py` (50) — **unit tests**, compare-tab removal, Imagen labels, data-source toggle, agent selector, routing, voice, architecture panel, model card, thinking display
 - `tests/test_frontend_e2e.py` (76) — **unit tests**, tabs, agent selector, data stores, voice ops, streaming, multi-turn, deployment scripts, E2E page load, API endpoints
 - `tests/test_model_armor.py` (10 unit + 5 integration) — validates Model Armor config, API schema, live template and assistant
+- `tests/test_frontend.py` (50) — **unit tests**, validates frontend server routes, config endpoint, proxy logic
+- `tests/test_frontend_e2e.py` (76) — **unit tests**, validates frontend HTML, JavaScript, UI components, agent selector
 - `tests/test_discovery_engine.py` (4) — **integration**, validates Discovery Engine SearchService directly against SOP and brand data stores
 - `tests/test_agent_engine.py` (5) — **integration**, validates deployed ADK agent via Agent Engine REST API (SOP search, analytics, brand guidelines)
 - `tests/test_bigquery.py` (12) — **integration**, validates schema and forbidden names against live BigQuery

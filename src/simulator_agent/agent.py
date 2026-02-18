@@ -372,13 +372,140 @@ def create_agent(
         f"  - {key}: {s['name']}" for key, s in strategies.items()
     )
 
+    # ── Endcap A/B Comparison Tool ──────────────────────────────────────
+
+    def compare_endcap_strategies(
+        strategy_a: str = "baseline",
+        strategy_b: str = "seasonal_produce",
+        store: str = "Downtown Market",
+        num_shoppers: int = 5,
+    ) -> dict:
+        """Compare two endcap merchandising strategies side-by-side.
+
+        Runs the same set of shopper personas through two different endcap
+        configurations and produces a comparative analysis. Use this to
+        A/B test marketing endcap placements and measure efficacy of
+        in-store assortment and placement decisions.
+
+        Args:
+            strategy_a: First strategy key to test.
+            strategy_b: Second strategy key to compare against strategy_a.
+            store: Store name (Downtown Market, Westside Market, Lakefront Market).
+            num_shoppers: Number of shoppers per strategy (1-12).
+
+        Returns:
+            Dict with side-by-side metrics: conversion rates, revenue,
+            endcap lift, and a winner recommendation.
+        """
+        all_strategies = _load_strategies()
+        s_a = all_strategies.get(strategy_a)
+        s_b = all_strategies.get(strategy_b)
+        if not s_a:
+            return {"status": "error", "message": f"Unknown strategy_a: '{strategy_a}'. Available: {list(all_strategies.keys())}"}
+        if not s_b:
+            return {"status": "error", "message": f"Unknown strategy_b: '{strategy_b}'. Available: {list(all_strategies.keys())}"}
+
+        all_personas = _load_personas()
+        layout = STORE_LAYOUTS.get(store, STORE_LAYOUTS["Downtown Market"])
+        n = max(1, min(num_shoppers, len(all_personas)))
+        selected = _select_personas_by_distribution(n)
+
+        def _simulate_arm(strat_data):
+            results = []
+            for p in selected:
+                behavior = p.get("shopping_behavior", {})
+                budget = behavior.get("budget", p.get("budget", 100.0))
+                impulse = behavior.get("impulse_tendency", p.get("impulse_tendency", 0.5))
+                endcaps = strat_data.get("endcaps", [])
+                cart_items = []
+                endcap_pickups = []
+                spend = 0.0
+                for aisle in layout["aisles"]:
+                    base_prob = 0.5
+                    cat_prefs = p.get("category_preferences", {})
+                    pref_key = aisle["name"].lower().split(" ")[0]
+                    if isinstance(cat_prefs, dict):
+                        base_prob = cat_prefs.get(pref_key, 0.4)
+                    if random.random() < base_prob:
+                        price = round(random.uniform(1.50, 8.99), 2)
+                        if spend + price <= budget:
+                            cart_items.append({"product": f"{aisle['name']} item", "price": price})
+                            spend += price
+                    for ec in endcaps:
+                        if ec["location"] == aisle["name"]:
+                            discount_boost = 0.15 if "%" in ec.get("discount", "") else 0.10
+                            pickup_prob = min(impulse * 0.6 + discount_boost + 0.1, 0.95)
+                            if random.random() < pickup_prob:
+                                endcap_pickups.append(ec["product"])
+                                ec_price = round(random.uniform(2.99, 12.99), 2)
+                                if spend + ec_price <= budget:
+                                    cart_items.append({"product": ec["product"], "price": ec_price})
+                                    spend += ec_price
+                results.append({
+                    "persona": p["name"], "persona_id": p.get("id", ""),
+                    "total_spend": round(spend, 2), "cart_size": len(cart_items),
+                    "endcap_pickups": endcap_pickups, "endcap_converted": len(endcap_pickups) > 0,
+                })
+            return results
+
+        results_a = _simulate_arm(s_a)
+        results_b = _simulate_arm(s_b)
+
+        def _metrics(results):
+            n = len(results)
+            total = sum(r["total_spend"] for r in results)
+            conv = sum(1 for r in results if r["endcap_converted"])
+            return {
+                "total_revenue": round(total, 2),
+                "conversion_rate": round((conv / n * 100) if n else 0, 1),
+                "avg_spend": round(total / n if n else 0, 2),
+                "avg_cart_size": round(sum(r["cart_size"] for r in results) / n if n else 0, 1),
+                "total_endcap_pickups": sum(len(r["endcap_pickups"]) for r in results),
+            }
+
+        m_a, m_b = _metrics(results_a), _metrics(results_b)
+        rev_lift = m_b["total_revenue"] - m_a["total_revenue"]
+        score_a = m_a["conversion_rate"] * 0.4 + (m_a["total_revenue"] / max(m_b["total_revenue"], 1)) * 30
+        score_b = m_b["conversion_rate"] * 0.4 + (m_b["total_revenue"] / max(m_a["total_revenue"], 1)) * 30
+        winner = strategy_a if score_a > score_b * 1.05 else (strategy_b if score_b > score_a * 1.05 else "tie")
+
+        return {
+            "status": "success",
+            "comparison": {
+                "strategy_a": {"key": strategy_a, "name": s_a["name"], "metrics": m_a, "shopper_details": results_a},
+                "strategy_b": {"key": strategy_b, "name": s_b["name"], "metrics": m_b, "shopper_details": results_b},
+                "delta": {"revenue_lift": round(rev_lift, 2), "conversion_lift": round(m_b["conversion_rate"] - m_a["conversion_rate"], 1)},
+                "winner": winner,
+            },
+        }
+
+    def list_endcap_strategies() -> dict:
+        """List all available endcap merchandising strategies for simulation.
+
+        Returns:
+            Dict with all strategy keys, names, descriptions, and endcap details.
+        """
+        all_strategies = _load_strategies()
+        out = {}
+        for key, s in all_strategies.items():
+            out[key] = {
+                "name": s["name"],
+                "description": s.get("description", ""),
+                "endcap_count": len(s.get("endcaps", [])),
+                "endcaps": [{"location": ec["location"], "product": ec["product"], "discount": ec["discount"]} for ec in s.get("endcaps", [])],
+            }
+        return {"status": "success", "strategies": out, "stores": list(STORE_LAYOUTS.keys())}
+
+    compare_tool = FunctionTool(func=compare_endcap_strategies)
+    list_tool = FunctionTool(func=list_endcap_strategies)
+
     # Report generation tool
     try:
         from .tools.report_generator import generate_simulation_report
         report_tool = FunctionTool(func=generate_simulation_report)
-        tools = [report_tool]
+        tools = [report_tool, compare_tool, list_tool]
     except ImportError:
-        tools = []
+        tools = [compare_tool, list_tool]
 
     # Add PreloadMemoryTool for cross-session memory recall
     try:
@@ -400,26 +527,39 @@ Current Scenario: {scenario['name']}
 Available Strategies:
 {strategy_list}
 
+Available Stores: Downtown Market, Westside Market, Lakefront Market
+
 You have {len(shopper_agents)} shopper agents available. Each represents a
 different customer persona walking the store aisles concurrently.
 
-When asked to run a simulation:
-1. Delegate to each shopper agent to simulate their shopping trip
-2. Collect all results
-3. Produce an aggregate report with:
-   - Total revenue across all shoppers
-   - Endcap conversion rate (% of shoppers who picked up endcap items)
-   - Most popular items by persona type
-   - Average cart size and spend
-   - Endcap ROI estimate (incremental revenue from endcap placements)
-   - Recommendations for merchandising optimization
-4. Use the generate_simulation_report tool to create a visual HTML report
-   with BCG/McKinsey-style charts. Pass the collected results as JSON.
+CAPABILITIES:
+1. **Run Single Simulation** — Delegate to shopper agents to simulate their
+   shopping trips under the current endcap scenario. Collect results and produce
+   an aggregate report (revenue, conversion rate, cart size, ROI).
+
+2. **A/B Test Endcap Strategies** — Use the compare_endcap_strategies tool to
+   pit two merchandising strategies against each other. This runs the same
+   shopper personas through both configurations and produces side-by-side
+   metrics. Use this when users ask to "test", "compare", or "A/B test"
+   different endcap placements or marketing strategies.
+
+3. **List Available Strategies** — Use the list_endcap_strategies tool to show
+   users all available endcap configurations they can test.
+
+4. **Generate Report** — Use generate_simulation_report to create a visual
+   HTML report with BCG/McKinsey-style charts.
+
+When presenting A/B test results, always include:
+- Side-by-side conversion rates
+- Revenue comparison (total and per-shopper average)
+- Endcap pickup counts and which products converted best
+- A clear winner recommendation with rationale
 
 Compare results across scenarios when asked to evaluate merchandising strategies.""",
         description=(
             "Orchestrates simulated shopper agents to evaluate store merchandising "
-            "strategies and endcap placement effectiveness."
+            "strategies and endcap placement effectiveness. Supports A/B testing "
+            "of different marketing endcap configurations."
         ),
         sub_agents=shopper_agents,
         tools=tools,

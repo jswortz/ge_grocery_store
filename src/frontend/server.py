@@ -373,6 +373,12 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         body = self._read_body()
         payload = json.loads(body) if body else {}
 
+        # Ensure user_id is present (required by ADK >= 1.19)
+        if "input" in payload and "user_id" not in payload["input"]:
+            payload["input"]["user_id"] = payload.get("user_id", "frontend-user")
+        elif "input" not in payload:
+            payload.setdefault("input", {})["user_id"] = "frontend-user"
+
         # Allow frontend to specify an alternative agent engine resource ID
         resource_id = payload.pop("resource_id", None)
         if resource_id:
@@ -447,6 +453,12 @@ class FrontendHandler(SimpleHTTPRequestHandler):
         }
         body = self._read_body()
         payload = json.loads(body) if body else {}
+
+        # Ensure user_id is present (required by ADK >= 1.19)
+        if "input" in payload and "user_id" not in payload["input"]:
+            payload["input"]["user_id"] = payload.get("user_id", "frontend-user")
+        elif "input" not in payload:
+            payload.setdefault("input", {})["user_id"] = "frontend-user"
 
         try:
             resp = req.post(url, headers=headers, json=payload, timeout=120, stream=True)
