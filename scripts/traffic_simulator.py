@@ -19,11 +19,13 @@ import json
 import logging
 import random
 import time
+from collections import defaultdict
 from pathlib import Path
 
 import google.auth
 import google.auth.transport.requests
 import requests
+import vertexai
 import yaml
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -156,15 +158,138 @@ def _query_agent(agent_id: str, message: str, user_id: str, token: str) -> dict:
     }
 
 
+def _generate_memories(
+    client,
+    agent_resource: str,
+    user_conversations: dict[str, list[str]],
+    agent_key: str,
+):
+    """Generate memories from user conversations.
+
+    Uses two strategies:
+    1. direct_contents_source — lets the LLM extract memories from conversation
+    2. direct_memories_source — stores explicit facts derived from query topics
+
+    Args:
+        client: Vertex AI client instance.
+        agent_resource: Full resource name of the agent engine.
+        user_conversations: Mapping of user_id to list of query strings.
+        agent_key: Which agent (main, mcp, simulator) for fact templates.
+    """
+    generated = 0
+    for user_id, queries in user_conversations.items():
+        # Strategy 1: Store conversation contents (may or may not generate memories)
+        events = [
+            {"content": {"role": "user", "parts": [{"text": q}]}}
+            for q in queries
+        ]
+        try:
+            client.agent_engines.memories.generate(
+                name=agent_resource,
+                direct_contents_source={"events": events},
+                scope={"user_id": user_id},
+                config={"wait_for_completion": True},
+            )
+        except Exception as e:
+            logger.debug("    direct_contents_source failed for user=%s: %s", user_id, e)
+
+        # Strategy 2: Store explicit facts derived from the queries
+        facts = _derive_facts(queries, user_id, agent_key)
+        if facts:
+            try:
+                client.agent_engines.memories.generate(
+                    name=agent_resource,
+                    direct_memories_source={
+                        "direct_memories": [{"fact": f} for f in facts]
+                    },
+                    scope={"user_id": user_id},
+                    config={"wait_for_completion": True},
+                )
+                generated += 1
+                logger.info(
+                    "    Memory generated for user=%s (%d facts, %d events)",
+                    user_id, len(facts), len(events),
+                )
+            except Exception as e:
+                logger.warning("    Memory generation failed for user=%s: %s", user_id, e)
+    return generated
+
+
+def _derive_facts(queries: list[str], user_id: str, agent_key: str) -> list[str]:
+    """Derive memorable facts from the queries a user asked.
+
+    These facts capture the user's interests and query patterns so that
+    Memory Bank can personalize future sessions.
+    """
+    facts = []
+    for q in queries:
+        ql = q.lower()
+        # Detect topic areas and create preference facts
+        if any(kw in ql for kw in ["top", "best", "most popular", "revenue", "sales"]):
+            facts.append(f"User is interested in sales performance and top product analytics")
+        elif any(kw in ql for kw in ["sop", "procedure", "guideline", "policy"]):
+            facts.append(f"User frequently looks up SOPs and store procedures")
+        elif any(kw in ql for kw in ["brand", "logo", "font", "color", "typography"]):
+            facts.append(f"User is interested in brand guidelines and visual standards")
+        elif any(kw in ql for kw in ["image", "generate", "photo", "picture"]):
+            facts.append(f"User requests product image generation")
+        elif any(kw in ql for kw in ["forecast", "trend", "predict"]):
+            facts.append(f"User is interested in forecasting and trend analysis")
+        elif any(kw in ql for kw in ["loyalty", "tier", "customer"]):
+            facts.append(f"User tracks customer loyalty tier analytics")
+        elif any(kw in ql for kw in ["employee", "staff", "associate"]):
+            facts.append(f"User monitors employee performance metrics")
+        elif any(kw in ql for kw in ["store", "location", "market"]):
+            facts.append(f"User analyzes store-level performance data")
+        elif any(kw in ql for kw in ["simulat", "endcap", "planogram", "shopper"]):
+            facts.append(f"User runs shopper simulations and endcap experiments")
+        elif any(kw in ql for kw in ["table", "schema", "dataset", "describe"]):
+            facts.append(f"User explores data schema and table structures")
+
+    # Deduplicate while preserving order
+    seen = set()
+    unique = []
+    for f in facts:
+        if f not in seen:
+            seen.add(f)
+            unique.append(f)
+    return unique
+
+
+def _verify_memories(client, agent_resource: str, user_ids: list[str]) -> dict:
+    """Verify memories exist for each user on the given agent.
+
+    Returns:
+        Dict mapping user_id to count of memories found.
+    """
+    counts = {}
+    for user_id in user_ids:
+        try:
+            results = client.agent_engines.memories.retrieve(
+                name=agent_resource,
+                scope={"user_id": user_id},
+            )
+            memories = list(results)
+            counts[user_id] = len(memories)
+        except Exception as e:
+            logger.warning("    Memory retrieval failed for user=%s: %s", user_id, e)
+            counts[user_id] = -1
+    return counts
+
+
 def run_traffic(
     config: dict,
     agent_keys: list[str],
     num_queries: int,
     delay: float = 2.0,
 ):
-    """Run traffic simulation against specified agents."""
+    """Run traffic simulation against specified agents and generate memories."""
     token = _get_token()
     project = config.get("project", {})
+
+    # Initialize Vertex AI client for memory operations
+    vertexai.init(project=project["id"], location=LOCATION)
+    vx_client = vertexai.Client(project=project["id"], location=LOCATION)
 
     results = {"agents": {}, "total_queries": 0, "total_success": 0, "total_failures": 0}
 
@@ -193,6 +318,8 @@ def run_traffic(
             selected.append(random.choice(queries))
 
         agent_results = {"queries": 0, "success": 0, "failures": 0, "details": []}
+        # Track conversations per user for memory generation
+        user_conversations: dict[str, list[str]] = defaultdict(list)
 
         for i, query in enumerate(selected, 1):
             user_id = random.choice(TRAFFIC_USER_IDS)
@@ -204,6 +331,7 @@ def run_traffic(
 
                 if result["success"]:
                     agent_results["success"] += 1
+                    user_conversations[user_id].append(query)
                     logger.info("    -> OK (%d bytes, trace=%s)",
                                 result["response_length"], result["trace_id"][:12] or "none")
                 else:
@@ -239,6 +367,27 @@ def run_traffic(
         logger.info("  Summary: %d/%d successful",
                      agent_results["success"], agent_results["queries"])
 
+        # Generate memories from successful conversations
+        if user_conversations:
+            agent_resource = (
+                f"projects/{PROJECT_NUMBER}/locations/{LOCATION}"
+                f"/reasoningEngines/{agent_id}"
+            )
+            logger.info("  Generating memories for %d users...", len(user_conversations))
+            mem_count = _generate_memories(vx_client, agent_resource, user_conversations, agent_key)
+            logger.info("  Memory generation complete: %d/%d users", mem_count, len(user_conversations))
+
+            # Verify memories were stored
+            time.sleep(3)
+            logger.info("  Verifying memories...")
+            mem_counts = _verify_memories(vx_client, agent_resource, list(user_conversations.keys()))
+            for uid, count in mem_counts.items():
+                status = "OK" if count > 0 else "MISSING"
+                logger.info("    %s: %d memories [%s]", uid, count, status)
+
+            agent_results["memories_generated"] = mem_count
+            agent_results["memory_counts"] = mem_counts
+
     # Final report
     logger.info("")
     logger.info("=" * 60)
@@ -250,6 +399,16 @@ def run_traffic(
     if results["total_queries"] > 0:
         rate = results["total_success"] / results["total_queries"] * 100
         logger.info("Success rate:  %.1f%%", rate)
+
+    # Memory summary
+    logger.info("")
+    logger.info("Memory Bank Summary:")
+    for agent_key, agent_data in results["agents"].items():
+        mem_counts = agent_data.get("memory_counts", {})
+        total_mem = sum(c for c in mem_counts.values() if c > 0)
+        users_with_mem = sum(1 for c in mem_counts.values() if c > 0)
+        logger.info("  %s: %d memories across %d users",
+                     agent_key, total_mem, users_with_mem)
 
     return results
 
