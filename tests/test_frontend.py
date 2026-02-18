@@ -149,17 +149,18 @@ class TestAgentSelectorForAgentEngine:
 class TestSampleQuestionRouting:
 
     def test_analytics_sample_routes_to_agent_engine(self, html_content):
-        """Analytics sample should route to agent-engine backend."""
-        assert "sendSample('What are the top 5 products by revenue?', {backend:'agent-engine'})" in html_content
+        """Analytics sample should route to agent-engine backend with explicit agent ID."""
+        assert "sendSample('What are the top 5 products by revenue?', {backend:'agent-engine', agentId:'3727910666648944640'})" in html_content
 
     def test_image_sample_routes_to_agent_engine(self, html_content):
-        """Image generation sample should route to agent-engine backend."""
+        """Image generation sample should route to agent-engine backend with explicit agent ID."""
         assert "sendSample('Generate a product image" in html_content
-        assert "backend:'agent-engine'" in html_content
+        assert "agentId:'3727910666648944640'" in html_content
 
     def test_simulator_sample_routes_to_agent_engine(self, html_content):
-        """Simulator sample should route to agent-engine backend."""
+        """Simulator sample should route to agent-engine with simulator agent ID."""
         assert "sendSample('Simulate 5 shoppers" in html_content
+        assert "agentId:'7053256041508634624'" in html_content
 
     def test_simulator_sample_label_not_a2a(self, html_content):
         """Simulator sample button should NOT say 'A2A Simulator' (it's not A2A protocol)."""
