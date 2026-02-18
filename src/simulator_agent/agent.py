@@ -43,7 +43,7 @@ def _load_config() -> dict:
     if os.environ.get("ADK_MODEL"):
         config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3-flash-preview")
+    config["models"].setdefault("adk_fast", "gemini-3-flash-preview")
 
     return config
 
@@ -311,7 +311,7 @@ def create_shopper_agent(
     from google.adk.agents import LlmAgent
 
     config = _load_config()
-    adk_model = config["models"]["adk"]
+    adk_model = config["models"].get("adk_fast", config["models"].get("adk", "gemini-3-flash-preview"))
 
     return LlmAgent(
         name=f"shopper_{persona['id']}",
@@ -343,7 +343,7 @@ def create_agent(
 
     config = _load_config()
     retailer = config["retailer"]["name"]
-    adk_model = config["models"]["adk"]
+    adk_model = config["models"].get("adk_fast", config["models"].get("adk", "gemini-3-flash-preview"))
     strategies = _load_strategies()
     scenario = strategies.get(scenario_key, strategies.get("baseline", {"name": "Baseline", "description": ""}))
 

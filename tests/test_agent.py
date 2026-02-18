@@ -32,6 +32,19 @@ class TestSystemPrompts:
         assert "Product Information & Analytics" not in instruction
         assert "BigQuery analytics tool" not in instruction
 
+    def test_main_instruction_simulator_scenarios_match_config(self):
+        """System prompt should list scenario keys that exist in endcap_strategies.yaml."""
+        from src.agent.prompts.system_prompts import get_main_agent_instruction
+        from src.simulator_agent.agent import _load_strategies
+        instruction = get_main_agent_instruction()
+        strategies = _load_strategies()
+        # Verify no stale scenario names
+        assert "premium_organic" not in instruction, "Stale scenario 'premium_organic' in system prompt"
+        assert "impulse_buy" not in instruction, "Stale scenario 'impulse_buy' in system prompt"
+        # Verify key real scenarios are listed
+        for key in ["seasonal_produce", "snack_impulse", "health_wellness"]:
+            assert key in instruction, f"Scenario '{key}' missing from system prompt"
+
     def test_sop_description(self):
         from src.agent.prompts.system_prompts import get_sop_agent_description
         desc = get_sop_agent_description()

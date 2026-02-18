@@ -1262,7 +1262,7 @@ details[open] .thoughts-toggle::before {
           </span>
           <span class="sq-text">
             <span class="sq-label">Simulate shopper traffic</span>
-            <span class="sq-sub">Analytics &middot; A2A Simulator</span>
+            <span class="sq-sub">Simulation &middot; Shopper Simulator</span>
           </span>
         </button>
         <button class="sample-btn" onclick="sendSample('What are the closing procedures for frontline associates?')">
@@ -1630,8 +1630,11 @@ function buildArchTree() {
 
     if (aeType === 'simulator') return [
       _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
-      _l('', true, 'simulation_orchestrator', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
-      _l('    ', false, 'Shopper Personas <span class="dim">(12 concurrent)</span>', '', '', false),
+      _l('', true, 'simulator_orchestrator', 'ROOT', 'badge-agent', true, 'gemini-3-flash-preview'),
+      _l('    ', false, 'compare_endcap_strategies', 'TOOL', 'badge-tool', false, 'A/B Test'),
+      _l('    ', false, 'list_endcap_strategies', 'TOOL', 'badge-tool', false, '9 strategies'),
+      _l('    ', false, 'generate_simulation_report', 'TOOL', 'badge-tool', false, 'Chart.js HTML'),
+      _l('    ', false, 'Shopper Sub-Agents <span class="dim">(12 personas)</span>', '', '', false),
       _l('    \u2502   ', false, 'Budget Family Shopper', 'PERSONA', 'badge-model'),
       _l('    \u2502   ', false, 'Health Enthusiast', 'PERSONA', 'badge-model'),
       _l('    \u2502   ', false, 'Quick-Stop Worker', 'PERSONA', 'badge-model'),
@@ -2411,6 +2414,14 @@ function addMessage(role, text, thoughts) {
       <div class="msg-meta">${timeStr}${sourceLabel}${perfBadge}${traceLink}</div>
     </div>
   `;
+
+  // Detect simulation report references and add "View Report" button
+  if (role === 'assistant' && /simulation.report|report.*generated|report_path/i.test(text)) {
+    const reportBtn = document.createElement('div');
+    reportBtn.style.cssText = 'margin-top:8px;';
+    reportBtn.innerHTML = `<button onclick="window.open('/api/simulation-report','_blank')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--vf-green-700);color:white;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>View Simulation Report</button>`;
+    msgDiv.querySelector('.msg-body').appendChild(reportBtn);
+  }
 
   $chatArea.appendChild(msgDiv);
   scrollToBottom();

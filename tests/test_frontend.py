@@ -161,6 +161,25 @@ class TestSampleQuestionRouting:
         """Simulator sample should route to agent-engine backend."""
         assert "sendSample('Simulate 5 shoppers" in html_content
 
+    def test_simulator_sample_label_not_a2a(self, html_content):
+        """Simulator sample button should NOT say 'A2A Simulator' (it's not A2A protocol)."""
+        assert "A2A Simulator" not in html_content
+
+    def test_simulator_sample_label_correct(self, html_content):
+        """Simulator sample button should say 'Shopper Simulator'."""
+        assert "Shopper Simulator" in html_content
+
+    def test_simulator_arch_panel_agent_name(self, html_content):
+        """Architecture panel should use correct agent name 'simulator_orchestrator'."""
+        assert "simulator_orchestrator" in html_content
+        assert "simulation_orchestrator" not in html_content
+
+    def test_simulator_arch_panel_shows_tools(self, html_content):
+        """Architecture panel for simulator should show its tools."""
+        assert "compare_endcap_strategies" in html_content
+        assert "list_endcap_strategies" in html_content
+        assert "generate_simulation_report" in html_content
+
     def test_send_sample_accepts_opts(self, html_content):
         """sendSample should accept an opts parameter."""
         assert "function sendSample(text, opts)" in html_content
@@ -267,6 +286,15 @@ class TestModelCardInfo:
     def test_server_supports_resource_id_override(self, server_content):
         """Agent Engine proxy should support resource_id override."""
         assert "resource_id" in server_content
+
+    def test_server_simulation_report_endpoint(self, server_content):
+        """Server should have a /api/simulation-report endpoint."""
+        assert "/api/simulation-report" in server_content
+        assert "simulation_report.html" in server_content
+
+    def test_server_simulator_model_config(self, server_content):
+        """Simulator config should use adk_fast model (with adk fallback)."""
+        assert "adk_fast" in server_content
 
 
 # ================================================================

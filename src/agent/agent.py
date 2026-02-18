@@ -157,7 +157,7 @@ def create_agent():
     except ImportError:
         print("Warning: GoogleSearchTool not available")
 
-    # Add A2A tool for cross-agent delegation to simulator
+    # Add simulator delegation tool (Agent Engine cross-agent call)
     try:
         from .tools.a2a_tool import create_a2a_tool
         root_tools.append(create_a2a_tool())

@@ -225,6 +225,16 @@ class TestSimulatorAgent(unittest.TestCase):
         assert persona["name"] in instruction
         assert str(persona["shopping_behavior"]["budget"]) in instruction
 
+    def test_simulator_uses_flash_model(self):
+        """Simulator should use adk_fast (gemini-3-flash) for low latency, not adk (pro)."""
+        from src.simulator_agent.agent import _load_config
+        config = _load_config()
+        # Should prefer adk_fast over adk
+        model = config["models"].get("adk_fast", config["models"].get("adk", ""))
+        assert "flash" in model.lower(), (
+            f"Simulator model should be flash for low latency, got: {model}"
+        )
+
 
 class TestReportGenerator(unittest.TestCase):
     """Test simulation report generation tool."""
