@@ -88,17 +88,18 @@ This demo showcases Google Cloud's agentic AI capabilities for grocery retail op
 ### Demo Flow
 
 #### 3.1 Shopper Simulation
-- **Query**: "Simulate 3 shoppers at Downtown Market with seasonal produce endcaps"
-- Expected: Agent delegates via `delegate_to_simulator` A2A tool to the Simulator Agent Engine
+- **Query**: "Simulate 5 shoppers at Downtown Market with the seasonal produce endcap strategy"
+- Expected: Agent delegates via `delegate_to_simulator` tool to the Simulator Agent Engine
 - Simulator creates concurrent shopper personas, walks them through aisles
 - Returns aggregate report: revenue, endcap conversion, recommendations
-- Highlight: Cross-agent delegation via A2A protocol, concurrent persona agents
+- Highlight: Multi-agent orchestration with specialized simulator agent on Agent Engine
 
 #### 3.2 Explain Architecture
-- Explain the A2A flow:
-  - Main Agent → A2A Tool → Cloud Run endpoint → Simulator Agent Engine
-  - AgentCard at `/.well-known/agent.json` for discovery
-  - Skills: SOP lookup, brand guidelines, sales analytics, image generation
+- Explain the delegation flow:
+  - Main Agent → `delegate_to_simulator` tool → Agent Engine `streamQuery` API → Simulator Agent Engine
+  - Simulator has 12 shopper persona sub-agents (gemini-3-flash-preview)
+  - Tools: `compare_endcap_strategies` (A/B testing), `list_endcap_strategies`, `generate_simulation_report`
+  - 9 endcap strategies + 3 planogram layouts for testing
 
 ---
 

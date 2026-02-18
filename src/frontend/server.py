@@ -161,7 +161,7 @@ class FrontendHandler(SimpleHTTPRequestHandler):
                         "id": project_cfg.get("simulator_agent_engine_id", ""),
                         "name": "Shopper Simulator",
                         "type": "simulator",
-                        "model": models_cfg.get("adk_fast", "gemini-3-flash-preview"),
+                        "model": models_cfg.get("adk_fast", models_cfg.get("adk", "gemini-3-flash-preview")),
                         "resource_name": f"reasoningEngines/{project_cfg.get('simulator_agent_engine_id', '')}",
                     },
                     {
@@ -196,6 +196,9 @@ class FrontendHandler(SimpleHTTPRequestHandler):
             return
         if path == "/api/stream-assist/data-stores":
             self._proxy_list_data_stores()
+            return
+        if path == "/api/simulation-report":
+            self._serve_simulation_report()
             return
         if path.startswith("/api/images/"):
             self._proxy_gcs_image(path)
@@ -744,6 +747,26 @@ class FrontendHandler(SimpleHTTPRequestHandler):
             )
 
         return None, None, None
+
+    # --- Simulation report -----------------------------------------------
+
+    def _serve_simulation_report(self):
+        """GET /api/simulation-report -> serve the generated HTML report.
+
+        The simulator agent writes reports to /tmp/simulation_report.html.
+        This endpoint serves that file so the frontend can display it.
+        """
+        report_path = Path("/tmp/simulation_report.html")
+        if not report_path.exists():
+            self._json_error(404, "No simulation report available. Run a simulation first.")
+            return
+
+        try:
+            html = report_path.read_text(encoding="utf-8")
+            self._raw_response(html, content_type="text/html")
+        except Exception as exc:
+            logger.warning("Failed to serve simulation report: %s", exc)
+            self._json_error(500, f"Failed to read report: {exc}")
 
     # --- GCS image proxy ------------------------------------------------
 
