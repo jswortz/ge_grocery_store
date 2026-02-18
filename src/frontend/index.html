@@ -1202,7 +1202,7 @@ details[open] .thoughts-toggle::before {
       <p style="font-size:12px;color:var(--vf-gray-500);margin-bottom:16px;">Each prompt routes to a specific agent. The badge shows the backend and agent.</p>
 
       <div class="sample-queries">
-        <button class="sample-btn" onclick="sendSample('What are the closing procedures for frontline associates?', {backend:'stream-assist'})">
+        <button class="sample-btn" onclick="sendSample('What are the closing procedures for frontline associates?', {backend:'stream-assist', agentId:'default_assistant'})">
           <span class="sq-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-green-700)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           </span>
@@ -1211,13 +1211,13 @@ details[open] .thoughts-toggle::before {
             <span class="sq-sub">StreamAssist &rarr; Default Assistant &middot; SOP search</span>
           </span>
         </button>
-        <button class="sample-btn" onclick="sendSample('What are the top 5 products by revenue?', {backend:'agent-engine', agentId:'3727910666648944640'})">
+        <button class="sample-btn" onclick="sendSample('What are the top 5 products by revenue?', {backend:'agent-engine', agentId:'5787744546217525248'})">
           <span class="sq-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
           </span>
           <span class="sq-text">
             <span class="sq-label">Top products by revenue</span>
-            <span class="sq-sub">Agent Engine &rarr; Grocery Retail Assistant &middot; BigQuery</span>
+            <span class="sq-sub">Agent Engine &rarr; MCP Grocery Analyst &middot; BigQuery</span>
           </span>
         </button>
         <button class="sample-btn" onclick="sendSample('Generate a product image for Nano Banana Pro that follows our brand guidelines', {backend:'agent-engine', agentId:'3727910666648944640'})">
@@ -2642,8 +2642,16 @@ async function sendMessage() {
 
 function sendSample(text, opts) {
   // opts: { backend: 'agent-engine'|'stream-assist', agentId: string }
-  if (opts?.backend && opts.backend !== State.backend) {
-    // Switch backend silently (no confirm since no conversation yet)
+  // Always reset session when clicking a sample button — each targets
+  // a specific agent and should not reuse a stale session from a
+  // previously selected agent.
+  const backendChanged = opts?.backend && opts.backend !== State.backend;
+  const agentChanged = opts?.agentId && (
+    (State.backend === 'stream-assist' && opts.agentId !== State.selectedAgent) ||
+    (State.backend === 'agent-engine' && opts.agentId !== State.selectedAgentEngineId)
+  );
+
+  if (backendChanged) {
     State.backend = opts.backend;
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.backend === opts.backend);
@@ -2653,12 +2661,17 @@ function sendSample(text, opts) {
     } else {
       $modeLabel.textContent = 'ADK Agent Engine & A2A';
     }
-    State.messages = [];
-    State.sessionName = null;
-    $sessionInfo.style.display = 'none';
     rebuildAgentSelector();
     updateAgentSelectorVisibility();
   }
+
+  if (backendChanged || agentChanged) {
+    // Reset session so the new agent gets a clean context
+    State.messages = [];
+    State.sessionName = null;
+    $sessionInfo.style.display = 'none';
+  }
+
   if (opts?.agentId) {
     if (State.backend === 'agent-engine') {
       State.selectedAgentEngineId = opts.agentId;

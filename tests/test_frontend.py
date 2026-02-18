@@ -148,9 +148,9 @@ class TestAgentSelectorForAgentEngine:
 # ================================================================
 class TestSampleQuestionRouting:
 
-    def test_analytics_sample_routes_to_agent_engine(self, html_content):
-        """Analytics sample should route to agent-engine backend with explicit agent ID."""
-        assert "sendSample('What are the top 5 products by revenue?', {backend:'agent-engine', agentId:'3727910666648944640'})" in html_content
+    def test_analytics_sample_routes_to_mcp_agent(self, html_content):
+        """Analytics sample should route to MCP Grocery Analyst on Agent Engine."""
+        assert "sendSample('What are the top 5 products by revenue?', {backend:'agent-engine', agentId:'5787744546217525248'})" in html_content
 
     def test_image_sample_routes_to_agent_engine(self, html_content):
         """Image generation sample should route to agent-engine backend with explicit agent ID."""
