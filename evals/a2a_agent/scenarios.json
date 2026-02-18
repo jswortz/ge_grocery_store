@@ -1,0 +1,42 @@
+{
+  "eval_set_id": "a2a_agent_eval",
+  "name": "A2A Agent Evaluation",
+  "description": "Evaluates the A2A-enabled grocery retail assistant deployed on Agent Engine. Tests SOP lookup, brand guidelines, analytics delegation, and image generation via the A2A protocol wrapper.",
+  "eval_cases": [
+    {
+      "eval_id": "a2a_sop_lookup",
+      "conversation_scenario": {
+        "starting_prompt": "What are the store opening procedures for morning shift associates?",
+        "conversation_plan": "After receiving the SOP information, ask about the required PPE for the produce section. Then ask what happens if a safety violation is observed during the opening check."
+      }
+    },
+    {
+      "eval_id": "a2a_brand_guidelines",
+      "conversation_scenario": {
+        "starting_prompt": "What are our brand typography and font guidelines?",
+        "conversation_plan": "After getting typography info, ask about the approved color palette for in-store signage. Then ask about tone of voice guidelines for social media posts."
+      }
+    },
+    {
+      "eval_id": "a2a_analytics_delegation",
+      "conversation_scenario": {
+        "starting_prompt": "Which store has the highest total revenue?",
+        "conversation_plan": "After seeing the results, ask about the top 3 product categories by sales volume. Then ask how Gold tier loyalty customers compare to Bronze tier in average transaction value."
+      }
+    },
+    {
+      "eval_id": "a2a_multi_skill_routing",
+      "conversation_scenario": {
+        "starting_prompt": "I need to prepare a promotional display. What are our brand color guidelines and what are the top selling products I should feature?",
+        "conversation_plan": "After getting both brand colors and product data, ask for an image of the top-selling product styled with our brand colors. Verify the agent coordinates across SOP search, analytics, and image generation."
+      }
+    },
+    {
+      "eval_id": "a2a_greeting_capabilities",
+      "conversation_scenario": {
+        "starting_prompt": "Hello, what capabilities do you have?",
+        "conversation_plan": "Ask the agent to demonstrate one capability at a time. Start with SOP lookup, then analytics. Confirm it mentions all four skill areas: SOPs, brand guidelines, analytics, and image generation."
+      }
+    }
+  ]
+}
