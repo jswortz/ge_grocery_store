@@ -45,6 +45,30 @@ def agent_engine_id(config):
 
 
 @pytest.fixture(scope="module")
+def mcp_agent_engine_id(config):
+    ae_id = config["project"].get("mcp_agent_engine_id", "")
+    if not ae_id:
+        pytest.skip("No mcp_agent_engine_id configured in settings.yaml")
+    return ae_id
+
+
+@pytest.fixture(scope="module")
+def simulator_agent_engine_id(config):
+    ae_id = config["project"].get("simulator_agent_engine_id", "")
+    if not ae_id:
+        pytest.skip("No simulator_agent_engine_id configured in settings.yaml")
+    return ae_id
+
+
+@pytest.fixture(scope="module")
+def a2a_agent_engine_id(config):
+    ae_id = config["project"].get("a2a_agent_engine_id", "")
+    if not ae_id:
+        pytest.skip("No a2a_agent_engine_id configured in settings.yaml")
+    return ae_id
+
+
+@pytest.fixture(scope="module")
 def project_number():
     """Resolve project number from credentials."""
     credentials, project = google.auth.default()
@@ -167,3 +191,71 @@ class TestAgentEngineBrandGuidelines:
             term in text_lower
             for term in ["color", "brand", "green", "font", "typography", "palette", "guideline"]
         ), f"Response should mention brand elements, got: {text[:200]}"
+
+
+class TestAgentEngineMCP:
+    """Verify MCP BigQuery analyst agent works on Agent Engine."""
+
+    def test_schema_exploration(self, project_number, mcp_agent_engine_id, auth_headers):
+        text = _stream_query(
+            project_number, mcp_agent_engine_id, auth_headers,
+            "What tables are available in the grocery dataset?",
+        )
+        assert text, "MCP agent should return schema information"
+        text_lower = text.lower()
+        assert any(
+            term in text_lower
+            for term in ["fact_transactions", "dim_store", "dim_product", "table", "dataset"]
+        ), f"Response should mention tables, got: {text[:200]}"
+
+    def test_revenue_query(self, project_number, mcp_agent_engine_id, auth_headers):
+        text = _stream_query(
+            project_number, mcp_agent_engine_id, auth_headers,
+            "What is the total revenue by store?",
+        )
+        assert text, "MCP agent should return revenue data"
+        assert any(
+            char.isdigit() for char in text
+        ), "Response should contain numeric revenue data"
+
+
+class TestAgentEngineSimulator:
+    """Verify Shopper Simulator agent works on Agent Engine."""
+
+    def test_simulation_run(self, project_number, simulator_agent_engine_id, auth_headers):
+        text = _stream_query(
+            project_number, simulator_agent_engine_id, auth_headers,
+            "Simulate 3 shoppers at the Downtown Market with the seasonal produce endcap.",
+        )
+        assert text, "Simulator should return simulation results"
+        text_lower = text.lower()
+        assert any(
+            term in text_lower
+            for term in ["shopper", "cart", "endcap", "revenue", "basket", "simulation"]
+        ), f"Response should mention simulation terms, got: {text[:200]}"
+
+
+class TestAgentEngineA2A:
+    """Verify A2A agent works on Agent Engine."""
+
+    def test_sop_search(self, project_number, a2a_agent_engine_id, auth_headers):
+        text = _stream_query(
+            project_number, a2a_agent_engine_id, auth_headers,
+            "What are the closing procedures for frontline associates?",
+        )
+        assert text, "A2A agent should return SOP information"
+        text_lower = text.lower()
+        assert any(
+            term in text_lower
+            for term in ["closing", "close", "register", "security", "clean", "lock"]
+        ), f"Response should mention closing-related terms, got: {text[:200]}"
+
+    def test_analytics(self, project_number, a2a_agent_engine_id, auth_headers):
+        text = _stream_query(
+            project_number, a2a_agent_engine_id, auth_headers,
+            "What are the top 3 selling products by revenue?",
+        )
+        assert text, "A2A agent should return analytics data"
+        assert any(
+            char.isdigit() for char in text
+        ), "Response should contain numeric data"

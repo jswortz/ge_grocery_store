@@ -21,8 +21,8 @@ from src.client.stream_assist import (
 # --- Fixtures ---
 
 @pytest.fixture
-def client():
-    """Create a StreamAssistClient with test config."""
+def client(mock_credentials):
+    """Create a StreamAssistClient with test config (auth mocked)."""
     return StreamAssistClient(
         project_id="test-project",
         location="global",
@@ -46,7 +46,9 @@ def mock_credentials():
 
 class TestStreamAssistClient:
 
-    def test_init_global_endpoint(self):
+    @patch("src.client.stream_assist.google.auth.default")
+    def test_init_global_endpoint(self, mock_auth):
+        mock_auth.return_value = (MagicMock(), "proj")
         client = StreamAssistClient(
             project_id="proj", location="global",
             engine_id="eng", agent_id="agt",
@@ -55,7 +57,9 @@ class TestStreamAssistClient:
         assert "proj" in client.base_url
         assert "eng" in client.base_url
 
-    def test_init_regional_endpoint(self):
+    @patch("src.client.stream_assist.google.auth.default")
+    def test_init_regional_endpoint(self, mock_auth):
+        mock_auth.return_value = (MagicMock(), "proj")
         client = StreamAssistClient(
             project_id="proj", location="us-central1",
             engine_id="eng", agent_id="agt",
