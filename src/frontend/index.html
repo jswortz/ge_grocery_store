@@ -1969,10 +1969,6 @@ function handleGreeting(query) {
 // API CALLS
 // ================================================================
 async function callStreamAssist(text) {
-  // Handle greetings client-side (StreamAssist is for document search)
-  const greeting = handleGreeting(text);
-  if (greeting) return greeting;
-
   await ensureSession();
 
   const cfg = AppConfig?.project || {};
@@ -2521,6 +2517,16 @@ async function sendMessage() {
   showLoading();
 
   try {
+    // Handle greetings client-side for all backends
+    const greeting = handleGreeting(text);
+    if (greeting) {
+      hideLoading();
+      addMessage('assistant', greeting);
+      State.isLoading = false;
+      $sendBtn.disabled = false;
+      return;
+    }
+
     let response;
     // Auto-route image generation requests to Agent Engine
     const isImageRequest = State.backend === 'stream-assist' &&
