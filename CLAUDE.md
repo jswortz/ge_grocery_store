@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pip install -e ".[dev]"
 
 # Unit tests (no GCP credentials needed)
-python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py tests/test_a2a_agent.py "tests/test_model_armor.py::TestModelArmorConfig" -v
+python -m pytest tests/test_agent.py tests/test_stream_assist.py tests/test_mcp_agent.py tests/test_a2a_agent.py "tests/test_model_armor.py::TestModelArmorConfig" tests/test_frontend.py tests/test_frontend_e2e.py tests/test_evals.py -v
 
 # All tests (requires gcloud auth + provisioned resources)
 python -m pytest tests/ -v
@@ -110,7 +110,7 @@ Dataset `ge_grocery_demo` in `wortz-project-352116`:
 
 DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_data.sql`.
 
-### Test structure (270 unit + 42 integration)
+### Test structure (291 unit + 78 integration = 369 total)
 
 - `tests/test_agent.py` (53) — **unit tests**, system prompts, SQL gen, tool configs, memory, voice, frontend, agent refactor, simulator scenario validation
 - `tests/test_stream_assist.py` (14 unit + 1 integration) — StreamAssist client, parsing, error handling, infra scripts
@@ -119,8 +119,9 @@ DDL in `infra/bigquery/create_schema.sql`, seed data in `infra/bigquery/seed_dat
 - `tests/test_frontend.py` (52) — **unit tests**, compare-tab removal, Imagen labels, data-source toggle, agent selector, routing, voice, architecture panel, model card, thinking display, simulator labels, report endpoint
 - `tests/test_frontend_e2e.py` (76) — **unit tests**, tabs, agent selector, data stores, voice ops, streaming, multi-turn, deployment scripts, E2E page load, API endpoints
 - `tests/test_model_armor.py` (10 unit + 5 integration) — validates Model Armor config, API schema, live template and assistant
+- `tests/test_evals.py` (40) — **unit tests**, validates eval config and scenario JSON structure for all eval directories
 - `tests/test_discovery_engine.py` (4) — **integration**, validates Discovery Engine SearchService directly against SOP and brand data stores
-- `tests/test_agent_engine.py` (5) — **integration**, validates deployed ADK agent via Agent Engine REST API (SOP search, analytics, brand guidelines)
+- `tests/test_agent_engine.py` (10) — **integration**, validates deployed ADK, MCP, Simulator, and A2A agents via Agent Engine REST API
 - `tests/test_bigquery.py` (12) — **integration**, validates schema and forbidden names against live BigQuery
 - `tests/test_memory_bank.py` (9) — **integration**, validates Memory Bank service and user-scoped memory persistence
 - `tests/test_acceptance.py` (6) — **integration**, validates acceptance criteria (greeting, SOP retrieval, brand guidelines) via StreamAssist
