@@ -23,17 +23,23 @@ Each deployed agent has an evaluation suite in the `evals/` directory:
 
 ```
 evals/
-├── grocery_assistant/     # Root ADK agent (SOP, brand, analytics, images)
+├── run_all_evals.py          # Master runner for all 4 agents
+├── grocery_assistant/        # Root ADK agent (SOP, brand, analytics, images)
 │   ├── eval_config.json
-│   └── scenarios.json
-├── mcp_analyst/           # MCP BigQuery agent
+│   ├── scenarios.json
+│   └── run_eval.py
+├── mcp_analyst/              # MCP BigQuery agent
 │   ├── eval_config.json
-│   └── scenarios.json
-├── simulator/             # Shopper simulation agent
+│   ├── scenarios.json
+│   └── run_eval.py
+├── simulator/                # Shopper simulation agent
 │   ├── eval_config.json
-│   └── scenarios.json
-└── a2a_agent/             # A2A-enabled agent
-    └── eval_config.json
+│   ├── scenarios.json
+│   └── run_eval.py
+└── a2a_agent/                # A2A-enabled agent
+    ├── eval_config.json
+    ├── scenarios.json
+    └── run_eval.py
 ```
 
 Evaluations use the ADK evaluation framework (v1.18.0+) with user simulation for multi-turn conversations.
@@ -101,6 +107,19 @@ Tests realistic shopping behavior and merchandising analysis.
 - Aggregate metrics are calculated
 - Recommendations are actionable
 
+### A2A Agent
+
+Tests the A2A protocol wrapper around the ADK agent, deployed on Agent Engine (`reasoningEngines/2240491336593571840`). Validates that all four skills work correctly when accessed via the agent-to-agent protocol.
+
+**Key scenarios:**
+- SOP lookup via A2A (store opening procedures)
+- Brand guidelines retrieval (typography, colors, tone)
+- Analytics delegation (revenue by store, product categories, loyalty tiers)
+- Multi-skill routing (combining brand + analytics + image in one request)
+- Greeting and capability discovery
+
+**Metrics:** `final_response_match_v2`, `hallucinations_v1`, `safety_v1`
+
 ---
 
 ## Running Evaluations
@@ -112,7 +131,26 @@ pip install -e ".[dev]"
 # ADK v1.18.0+ required for user simulation
 ```
 
-### Run all evaluations
+### Run evaluations against Agent Engine (deployed agents)
+
+```bash
+# All 4 agents at once
+python evals/run_all_evals.py
+
+# Single agent
+python evals/run_all_evals.py --agent grocery_assistant
+python evals/run_all_evals.py --agent mcp_analyst
+python evals/run_all_evals.py --agent simulator
+python evals/run_all_evals.py --agent a2a_agent
+
+# Or run individual scripts directly
+python evals/grocery_assistant/run_eval.py
+python evals/mcp_analyst/run_eval.py
+python evals/simulator/run_eval.py
+python evals/a2a_agent/run_eval.py
+```
+
+### Run evaluations locally (ADK CLI)
 
 ```bash
 # Grocery assistant
@@ -157,6 +195,7 @@ Run in order of speed and cost:
 | grocery_assistant | `tool_trajectory_avg_score` | 0.9 |
 | mcp_analyst | `final_response_match_v2` | 0.6 (open-ended SQL) |
 | simulator | rubric scores | 0.7 per rubric |
+| a2a_agent | `final_response_match_v2` | 0.6 (A2A wrapper overhead) |
 
 ### 3. Use user simulation for multi-turn
 
