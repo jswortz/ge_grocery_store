@@ -153,11 +153,9 @@ def create_agent():
         tools=[create_image_gen_tool()],
     )
 
-    agent = LlmAgent(
-        name="sop_agent",
-        model=adk_model,
-        planner=planner,
-        instruction=f"""You are an AI assistant for {retailer}, a grocery retail company.
+    from agent.prompts.system_prompts import get_a2ui_prompt_suffix
+    a2ui_suffix = get_a2ui_prompt_suffix()
+    base_instruction = f"""You are an AI assistant for {retailer}, a grocery retail company.
 You help associates, managers, and stakeholders with:
 1. Standard Operating Procedures - Retrieve and explain SOPs
 2. Brand-Compliant Marketing Content - Generate brand-aligned materials
@@ -166,7 +164,15 @@ You help associates, managers, and stakeholders with:
 
 Guidelines:
 - Always ground responses in data from tools.
-- Be concise and actionable.""",
+- Be concise and actionable."""
+    if a2ui_suffix:
+        base_instruction += "\n\n" + a2ui_suffix
+
+    agent = LlmAgent(
+        name="sop_agent",
+        model=adk_model,
+        planner=planner,
+        instruction=base_instruction,
         description=(
             "AI assistant for grocery retail operations. Searches SOPs and "
             "brand guidelines, and delegates to sub-agents for analytics "
@@ -207,6 +213,15 @@ def get_agent_card() -> dict:
         "capabilities": {
             "streaming": True,
             "pushNotifications": False,
+            "extensions": {
+                "a2ui": {
+                    "version": "0.8",
+                    "supportedComponents": [
+                        "Text", "Image", "Card", "Row", "Column",
+                        "List", "Button", "Tabs", "Icon", "Divider"
+                    ],
+                }
+            },
         },
         "skills": [
             {

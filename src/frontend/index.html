@@ -70,6 +70,133 @@
 }
 
 /* ================================================================
+   A2UI COMPONENT STYLES
+   ================================================================ */
+.a2ui-surface {
+  margin: 8px 0;
+  width: 100%;
+}
+.message.assistant:has(.a2ui-surface) .msg-bubble {
+  max-width: 95%;
+  width: 95%;
+}
+.a2ui-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.a2ui-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+.a2ui-row > * {
+  min-width: 0;
+}
+.a2ui-card {
+  background: linear-gradient(160deg, #ffffff 0%, #f1f8f1 100%);
+  border: 1.5px solid #a5d6a7;
+  border-left: 4px solid var(--vf-green-700);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 3px 12px rgba(46,125,50,0.10);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.a2ui-card:hover {
+  box-shadow: 0 6px 20px rgba(46,125,50,0.18);
+  transform: translateY(-2px);
+}
+.a2ui-card-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--vf-green-900);
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+.a2ui-card-subtitle {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--vf-green-700), #43a047);
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.a2ui-text p {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 14px;
+  color: var(--vf-gray-700);
+}
+.a2ui-text strong {
+  color: var(--vf-green-800);
+  font-weight: 700;
+}
+.a2ui-card .a2ui-text p {
+  font-size: 13.5px;
+}
+.a2ui-divider {
+  border: none;
+  border-top: 1.5px solid var(--vf-gray-200);
+  margin: 10px 0;
+}
+.a2ui-image img {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+.a2ui-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.a2ui-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--vf-gray-100);
+  font-size: 14px;
+  color: var(--vf-gray-700);
+}
+.a2ui-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--vf-gray-200);
+  margin-bottom: 12px;
+}
+.a2ui-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vf-gray-500);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.a2ui-tab.active, .a2ui-tab:first-child {
+  color: var(--vf-green-700);
+  border-bottom-color: var(--vf-green-700);
+}
+.a2ui-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--vf-green-700);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.a2ui-button:hover {
+  background: var(--vf-green-800);
+}
+
+/* ================================================================
    RESET & BASE
    ================================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1709,6 +1836,170 @@ function renderMarkdown(text) {
 }
 
 // ================================================================
+// A2UI RENDERER
+// ================================================================
+window.A2UI = {
+  containsA2UI(text) {
+    return /<a2ui-json>/.test(text);
+  },
+
+  parseBlocks(text) {
+    const blocks = [];
+    const regex = /<a2ui-json>([\s\S]*?)<\/a2ui-json>/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const before = text.slice(lastIndex, match.index).trim();
+      if (before) blocks.push({ type: 'text', content: before });
+      try {
+        blocks.push({ type: 'a2ui', content: JSON.parse(match[1]) });
+      } catch (e) {
+        blocks.push({ type: 'text', content: match[0] });
+      }
+      lastIndex = regex.lastIndex;
+    }
+    const after = text.slice(lastIndex).trim();
+    if (after) blocks.push({ type: 'text', content: after });
+    return blocks;
+  },
+
+  renderComponent(comp, componentsMap) {
+    const el = document.createElement('div');
+    if (comp.component) {
+      const [type, props] = Object.entries(comp.component)[0];
+      switch (type) {
+        case 'Column': {
+          el.className = 'a2ui-column';
+          this._renderChildren(props, el, componentsMap);
+          break;
+        }
+        case 'Row': {
+          el.className = 'a2ui-row';
+          this._renderChildren(props, el, componentsMap);
+          break;
+        }
+        case 'Card': {
+          el.className = 'a2ui-card';
+          if (props.title) {
+            const t = document.createElement('div');
+            t.className = 'a2ui-card-title';
+            t.textContent = props.title;
+            el.appendChild(t);
+          }
+          if (props.subtitle) {
+            const s = document.createElement('div');
+            s.className = 'a2ui-card-subtitle';
+            s.textContent = props.subtitle;
+            el.appendChild(s);
+          }
+          this._renderChildren(props, el, componentsMap);
+          break;
+        }
+        case 'Text': {
+          el.className = 'a2ui-text';
+          const p = document.createElement('p');
+          p.innerHTML = DOMPurify.sanitize(marked.parse(props.text || ''));
+          el.appendChild(p);
+          break;
+        }
+        case 'Divider': {
+          const hr = document.createElement('hr');
+          hr.className = 'a2ui-divider';
+          el.appendChild(hr);
+          break;
+        }
+        case 'Image': {
+          el.className = 'a2ui-image';
+          const img = document.createElement('img');
+          img.src = props.url || props.src || '';
+          img.alt = props.alt || '';
+          el.appendChild(img);
+          break;
+        }
+        case 'List': {
+          const ul = document.createElement('ul');
+          ul.className = 'a2ui-list';
+          this._renderChildren(props, ul, componentsMap);
+          el.appendChild(ul);
+          break;
+        }
+        case 'Button': {
+          const btn = document.createElement('button');
+          btn.className = 'a2ui-button';
+          btn.textContent = props.label || props.text || 'Button';
+          el.appendChild(btn);
+          break;
+        }
+        case 'Tabs': {
+          const tabs = document.createElement('div');
+          tabs.className = 'a2ui-tabs';
+          (props.tabs || []).forEach((tab, i) => {
+            const t = document.createElement('div');
+            t.className = 'a2ui-tab' + (i === 0 ? ' active' : '');
+            t.textContent = tab.label || tab;
+            tabs.appendChild(t);
+          });
+          el.appendChild(tabs);
+          this._renderChildren(props, el, componentsMap);
+          break;
+        }
+        case 'Icon': {
+          el.className = 'a2ui-icon';
+          el.textContent = props.name || props.icon || '';
+          break;
+        }
+        default: {
+          el.className = 'a2ui-unknown';
+          el.textContent = `[${type}]`;
+        }
+      }
+    }
+    return el;
+  },
+
+  _renderChildren(props, container, componentsMap) {
+    const childIds = props?.children?.explicitList || [];
+    childIds.forEach(id => {
+      const child = componentsMap.get(id);
+      if (child) container.appendChild(this.renderComponent(child, componentsMap));
+    });
+  },
+
+  renderSurface(messages) {
+    const surface = document.createElement('div');
+    surface.className = 'a2ui-surface';
+    messages.forEach(msg => {
+      if (msg.surfaceUpdate) {
+        const components = msg.surfaceUpdate.components || [];
+        const compMap = new Map();
+        components.forEach(c => compMap.set(c.id, c));
+        const rootId = messages.find(m => m.beginRendering)?.beginRendering?.root;
+        const rootComp = compMap.get(rootId);
+        if (rootComp) {
+          surface.appendChild(this.renderComponent(rootComp, compMap));
+        }
+      }
+    });
+    return surface;
+  },
+
+  render(text) {
+    const container = document.createElement('div');
+    const blocks = this.parseBlocks(text);
+    blocks.forEach(block => {
+      if (block.type === 'a2ui') {
+        container.appendChild(this.renderSurface(block.content));
+      } else {
+        const md = document.createElement('div');
+        md.innerHTML = renderMarkdown(block.content);
+        container.appendChild(md);
+      }
+    });
+    return container;
+  }
+};
+
+// ================================================================
 // BACKEND SWITCHING
 // ================================================================
 function switchBackend(backend) {
@@ -2270,7 +2561,8 @@ function addMessage(role, text, thoughts) {
     ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1.41-3.53C10.43 15 14 12 17 8z"/></svg>'
     : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
-  const bubbleContent = role === 'assistant' ? renderMarkdown(text) : escapeHtml(text);
+  const hasA2UI = role === 'assistant' && window.A2UI && window.A2UI.containsA2UI(text);
+  const bubbleContent = hasA2UI ? '' : (role === 'assistant' ? renderMarkdown(text) : escapeHtml(text));
 
   // Build collapsible thoughts section if thoughts are present
   let thoughtsHtml = '';
@@ -2321,6 +2613,15 @@ function addMessage(role, text, thoughts) {
       <div class="msg-meta">${timeStr}${sourceLabel}${perfBadge}${traceLink}</div>
     </div>
   `;
+
+  // Render A2UI content via DOM insertion
+  if (hasA2UI) {
+    const bubble = msgDiv.querySelector('.msg-bubble');
+    if (bubble) {
+      const rendered = window.A2UI.render(text);
+      bubble.appendChild(rendered);
+    }
+  }
 
   // Detect simulation report references and add "View Report" button
   if (role === 'assistant' && /simulation.report|report.*generated|report_path/i.test(text)) {
@@ -2421,7 +2722,13 @@ function addStreamingMessage(role) {
 function updateStreamingMessage(el, text) {
   if (!el) return;
   const bubble = el.querySelector('.msg-bubble');
-  if (bubble) bubble.innerHTML = renderMarkdown(text);
+  if (!bubble) return;
+  if (window.A2UI && window.A2UI.containsA2UI(text)) {
+    bubble.innerHTML = '';
+    bubble.appendChild(window.A2UI.render(text));
+  } else {
+    bubble.innerHTML = renderMarkdown(text);
+  }
   scrollToBottom();
 }
 
@@ -2431,7 +2738,14 @@ function finalizeStreamingMessage(el, text, role) {
   delete el.dataset.streaming;
   const bubble = el.querySelector('.msg-bubble');
   if (bubble) {
-    bubble.innerHTML = effectiveRole === 'user' ? escapeHtml(text) : renderMarkdown(text);
+    if (effectiveRole === 'user') {
+      bubble.innerHTML = escapeHtml(text);
+    } else if (window.A2UI && window.A2UI.containsA2UI(text)) {
+      bubble.innerHTML = '';
+      bubble.appendChild(window.A2UI.render(text));
+    } else {
+      bubble.innerHTML = renderMarkdown(text);
+    }
   }
   const meta = el.querySelector('.msg-meta');
   if (meta) {

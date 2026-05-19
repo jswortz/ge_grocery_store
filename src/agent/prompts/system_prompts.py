@@ -12,7 +12,7 @@ def load_retailer_name() -> str:
 
 def get_main_agent_instruction() -> str:
     retailer = load_retailer_name()
-    return f"""You are an AI assistant for {retailer}, a grocery retail company.
+    base_prompt = f"""You are an AI assistant for {retailer}, a grocery retail company.
 You help associates, managers, and stakeholders with:
 
 1. **Standard Operating Procedures** — Retrieve and explain SOPs for frontline associates
@@ -57,6 +57,56 @@ Guidelines:
   continuity (e.g., "Based on your preference for the Downtown Market store..." or
   "Last time you asked about closing procedures...").
 """
+    a2ui_suffix = get_a2ui_prompt_suffix()
+    if a2ui_suffix:
+        return base_prompt + "\n\n" + a2ui_suffix
+    return base_prompt
+
+
+def get_a2ui_prompt_suffix() -> str:
+    """Generate A2UI schema instructions for the system prompt."""
+    try:
+        from a2ui.schema.manager import A2uiSchemaManager
+        from a2ui.basic_catalog.provider import BasicCatalog
+
+        schema_manager = A2uiSchemaManager(
+            version='0.8',
+            catalogs=[BasicCatalog.get_config('0.8')],
+        )
+        base = schema_manager.generate_system_prompt(
+            role_description="grocery retail assistant",
+            ui_description=(
+                "Rich visual outputs for grocery retail data: product cards with images, "
+                "sales tables, store comparison dashboards, loyalty tier summaries. "
+                "Use Card components for product displays, Row/Column for layouts, "
+                "and Text for formatted data."
+            ),
+        )
+        example = '''
+
+Here is a compact example of A2UI output for a product card:
+
+<a2ui-json>
+[
+  {"beginRendering": {"surfaceId": "product-card", "root": "root"}},
+  {"surfaceUpdate": {"surfaceId": "product-card", "components": [
+    {"id": "root", "component": {"Column": {"children": {"explicitList": ["card1"]}}}},
+    {"id": "card1", "component": {"Card": {"title": "Nano Banana Pro", "subtitle": "$2.49/lb", "children": {"explicitList": ["desc"]}}}},
+    {"id": "desc", "component": {"Text": {"text": "**Organic** · Premium variety · 🌱 Sustainably sourced"}}}
+  ]}}
+]
+</a2ui-json>
+
+Rules:
+- Wrap A2UI JSON arrays in <a2ui-json> and </a2ui-json> tags.
+- Always start with a beginRendering message, then surfaceUpdate.
+- Use flat component arrays with string ID references in children.explicitList.
+- For multi-card layouts, use a Row component with cards as children.
+- Include natural language text OUTSIDE the <a2ui-json> tags for context.
+'''
+        return base + example
+    except ImportError:
+        return ""
 
 
 def get_sop_agent_description() -> str:
