@@ -21,6 +21,8 @@ This workshop integrates Google Cloud AI surfaces across multiple layers. See [d
 |---|---|
 | ![Frontend Chat](docs/img/22_frontend_adk_top_products.png) | ![Simulator](docs/img/24_frontend_simulator_personas.png) |
 | *ADK agent: top products chart* | *Simulator: 12 shopper personas* |
+| ![A2UI Products](docs/img/34_frontend_a2ui_products.png) | ![A2UI Stores](docs/img/36_frontend_a2ui_stores.png) |
+| *A2UI: rich product cards* | *A2UI: store comparison dashboard* |
 | ![Agent Engine](docs/img/10_gcp_agent_engine_list.png) | ![Cloud Trace](docs/img/12_gcp_cloud_trace_flow.png) |
 | *Agent Engine: deployed agents* | *Cloud Trace: agent call flow* |
 
@@ -140,6 +142,15 @@ The proxy server routes requests:
 - `POST /api/agent-engine/stream` → Agent Engine SSE streaming
 - `GET /api/images/*` → GCS image proxy for generated product images
 - `GET /api/memory/status` → Memory Bank memory count
+
+### A2UI Rich Visual Output
+
+The agent supports **A2UI (Agent-to-User Interface)** — an open protocol that lets agents emit declarative UI components rendered as interactive cards, dashboards, and layouts directly in the chat. When the LLM returns A2UI JSON alongside natural language, the frontend renders rich visual surfaces using Lit-based web components.
+
+Components used: `Card`, `Text`, `Row`, `Column`, `Divider` — composed into product displays, tier breakdowns, and store comparison dashboards.
+
+![A2UI Loyalty Tiers](docs/img/35_frontend_a2ui_loyalty.png)
+*Customer loyalty tier analysis rendered as an A2UI surface with Row layout*
 
 ---
 
