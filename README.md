@@ -149,8 +149,20 @@ The agent supports **A2UI (Agent-to-User Interface)** — an open protocol that 
 
 Components used: `Card`, `Text`, `Row`, `Column`, `Divider` — composed into product displays, tier breakdowns, and store comparison dashboards.
 
+**Top Products — Column Layout**
+
+![A2UI Top Products](docs/img/34_frontend_a2ui_products.png)
+*Top 5 best-selling products rendered as stacked `Card` components inside a `Column`. Each card shows revenue, units sold, average price, margin, and YoY growth. A `Divider` separates the product list from a Key Insight card with an actionable recommendation.*
+
+**Customer Loyalty Tiers — Row Layout**
+
 ![A2UI Loyalty Tiers](docs/img/35_frontend_a2ui_loyalty.png)
-*Customer loyalty tier analysis rendered as an A2UI surface with Row layout*
+*Three loyalty tiers (Gold, Silver, Bronze) displayed side-by-side using a `Row` of `Card` components. Each tier card contains `Text` elements for average spend, visit frequency, and retention rate. An Action Plan card below the divider highlights the Silver-to-Gold conversion opportunity with estimated revenue uplift.*
+
+**Store Performance Comparison — Row Layout**
+
+![A2UI Store Comparison](docs/img/36_frontend_a2ui_stores.png)
+*Q1 performance across three store locations in a `Row` layout. Each store `Card` shows revenue, transaction count, average basket size, and quarter-over-quarter growth. A Recommendation card identifies the fastest-growing location and suggests marketing actions.*
 
 ---
 
