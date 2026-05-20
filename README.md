@@ -199,6 +199,15 @@ A2UI form controls (`MultipleChoice`, `Slider`, `Button`) render as interactive 
 ![A2UI Verdict](docs/img/45_a2ui_simulator_verdict.png)
 *Trend chart with Unicode bar visualization and winner verdict card showing +44.7% revenue lift, 82.9% conversion, and projected annual incremental revenue across all stores.*
 
+### Gemini Enterprise (Discovery Engine) — StreamAssist Backend
+
+The StreamAssist tab uses the **Gemini Enterprise (Discovery Engine API)** backend for grounded search over SOPs, brand guidelines, and workspace data stores.
+
+| SOP Search — Closing Procedures | Brand Guidelines — Typography |
+|:---:|:---:|
+| ![StreamAssist SOP](docs/img/52_ge_streamassist_sop.png) | ![StreamAssist Brand](docs/img/53_ge_streamassist_brand.png) |
+| *Store closing procedures retrieved from SOP data store with structured steps* | *Brand color palette and typography table from brand guidelines data store* |
+
 ### E2E Playwright Screenshots
 
 Automated high-resolution (3840x2160) captures from the Playwright E2E test suite, validating live agent responses across all backends.
