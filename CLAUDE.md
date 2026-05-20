@@ -91,9 +91,9 @@ Central config loader in `src/agent/agent.py:_load_config()` reads `config/setti
 
 ### Deployed resources
 
-- **Agent Engine (Main)**: `reasoningEngines/1929337792270172160` — Grocery Retail Assistant (A2UI + OTel enabled)
-- **Agent Engine (MCP)**: `reasoningEngines/4474223425455390720` — MCP Grocery Analyst (A2UI + OTel enabled)
-- **Agent Engine (Simulator)**: `reasoningEngines/4033996561879924736` — Shopper Simulator w/ endcap A/B testing (A2UI + OTel enabled)
+- **Agent Engine (Main)**: `reasoningEngines/5752190188465946624` — Grocery Retail Assistant (A2UI + OTel enabled)
+- **Agent Engine (MCP)**: `reasoningEngines/6529624074140778496` — MCP Grocery Analyst (A2UI + OTel enabled)
+- **Agent Engine (Simulator)**: `reasoningEngines/6121485357910327296` — Shopper Simulator w/ endcap A/B testing (A2UI + OTel enabled)
 - **Cloud Run (A2A)**: `https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app` — A2A protocol agent
 - **Discovery Engine**: `grocery-workshop-engine` (global, SEARCH_TIER_ENTERPRISE)
 - **Model Armor**: `grocery-workshop-armor-us` template (us multi-region, applied to Discovery Engine assistant)

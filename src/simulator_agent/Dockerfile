@@ -6,10 +6,10 @@ WORKDIR /app
 COPY config/ config/
 COPY src/ src/
 COPY pyproject.toml .
-COPY src/simulator_agent/requirements.txt requirements.txt
+COPY src/simulator_agent/requirements.txt requirements-sim.txt
 
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements-sim.txt
 
 # Set environment variables
 ENV PORT=8080
