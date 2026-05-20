@@ -208,6 +208,20 @@ The StreamAssist tab uses the **Gemini Enterprise (Discovery Engine API)** backe
 | ![StreamAssist SOP](docs/img/52_ge_streamassist_sop.png) | ![StreamAssist Brand](docs/img/53_ge_streamassist_brand.png) |
 | *Store closing procedures retrieved from SOP data store with structured steps* | *Brand color palette and typography table from brand guidelines data store* |
 
+### A2UI in the Gemini Enterprise Console
+
+The A2UI components render natively inside the **Gemini Enterprise** web console — the same interface enterprise users access at `vertexaisearch.cloud.google.com`. Tabs, KPI cards, and recommendation panels display inline alongside the agent's natural language response.
+
+| A2UI Dashboard — Tabs + KPI Cards | Strategy B — Seasonal Produce Metrics |
+|:---:|:---:|
+| ![GE A2UI Dashboard](docs/img/55_ge_simulator_a2ui_recommend.png) | ![GE A2UI Strategy B](docs/img/56_ge_simulator_a2ui_strategyb.png) |
+| *A/B Test Results with interactive tabs, revenue/conversion/spend KPIs, and recommendation card* | *Strategy B tab shows +40pp conversion lift vs baseline with Nano Banana Pro endcap conversions* |
+
+| Data Insights Agent — BigQuery Revenue | MCP Agent Schema Discovery |
+|:---:|:---:|
+| ![GE MCP Revenue](docs/img/57_ge_mcp_revenue.png) | ![GE Data Analysis](docs/img/57_ge_data_analysis.png) |
+| *Revenue by store analysis via MCP Toolbox for Databases* | *Data Insights Agent discovering BigQuery star schema tables* |
+
 ### E2E Playwright Screenshots
 
 Automated high-resolution (3840x2160) captures from the Playwright E2E test suite, validating live agent responses across all backends.
