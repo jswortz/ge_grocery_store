@@ -176,9 +176,9 @@ The agent uses a **multi-agent architecture** with Google's [Agent Development K
 
 | Model | Role | Used By |
 |-------|------|---------|
-| `gemini-3-pro-preview` | Orchestration, complex reasoning | Root agent, MCP agent, Simulator |
-| `gemini-3-flash-preview` | Fast sub-agent tasks | analytics_agent, image_agent |
-| `gemini-3-pro-image-preview` | Native image generation | image_gen_tool |
+| `gemini-2.5-pro` | Orchestration, complex reasoning | Root agent, MCP agent, Simulator |
+| `gemini-2.5-flash` | Fast sub-agent tasks | analytics_agent, image_agent |
+| `gemini-2.0-flash` | Native image generation | image_gen_tool |
 
 ### Agent Capabilities
 

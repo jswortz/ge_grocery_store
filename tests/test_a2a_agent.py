@@ -56,63 +56,69 @@ class TestAgentCard(unittest.TestCase):
     """Test A2A AgentCard generation."""
 
     def test_agent_card_has_required_fields(self):
-        from src.a2a_agent.agent import get_agent_card
+        from src.a2a_agent.server import _build_agent_card
 
-        card = get_agent_card()
-        assert "name" in card
-        assert "description" in card
-        assert "url" in card
-        assert "version" in card
-        assert "capabilities" in card
-        assert "skills" in card
+        card = _build_agent_card()
+        assert card.name
+        assert card.description
+        assert card.url
+        assert card.version
+        assert card.capabilities
+        assert card.skills
 
     def test_agent_card_name(self):
-        from src.a2a_agent.agent import get_agent_card
+        from src.a2a_agent.server import _build_agent_card
 
-        card = get_agent_card()
-        assert card["name"] == "grocery-retail-assistant"
+        card = _build_agent_card()
+        assert card.name == "grocery-retail-assistant"
 
     def test_agent_card_has_skills(self):
-        from src.a2a_agent.agent import get_agent_card
+        from src.a2a_agent.server import _build_agent_card
 
-        card = get_agent_card()
-        skill_ids = [s["id"] for s in card["skills"]]
+        card = _build_agent_card()
+        skill_ids = [s.id for s in card.skills]
         assert "sop-lookup" in skill_ids
         assert "brand-guidelines" in skill_ids
         assert "sales-analytics" in skill_ids
         assert "image-generation" in skill_ids
 
     def test_agent_card_skills_have_descriptions(self):
-        from src.a2a_agent.agent import get_agent_card
+        from src.a2a_agent.server import _build_agent_card
 
-        card = get_agent_card()
-        for skill in card["skills"]:
-            assert "id" in skill
-            assert "name" in skill
-            assert "description" in skill
-            assert len(skill["description"]) > 10
+        card = _build_agent_card()
+        for skill in card.skills:
+            assert skill.id
+            assert skill.name
+            assert skill.description
+            assert len(skill.description) > 10
 
     def test_agent_card_capabilities(self):
-        from src.a2a_agent.agent import get_agent_card
+        from src.a2a_agent.server import _build_agent_card
 
-        card = get_agent_card()
-        assert card["capabilities"]["streaming"] is True
+        card = _build_agent_card()
+        assert card.capabilities.streaming is True
 
     def test_agent_card_includes_retailer(self):
-        from src.a2a_agent.agent import get_agent_card
+        from src.a2a_agent.server import _build_agent_card
 
-        card = get_agent_card()
-        # Description should include the retailer name from config
+        card = _build_agent_card()
         from src.a2a_agent.agent import _load_config
         config = _load_config()
-        assert config["retailer"]["name"] in card["description"]
+        assert config["retailer"]["name"] in card.description
 
     def test_agent_card_url_from_env(self):
-        from src.a2a_agent.agent import get_agent_card
+        from src.a2a_agent.server import _build_agent_card
 
-        with patch.dict(os.environ, {"A2A_AGENT_URL": "https://test.run.app"}):
-            card = get_agent_card()
-            assert card["url"] == "https://test.run.app"
+        with patch.dict(os.environ, {"A2A_AGENT_URL": "https://test.run.app/"}):
+            card = _build_agent_card()
+            assert card.url == "https://test.run.app/"
+
+    def test_agent_card_has_a2ui_extension(self):
+        from src.a2a_agent.server import _build_agent_card
+
+        card = _build_agent_card()
+        ext_uris = [e.uri for e in card.capabilities.extensions]
+        assert any("a2ui" in uri and "v0.8" in uri for uri in ext_uris)
 
 
 class TestA2AAgentCreation(unittest.TestCase):
@@ -326,7 +332,7 @@ class TestSimulatorAgent(unittest.TestCase):
         assert str(persona["shopping_behavior"]["budget"]) in instruction
 
     def test_simulator_uses_flash_model(self):
-        """Simulator should use adk_fast (gemini-3-flash) for low latency, not adk (pro)."""
+        """Simulator should use adk_fast (gemini-3.5-flash) for low latency."""
         from src.simulator_agent.agent import _load_config
         config = _load_config()
         # Should prefer adk_fast over adk
@@ -442,6 +448,271 @@ class TestReportGenerator(unittest.TestCase):
         # Should still succeed with placeholder data
         assert result["status"] == "success"
         assert result["report_path"] == "/tmp/simulation_report.html"
+
+
+class TestSimulatorA2AServer(unittest.TestCase):
+    """Tests for the simulator A2A server (Cloud Run deployment)."""
+
+    def test_simulator_server_module_exists(self):
+        assert Path("src/simulator_agent/server.py").exists()
+
+    def test_simulator_dockerfile_exists(self):
+        assert Path("src/simulator_agent/Dockerfile").exists()
+
+    def test_simulator_requirements_exist(self):
+        assert Path("src/simulator_agent/requirements.txt").exists()
+
+    def test_simulator_deploy_script_exists(self):
+        assert Path("src/simulator_agent/deploy_to_cloud_run.sh").exists()
+
+    def test_simulator_deploy_script_executable(self):
+        import stat
+        mode = Path("src/simulator_agent/deploy_to_cloud_run.sh").stat().st_mode
+        assert mode & stat.S_IXUSR, "deploy_to_cloud_run.sh should be executable"
+
+    def test_simulator_requirements_contain_key_deps(self):
+        content = Path("src/simulator_agent/requirements.txt").read_text()
+        assert "google-adk" in content
+        assert "a2a-sdk" in content
+        assert "a2ui-agent-sdk" in content
+        assert "uvicorn" in content
+
+    def test_simulator_agent_card_has_required_fields(self):
+        from src.simulator_agent.server import _build_agent_card
+        card = _build_agent_card()
+        assert card.name == "shopper-simulator"
+        assert card.version
+        assert card.url
+        assert card.description
+
+    def test_simulator_agent_card_has_a2ui_extension(self):
+        from src.simulator_agent.server import _build_agent_card
+        card = _build_agent_card()
+        ext_uris = [e.uri for e in card.capabilities.extensions]
+        assert any("a2ui" in uri and "v0.8" in uri for uri in ext_uris)
+
+    def test_simulator_agent_card_has_skills(self):
+        from src.simulator_agent.server import _build_agent_card
+        card = _build_agent_card()
+        assert len(card.skills) >= 3
+        skill_ids = [s.id for s in card.skills]
+        assert "endcap-ab-test" in skill_ids
+        assert "shopper-simulation" in skill_ids
+        assert "strategy-listing" in skill_ids
+
+    def test_simulator_agent_card_skills_have_tags(self):
+        from src.simulator_agent.server import _build_agent_card
+        card = _build_agent_card()
+        for skill in card.skills:
+            assert skill.tags, f"Skill '{skill.id}' missing tags"
+            assert len(skill.tags) >= 2
+
+    def test_simulator_agent_card_includes_retailer(self):
+        from src.simulator_agent.server import _build_agent_card
+        card = _build_agent_card()
+        assert "ValueFresh Market" in card.description or "retailer" in card.description.lower()
+
+    def test_simulator_agent_card_url_from_env(self):
+        from src.simulator_agent.server import _get_agent_url
+        with patch.dict(os.environ, {"A2A_AGENT_URL": "https://test.example.com/"}):
+            url = _get_agent_url()
+            assert url == "https://test.example.com/"
+
+    def test_simulator_agent_card_url_localhost_fallback(self):
+        from src.simulator_agent.server import _get_agent_url
+        with patch.dict(os.environ, {}, clear=True):
+            url = _get_agent_url()
+            assert "localhost" in url
+
+    def test_simulator_dockerfile_uses_global_location(self):
+        content = Path("src/simulator_agent/Dockerfile").read_text()
+        assert "GOOGLE_CLOUD_LOCATION=global" in content
+
+    def test_simulator_dockerfile_cmd_is_correct(self):
+        content = Path("src/simulator_agent/Dockerfile").read_text()
+        assert "src.simulator_agent.server" in content
+
+
+class TestModelMigration(unittest.TestCase):
+    """Verify all agents use gemini-3.5-flash after migration."""
+
+    def test_main_agent_uses_gemini_35_flash(self):
+        from src.agent.agent import _load_config
+        config = _load_config()
+        assert config["models"]["adk"] == "gemini-3.5-flash"
+        assert config["models"]["adk_fast"] == "gemini-3.5-flash"
+
+    def test_a2a_agent_uses_gemini_35_flash(self):
+        from src.a2a_agent.agent import _load_config
+        config = _load_config()
+        assert config["models"]["adk"] == "gemini-3.5-flash"
+
+    def test_mcp_agent_uses_gemini_35_flash(self):
+        from src.mcp_agent.agent import _load_config
+        config = _load_config()
+        assert config["models"]["adk"] == "gemini-3.5-flash"
+
+    def test_simulator_uses_gemini_35_flash(self):
+        from src.simulator_agent.agent import _load_config
+        config = _load_config()
+        model = config["models"].get("adk_fast", config["models"].get("adk", ""))
+        assert model == "gemini-3.5-flash"
+
+    def test_image_gen_uses_nano_banana(self):
+        from src.agent.agent import _load_config
+        config = _load_config()
+        assert config["models"]["imagen"] == "gemini-3.1-flash-image-preview"
+
+    def test_config_yaml_models_section(self):
+        import yaml
+        with open("config/settings.yaml") as f:
+            config = yaml.safe_load(f)
+        assert config["models"]["adk"] == "gemini-3.5-flash"
+        assert config["models"]["adk_fast"] == "gemini-3.5-flash"
+        assert config["models"]["imagen"] == "gemini-3.1-flash-image-preview"
+        assert config["models"]["live"] == "gemini-2.0-flash-live-001"
+
+    def test_no_gemini_25_references_in_source(self):
+        """No source files should reference gemini-2.5-* models (except live)."""
+        import glob
+        for pattern in ["src/**/*.py"]:
+            for filepath in glob.glob(pattern, recursive=True):
+                if "__pycache__" in filepath:
+                    continue
+                content = Path(filepath).read_text()
+                for old_model in ["gemini-2.5-pro", "gemini-2.5-flash"]:
+                    assert old_model not in content, (
+                        f"Found '{old_model}' in {filepath} — should be gemini-3.5-flash"
+                    )
+
+
+class TestA2UIPromptEnhancements(unittest.TestCase):
+    """Verify A2UI prompts use include_schema=True, include_examples=True, and non-text visuals."""
+
+    def test_main_a2ui_uses_include_schema(self):
+        from src.agent.prompts.system_prompts import get_a2ui_prompt_suffix
+        suffix = get_a2ui_prompt_suffix()
+        assert len(suffix) > 500, "A2UI suffix too short — missing schema/examples?"
+
+    def test_main_a2ui_has_image_component_example(self):
+        from src.agent.prompts.system_prompts import get_a2ui_prompt_suffix
+        suffix = get_a2ui_prompt_suffix()
+        assert '"Image"' in suffix, "Main A2UI prompt should include Image component example"
+
+    def test_main_a2ui_has_list_component_example(self):
+        from src.agent.prompts.system_prompts import get_a2ui_prompt_suffix
+        suffix = get_a2ui_prompt_suffix()
+        assert '"List"' in suffix, "Main A2UI prompt should include List component example"
+
+    def test_main_a2ui_has_row_component_example(self):
+        from src.agent.prompts.system_prompts import get_a2ui_prompt_suffix
+        suffix = get_a2ui_prompt_suffix()
+        assert '"Row"' in suffix, "Main A2UI prompt should include Row component example"
+
+    def test_main_a2ui_has_emoji_indicators(self):
+        from src.agent.prompts.system_prompts import get_a2ui_prompt_suffix
+        suffix = get_a2ui_prompt_suffix()
+        assert any(emoji in suffix for emoji in ["📈", "📉", "✅", "⚠️", "🏆", "📊"]), \
+            "Main A2UI prompt should include emoji indicators for visual richness"
+
+    def test_main_a2ui_has_multiple_examples(self):
+        import re
+        from src.agent.prompts.system_prompts import get_a2ui_prompt_suffix
+        suffix = get_a2ui_prompt_suffix()
+        blocks = re.findall(r'<a2ui-json>', suffix)
+        assert len(blocks) >= 2, f"Expected at least 2 A2UI examples, found {len(blocks)}"
+
+    def test_simulator_a2ui_uses_include_schema(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert len(suffix) > 500, "Simulator A2UI suffix too short — missing schema/examples?"
+
+    def test_simulator_a2ui_has_list_component_example(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert '"List"' in suffix, "Simulator A2UI prompt should include List component example"
+
+    def test_simulator_a2ui_has_emoji_indicators(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert any(emoji in suffix for emoji in ["📈", "📉", "🏆", "💰", "🛒"]), \
+            "Simulator A2UI prompt should include emoji indicators"
+
+    def test_simulator_a2ui_has_multiple_examples(self):
+        import re
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        blocks = re.findall(r'<a2ui-json>', suffix)
+        assert len(blocks) >= 2, f"Expected at least 2 A2UI examples, found {len(blocks)}"
+
+    def test_a2a_a2ui_mentions_variety(self):
+        from src.a2a_agent.agent import _get_a2ui_prompt
+        prompt = _get_a2ui_prompt("TestMart")
+        assert "variety" in prompt.lower() or "VARIETY" in prompt, \
+            "A2A agent A2UI prompt should emphasize component variety"
+
+
+class TestSimulatorA2UIFirstArchitecture(unittest.TestCase):
+    """Verify the simulator A2UI prompt enforces UI-first output patterns."""
+
+    def test_simulator_a2ui_mandates_ui_first_output(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert "MUST" in suffix and "BEFORE" in suffix, \
+            "Simulator should mandate A2UI output BEFORE text"
+
+    def test_simulator_a2ui_bans_markdown_patterns(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert "BANNED" in suffix or "NEVER" in suffix, \
+            "Simulator should ban plain markdown fallback patterns"
+
+    def test_simulator_a2ui_uses_tabs_component(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert '"Tabs"' in suffix, "Simulator A2UI should include Tabs component example"
+
+    def test_simulator_a2ui_uses_icon_component(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert '"Icon"' in suffix, "Simulator A2UI should include Icon component example"
+
+    def test_simulator_a2ui_uses_divider_component(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert '"Divider"' in suffix, "Simulator A2UI should include Divider component example"
+
+    def test_simulator_a2ui_has_card_child_pattern(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert '"child"' in suffix, "Simulator A2UI should use Card child pattern"
+
+    def test_simulator_a2ui_uses_literal_string_format(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert '"literalString"' in suffix, \
+            "Simulator A2UI should use literalString format for schema compliance"
+
+    def test_simulator_a2ui_has_usage_hint(self):
+        from src.simulator_agent.agent import _get_a2ui_suffix
+        suffix = _get_a2ui_suffix()
+        assert '"usageHint"' in suffix, \
+            "Simulator A2UI should use usageHint for Text headings"
+
+    def test_simulator_instruction_leads_with_a2ui(self):
+        from src.simulator_agent.agent import create_agent
+        agent = create_agent()
+        instruction = agent.instruction
+        a2ui_pos = instruction.find("A2UI")
+        capabilities_pos = instruction.find("TOOLS:")
+        assert a2ui_pos < capabilities_pos, \
+            "A2UI instructions should appear before tool/capability descriptions"
+
+    def test_simulator_instruction_visual_dashboard(self):
+        from src.simulator_agent.agent import create_agent
+        agent = create_agent()
+        assert "VISUAL DASHBOARD" in agent.instruction, \
+            "Simulator instruction should identify as a VISUAL DASHBOARD agent"
 
 
 if __name__ == "__main__":

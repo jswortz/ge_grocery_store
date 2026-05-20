@@ -25,7 +25,7 @@ STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://wortz-project-352116-ge-
 _DEPLOY_CONFIG = {
     "retailer": {"name": os.environ.get("RETAILER_NAME", "ValueFresh Market")},
     "bigquery": {"project": os.environ.get("BQ_PROJECT", "wortz-project-352116"), "dataset": os.environ.get("BQ_DATASET", "ge_grocery_demo")},
-    "models": {"adk": "gemini-3-pro-preview"},
+    "models": {"adk": "gemini-3.5-flash"},
 }
 
 
@@ -239,6 +239,50 @@ Guidelines:
 - Be concise and actionable in your responses.
 - IMPORTANT: Always show the SQL query you executed in a ```sql code block before presenting results. This helps users understand and verify the analysis.
 """
+    try:
+        from a2ui.schema.manager import A2uiSchemaManager
+        from a2ui.basic_catalog.provider import BasicCatalog
+
+        schema_manager = A2uiSchemaManager(
+            version='0.8',
+            catalogs=[BasicCatalog.get_config('0.8')],
+        )
+        a2ui_suffix = schema_manager.generate_system_prompt(
+            role_description="grocery retail data analytics assistant",
+            ui_description=(
+                "Rich visual outputs for analytics results: data tables as Card grids, "
+                "store comparisons in Row layouts, loyalty tier breakdowns. "
+                "Use Card for metric summaries, Row/Column for layouts, "
+                "and Text for formatted data with markdown."
+            ),
+        )
+        a2ui_suffix += '''
+
+Here is a compact example of A2UI output for analytics results:
+
+<a2ui-json>
+[
+  {"beginRendering": {"surfaceId": "analytics", "root": "root"}},
+  {"surfaceUpdate": {"surfaceId": "analytics", "components": [
+    {"id": "root", "component": {"Row": {"children": {"explicitList": ["card1", "card2"]}}}},
+    {"id": "card1", "component": {"Card": {"title": "Downtown Market", "subtitle": "$45,231 Revenue", "children": {"explicitList": ["t1"]}}}},
+    {"id": "t1", "component": {"Text": {"text": "**1,234** transactions · Avg basket **$36.69**"}}},
+    {"id": "card2", "component": {"Card": {"title": "Westside Market", "subtitle": "$38,102 Revenue", "children": {"explicitList": ["t2"]}}}},
+    {"id": "t2", "component": {"Text": {"text": "**987** transactions · Avg basket **$38.60**"}}}
+  ]}}
+]
+</a2ui-json>
+
+Rules:
+- Wrap A2UI JSON arrays in <a2ui-json> and </a2ui-json> tags.
+- Always start with a beginRendering message, then surfaceUpdate.
+- Use flat component arrays with string ID references in children.explicitList.
+- For multi-card layouts, use a Row component with cards as children.
+- Include natural language text OUTSIDE the <a2ui-json> tags for context.
+'''
+        instruction += "\n\n" + a2ui_suffix
+    except ImportError:
+        pass
 
     bq_tool = FunctionTool(func=query_grocery_data)
 
@@ -288,10 +332,11 @@ Guidelines:
         agent_engine=app,
         display_name=display_name,
         requirements=[
-            "google-adk>=1.19.0",
+            "google-adk>=1.19.0,<2.0.0",
             "google-cloud-bigquery>=3.0.0",
             "google-cloud-aiplatform",
             "pyyaml>=6.0",
+            "a2ui-agent-sdk>=0.2.1",
         ],
         env_vars=env_vars,
     )

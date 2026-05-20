@@ -41,8 +41,8 @@ def _load_config():
         config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
 
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3-pro-preview")
-    config["models"].setdefault("adk_fast", "gemini-3-flash-preview")
+    config["models"].setdefault("adk", "gemini-3.5-flash")
+    config["models"].setdefault("adk_fast", "gemini-3.5-flash")
     config["models"].setdefault("live", "gemini-2.0-flash-live-001")
 
     return config

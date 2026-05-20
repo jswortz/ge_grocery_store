@@ -3,8 +3,7 @@
 Wraps Vertex AI's Gemini image generation to create product imagery
 grounded in brand guidelines. Uses a FunctionTool for ADK integration.
 
-Uses gemini-3-pro-image-preview (Gemini 3 Pro Image) for native image
-generation.
+Uses gemini-3.1-flash-image-preview (Nano Banana 2) for image generation.
 """
 
 import base64
@@ -36,7 +35,7 @@ def generate_product_image(
     config = _load_config()
     project_id = config["project"]["id"]
     retailer = config["retailer"]["name"]
-    imagen_model = config.get("models", {}).get("imagen", "gemini-3-pro-image-preview")
+    imagen_model = config.get("models", {}).get("imagen", "gemini-3.1-flash-image-preview")
 
     prompt = (
         f"Professional product photo of '{product_name}' for {retailer} grocery store. "

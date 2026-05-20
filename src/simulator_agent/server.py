@@ -1,10 +1,9 @@
-"""A2A server with A2UI support for the grocery retail agent.
+"""A2A server with A2UI support for the shopper simulator agent.
 
-Serves the ADK agent via the A2A protocol over HTTP with native A2UI
-rendering support. When Discovery Engine (GE console) requests the A2UI
-extension, the executor parses <a2ui-json> blocks from the LLM response
-into A2A DataParts with mimeType=application/json+a2ui, which GE renders
-as rich visual cards.
+Serves the simulator ADK agent via the A2A protocol over HTTP with native
+A2UI rendering support. When Discovery Engine (GE console) requests the
+A2UI extension, the executor parses <a2ui-json> blocks from the LLM
+response into A2A DataParts with mimeType=application/json+a2ui.
 
 Endpoints:
 - GET  /.well-known/agent.json  — AgentCard discovery (declares A2UI v0.8)
@@ -12,17 +11,15 @@ Endpoints:
 
 Usage:
     # Local
-    python -m src.a2a_agent.server
+    python -m src.simulator_agent.server
 
     # Cloud Run (via Dockerfile)
-    PORT=8080 python -m src.a2a_agent.server
+    PORT=8080 python -m src.simulator_agent.server
 """
 
 import logging
 import os
 import uuid
-from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 import uvicorn
 from a2a.server.apps import A2AStarletteApplication
@@ -34,10 +31,8 @@ from a2a.server.agent_execution.context import RequestContext
 from a2a.types import (
     AgentCapabilities,
     AgentCard,
-    AgentExtension,
     AgentSkill,
     Artifact,
-    DataPart,
     Message,
     Part,
     Role,
@@ -63,21 +58,14 @@ logger = logging.getLogger(__name__)
 
 
 class A2UIAgentExecutor(AgentExecutor):
-    """Custom executor that runs the ADK agent and converts A2UI blocks to DataParts.
-
-    When the A2UI extension is active (requested by GE console), this executor:
-    1. Runs the ADK agent via Runner
-    2. Collects the full text response
-    3. Parses <a2ui-json> blocks into A2A DataParts
-    4. Emits them as task artifacts so GE renders rich UI
-    """
+    """Runs the simulator ADK agent and converts A2UI blocks to DataParts."""
 
     def __init__(self, agent: LlmAgent, agent_card: AgentCard):
         super().__init__()
         self._agent = agent
         self._agent_card = agent_card
         self._runner = Runner(
-            app_name=agent.name or "grocery_a2a",
+            app_name=agent.name or "simulator_a2a",
             agent=agent,
             artifact_service=InMemoryArtifactService(),
             session_service=InMemorySessionService(),
@@ -110,7 +98,7 @@ class A2UIAgentExecutor(AgentExecutor):
                 user_text += part.root.text
 
         if not user_text:
-            user_text = "Hello"
+            user_text = "Compare baseline vs seasonal produce strategies"
 
         try:
             user_id = "a2a_user"
@@ -135,7 +123,7 @@ class A2UIAgentExecutor(AgentExecutor):
                         if hasattr(p, "text") and p.text:
                             full_response += p.text
 
-            logger.info("Agent response length: %d chars", len(full_response))
+            logger.info("Simulator response length: %d chars", len(full_response))
 
             if a2ui_version and "<a2ui-json>" in full_response:
                 parts = parse_response_to_parts(
@@ -168,7 +156,7 @@ class A2UIAgentExecutor(AgentExecutor):
             )
 
         except Exception as e:
-            logger.error("Agent execution failed: %s", e, exc_info=True)
+            logger.error("Simulator execution failed: %s", e, exc_info=True)
             await event_queue.enqueue_event(
                 TaskStatusUpdateEvent(
                     taskId=context.task_id,
@@ -201,10 +189,7 @@ class A2UIAgentExecutor(AgentExecutor):
 
 
 def _get_agent_url() -> str:
-    """Resolve the agent's public URL.
-
-    Priority: A2A_AGENT_URL env var > Cloud Run auto-detect (K_SERVICE) > localhost.
-    """
+    """Resolve the simulator agent's public URL."""
     if os.environ.get("A2A_AGENT_URL"):
         return os.environ["A2A_AGENT_URL"]
     k_service = os.environ.get("K_SERVICE")
@@ -214,7 +199,7 @@ def _get_agent_url() -> str:
         return f"https://{k_service}-{project_number}.{region}.run.app/"
     if k_service:
         return f"https://{k_service}.run.app/"
-    return "http://localhost:8080/"
+    return "http://localhost:8082/"
 
 
 def _build_agent_card() -> AgentCard:
@@ -227,11 +212,12 @@ def _build_agent_card() -> AgentCard:
     a2ui_ext = get_a2ui_agent_extension("0.8")
 
     return AgentCard(
-        name="grocery-retail-assistant",
+        name="shopper-simulator",
         description=(
-            f"AI assistant for {retailer} grocery retail operations. "
-            "Handles SOP lookup, brand guidelines, sales analytics, "
-            "and product image generation with rich visual A2UI output."
+            f"AI shopper simulation agent for {retailer}. "
+            "Runs concurrent shopper personas through store layouts to A/B test "
+            "endcap merchandising strategies, with rich visual A2UI output for "
+            "comparison dashboards and conversion analytics."
         ),
         url=_get_agent_url(),
         version="1.0.0",
@@ -243,28 +229,28 @@ def _build_agent_card() -> AgentCard:
         defaultOutputModes=["text"],
         skills=[
             AgentSkill(
-                id="sop-lookup",
-                name="SOP Lookup",
-                description="Search and retrieve Standard Operating Procedures",
-                tags=["sop", "procedures", "operations"],
+                id="endcap-ab-test",
+                name="Endcap A/B Testing",
+                description="Compare two merchandising strategies side-by-side with simulated shoppers",
+                tags=["simulation", "ab-test", "endcap", "merchandising"],
             ),
             AgentSkill(
-                id="brand-guidelines",
-                name="Brand Guidelines",
-                description="Search brand guidelines for marketing compliance",
-                tags=["brand", "marketing", "guidelines"],
+                id="shopper-simulation",
+                name="Shopper Simulation",
+                description="Simulate individual shoppers walking store aisles with persona-based behavior",
+                tags=["simulation", "shopper", "persona", "store"],
             ),
             AgentSkill(
-                id="sales-analytics",
-                name="Sales Analytics",
-                description="Query BigQuery for sales and customer analytics",
-                tags=["analytics", "sales", "bigquery"],
+                id="strategy-listing",
+                name="Strategy Listing",
+                description="List all available endcap merchandising strategies and store configurations",
+                tags=["strategy", "endcap", "listing"],
             ),
             AgentSkill(
-                id="image-generation",
-                name="Product Image Generation",
-                description="Generate brand-compliant product imagery",
-                tags=["image", "product", "generation"],
+                id="simulation-report",
+                name="Simulation Report",
+                description="Generate visual HTML reports with charts for simulation results",
+                tags=["report", "chart", "analytics", "visualization"],
             ),
         ],
     )
@@ -294,13 +280,13 @@ def create_app() -> Starlette:
 
 
 def main():
-    """Run the A2A server."""
-    port = int(os.environ.get("PORT", "8080"))
+    """Run the simulator A2A server."""
+    port = int(os.environ.get("PORT", "8082"))
     host = os.environ.get("HOST", "0.0.0.0")
 
     logging.basicConfig(level=logging.INFO)
 
-    print(f"Starting A2A+A2UI server on {host}:{port}")
+    print(f"Starting Simulator A2A+A2UI server on {host}:{port}")
     print(f"AgentCard: http://{host}:{port}/.well-known/agent.json")
 
     app = create_app()

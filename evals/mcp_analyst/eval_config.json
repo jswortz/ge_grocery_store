@@ -7,7 +7,7 @@
     "final_response_match_v2": {
       "threshold": 0.6,
       "judge_model_options": {
-        "judge_model": "gemini-3-flash-preview"
+        "judge_model": "gemini-2.5-flash"
       }
     },
     "hallucinations_v1": {
@@ -18,7 +18,7 @@
     }
   },
   "user_simulator_config": {
-    "model": "gemini-3-flash-preview",
+    "model": "gemini-2.5-flash",
     "max_allowed_invocations": 8
   }
 }

@@ -100,7 +100,7 @@ class TestImageGenTool:
         mock_config.return_value = {
             "project": {"id": "test-project"},
             "retailer": {"name": "TestMart"},
-            "models": {"imagen": "gemini-3-pro-image-preview"},
+            "models": {"imagen": "gemini-3.1-flash-image-preview"},
         }
         from src.agent.tools.image_gen_tool import generate_product_image
         result = generate_product_image("Test Product")
@@ -113,7 +113,7 @@ class TestImageGenTool:
         mock_config.return_value = {
             "project": {"id": "test-project"},
             "retailer": {"name": "TestMart"},
-            "models": {"imagen": "gemini-3-pro-image-preview"},
+            "models": {"imagen": "gemini-3.1-flash-image-preview"},
         }
         from src.agent.tools.image_gen_tool import generate_product_image
         # The function should pick up the model from config
@@ -127,16 +127,16 @@ class TestModelConfig:
         from src.agent.agent import _load_config
         config = _load_config()
         assert "models" in config
-        assert config["models"]["adk"] == "gemini-3-pro-preview"
-        assert config["models"]["adk_fast"] == "gemini-3-flash-preview"
-        assert config["models"]["imagen"] == "gemini-3-pro-image-preview"
+        assert config["models"]["adk"] == "gemini-3.5-flash"
+        assert config["models"]["adk_fast"] == "gemini-3.5-flash"
+        assert config["models"]["imagen"] == "gemini-3.1-flash-image-preview"
 
     def test_config_model_env_override(self):
         import os
         from src.agent.agent import _load_config
-        with patch.dict(os.environ, {"ADK_MODEL": "gemini-3-pro-preview", "IMAGEN_MODEL": "imagen-4.0"}):
+        with patch.dict(os.environ, {"ADK_MODEL": "gemini-3.5-flash", "IMAGEN_MODEL": "imagen-4.0"}):
             config = _load_config()
-            assert config["models"]["adk"] == "gemini-3-pro-preview"
+            assert config["models"]["adk"] == "gemini-3.5-flash"
             assert config["models"]["imagen"] == "imagen-4.0"
 
     def test_old_imagegeneration_model_not_used(self):
@@ -227,7 +227,7 @@ class TestImageGenGlobalEndpoint:
         mock_config.return_value = {
             "project": {"id": "test-project"},
             "retailer": {"name": "TestMart"},
-            "models": {"imagen": "gemini-3-pro-image-preview"},
+            "models": {"imagen": "gemini-3.1-flash-image-preview"},
             "gcs": {"bucket": "test-bucket"},
         }
         # Mock the full image generation pipeline

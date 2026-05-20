@@ -95,9 +95,9 @@ All agents use the Gemini 3 model family, with model selection matched to task c
 
 | Model | Role | Used By |
 |-------|------|---------|
-| `gemini-3-pro-preview` | Orchestration, complex reasoning, tool use | Root agent, MCP agent, Simulator orchestrator |
-| `gemini-3-flash-preview` | Fast sub-agent tasks, streaming | analytics_agent, image_agent |
-| `gemini-3-pro-image-preview` | Native image generation | image_gen_tool |
+| `gemini-2.5-pro` | Orchestration, complex reasoning, tool use | Root agent, MCP agent, Simulator orchestrator |
+| `gemini-2.5-flash` | Fast sub-agent tasks, streaming | analytics_agent, image_agent |
+| `gemini-2.0-flash` | Native image generation | image_gen_tool |
 
 ### ADK Multi-Agent Architecture (`src/agent/`)
 
@@ -114,7 +114,7 @@ The primary agent uses Google's [Agent Development Kit (ADK)](https://google.git
 
 **Sub-agents** (Gemini 3 Flash):
 - `analytics_agent` — `query_grocery_data` FunctionTool for BigQuery analytics
-- `image_agent` — `generate_product_image` FunctionTool for brand-compliant product images via Gemini Image (`gemini-3-pro-image-preview`)
+- `image_agent` — `generate_product_image` FunctionTool for brand-compliant product images via Gemini Image (`gemini-2.0-flash`)
 
 **Key design decision**: `DiscoveryEngineSearchTool` vs `VertexAiSearchTool`
 

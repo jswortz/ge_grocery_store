@@ -30,7 +30,7 @@ _DEPLOY_CONFIG = {
         "project": os.environ.get("BQ_PROJECT", "wortz-project-352116"),
         "dataset": os.environ.get("BQ_DATASET", "ge_grocery_demo"),
     },
-    "models": {"adk": "gemini-3-flash-preview"},
+    "models": {"adk": "gemini-3.5-flash"},
 }
 
 
@@ -411,7 +411,7 @@ Guidelines:
         agent_engine=app,
         display_name=display_name,
         requirements=[
-            "google-adk>=1.19.0",
+            "google-adk>=1.19.0,<2.0.0",
             "google-cloud-bigquery>=3.0.0",
             "google-cloud-aiplatform",
             "pandas",

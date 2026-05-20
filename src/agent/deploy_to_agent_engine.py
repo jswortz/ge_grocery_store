@@ -19,15 +19,15 @@ STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://wortz-project-352116-ge-
 
 # Hardcoded config for Agent Engine deployment
 _RETAILER_NAME = os.environ.get("RETAILER_NAME", "ValueFresh Market")
-_ADK_MODEL = os.environ.get("ADK_MODEL", "gemini-3-pro-preview")
-_ADK_FAST = os.environ.get("ADK_FAST", "gemini-3-flash-preview")
+_ADK_MODEL = os.environ.get("ADK_MODEL", "gemini-3.5-flash")
+_ADK_FAST = os.environ.get("ADK_FAST", "gemini-3.5-flash")
 _BQ_PROJECT = os.environ.get("BQ_PROJECT", "wortz-project-352116")
 _BQ_DATASET = os.environ.get("BQ_DATASET", "ge_grocery_demo")
 _ENGINE_ID = os.environ.get("ENGINE_ID", "grocery-workshop-engine")
 _GCS_BUCKET = os.environ.get("GCS_BUCKET", "wortz-project-352116-ge-workshop")
-_IMAGEN_MODEL = os.environ.get("IMAGEN_MODEL", "gemini-3-pro-image-preview")
+_IMAGEN_MODEL = os.environ.get("IMAGEN_MODEL", "gemini-3.1-flash-image-preview")
 # Simulator Agent Engine resource ID for A2A delegation
-_SIMULATOR_AE_ID = os.environ.get("SIMULATOR_AE_ID", "7053256041508634624")
+_SIMULATOR_AE_ID = os.environ.get("SIMULATOR_AE_ID", "6668039393938243584")
 
 
 def find_agent_by_display_name(display_name: str) -> str:
@@ -224,6 +224,50 @@ def _build_agent():
 
     search_tool = FunctionTool(func=search_documents)
 
+    # --- A2UI prompt suffix ---
+    a2ui_suffix = ""
+    try:
+        from a2ui.schema.manager import A2uiSchemaManager
+        from a2ui.basic_catalog.provider import BasicCatalog
+
+        schema_manager = A2uiSchemaManager(
+            version='0.8',
+            catalogs=[BasicCatalog.get_config('0.8')],
+        )
+        a2ui_suffix = schema_manager.generate_system_prompt(
+            role_description="grocery retail assistant",
+            ui_description=(
+                "Rich visual outputs for grocery retail data: product cards with images, "
+                "sales tables, store comparison dashboards, loyalty tier summaries. "
+                "Use Card components for product displays, Row/Column for layouts, "
+                "and Text for formatted data."
+            ),
+        )
+        a2ui_suffix += '''
+
+Here is a compact example of A2UI output for a product card:
+
+<a2ui-json>
+[
+  {"beginRendering": {"surfaceId": "product-card", "root": "root"}},
+  {"surfaceUpdate": {"surfaceId": "product-card", "components": [
+    {"id": "root", "component": {"Column": {"children": {"explicitList": ["card1"]}}}},
+    {"id": "card1", "component": {"Card": {"title": "Nano Banana Pro", "subtitle": "$2.49/lb", "children": {"explicitList": ["desc"]}}}},
+    {"id": "desc", "component": {"Text": {"text": "**Organic** · Premium variety · Sustainably sourced"}}}
+  ]}}
+]
+</a2ui-json>
+
+Rules:
+- Wrap A2UI JSON arrays in <a2ui-json> and </a2ui-json> tags.
+- Always start with a beginRendering message, then surfaceUpdate.
+- Use flat component arrays with string ID references in children.explicitList.
+- For multi-card layouts, use a Row component with cards as children.
+- Include natural language text OUTSIDE the <a2ui-json> tags for context.
+'''
+    except ImportError:
+        pass
+
     # --- Root tools ---
     root_tools = [search_tool]
 
@@ -295,6 +339,8 @@ Guidelines:
 - For analytics, include specific numbers and cite the data source.
 - Be concise and actionable in your responses.
 """
+    if a2ui_suffix:
+        instruction += "\n\n" + a2ui_suffix
 
     agent = LlmAgent(
         name="sop_agent",
@@ -352,12 +398,13 @@ def deploy():
         agent_engine=app,
         display_name=display_name,
         requirements=[
-            "google-adk>=1.19.0",
+            "google-adk>=1.19.0,<2.0.0",
             "google-cloud-bigquery>=3.0.0",
             "google-cloud-aiplatform",
             "google-cloud-discoveryengine",
             "google-cloud-storage",
             "pyyaml>=6.0",
+            "a2ui-agent-sdk>=0.2.1",
         ],
         env_vars=env_vars,
     )

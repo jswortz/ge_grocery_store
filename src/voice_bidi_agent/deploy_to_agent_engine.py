@@ -21,8 +21,8 @@ STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://wortz-project-352116-ge-
 _BQ_PROJECT = os.environ.get("BQ_PROJECT", "wortz-project-352116")
 _BQ_DATASET = os.environ.get("BQ_DATASET", "ge_grocery_demo")
 _RETAILER_NAME = os.environ.get("RETAILER_NAME", "ValueFresh Market")
-_ADK_MODEL = os.environ.get("ADK_MODEL", "gemini-3-pro-preview")
-_ADK_FAST = os.environ.get("ADK_FAST", "gemini-3-flash-preview")
+_ADK_MODEL = os.environ.get("ADK_MODEL", "gemini-3.5-flash")
+_ADK_FAST = os.environ.get("ADK_FAST", "gemini-3.5-flash")
 
 
 def find_agent_by_display_name(display_name: str) -> str:
@@ -245,7 +245,7 @@ Keep responses concise for voice — 2-3 sentences for simple questions.""",
         agent_engine=app,
         display_name=display_name,
         requirements=[
-            "google-adk>=1.19.0",
+            "google-adk>=1.19.0,<2.0.0",
             "google-cloud-bigquery>=3.0.0",
             "google-cloud-aiplatform",
             "pyyaml>=6.0",

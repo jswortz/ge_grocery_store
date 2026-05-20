@@ -118,7 +118,7 @@ This demo showcases Google Cloud's agentic AI capabilities for grocery retail op
 #### 3.2 Explain Architecture
 - Explain the delegation flow:
   - Main Agent → `delegate_to_simulator` tool → Agent Engine `streamQuery` API → Simulator Agent Engine
-  - Simulator has 12 shopper persona sub-agents (gemini-3-flash-preview)
+  - Simulator has 12 shopper persona sub-agents (gemini-2.5-flash)
   - Tools: `compare_endcap_strategies` (A/B testing), `list_endcap_strategies`, `generate_simulation_report`
   - 9 endcap strategies + 3 planogram layouts for testing
 
@@ -183,9 +183,9 @@ This demo showcases Google Cloud's agentic AI capabilities for grocery retail op
 ### 5.3 Model Regime
 | Model | Role |
 |-------|------|
-| `gemini-3-pro-preview` | Root orchestrator, complex reasoning |
-| `gemini-3-flash-preview` | Sub-agents (analytics, image routing) |
-| `gemini-3-pro-image-preview` | Native image generation |
+| `gemini-2.5-pro` | Root orchestrator, complex reasoning |
+| `gemini-2.5-flash` | Sub-agents (analytics, image routing) |
+| `gemini-2.0-flash` | Native image generation |
 
 ---
 

@@ -195,6 +195,105 @@
 .a2ui-button:hover {
   background: var(--vf-green-800);
 }
+.a2ui-video video {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+.a2ui-audio {
+  width: 100%;
+}
+.a2ui-audio audio {
+  width: 100%;
+}
+.a2ui-modal {
+  background: #fff;
+  border: 1.5px solid var(--vf-gray-200);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+.a2ui-modal-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--vf-green-900);
+  margin-bottom: 12px;
+}
+.a2ui-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--vf-gray-700);
+  cursor: pointer;
+}
+.a2ui-checkbox input[type="checkbox"] {
+  accent-color: var(--vf-green-700);
+  width: 16px;
+  height: 16px;
+}
+.a2ui-textfield {
+  width: 100%;
+}
+.a2ui-textfield input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid var(--vf-gray-300);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--vf-gray-800);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.a2ui-textfield input:focus {
+  border-color: var(--vf-green-700);
+}
+.a2ui-textfield label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vf-gray-500);
+  margin-bottom: 4px;
+}
+.a2ui-datetime {
+  width: 100%;
+}
+.a2ui-datetime input {
+  padding: 8px 12px;
+  border: 1.5px solid var(--vf-gray-300);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--vf-gray-800);
+}
+.a2ui-multiplechoice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.a2ui-multiplechoice label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--vf-gray-700);
+  cursor: pointer;
+}
+.a2ui-multiplechoice input[type="radio"] {
+  accent-color: var(--vf-green-700);
+}
+.a2ui-slider {
+  width: 100%;
+}
+.a2ui-slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--vf-green-700);
+}
+.a2ui-slider-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vf-gray-500);
+  margin-bottom: 4px;
+}
 
 /* ================================================================
    RESET & BASE
@@ -1668,7 +1767,7 @@ function buildArchTree() {
 
     if (aeType === 'mcp') return [
       _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
-      _l('', true, 'mcp_grocery_analyst', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
+      _l('', true, 'mcp_grocery_analyst', 'ROOT', 'badge-agent', true, 'gemini-2.5-pro'),
       _l('    ', true, 'McpToolset <span class="dim">genai-toolbox --prebuilt bigquery</span>', 'MCP', 'badge-svc'),
       _l('        ', false, 'execute_sql', 'TOOL', 'badge-tool'),
       _l('        ', false, 'list_table_ids', 'TOOL', 'badge-tool'),
@@ -1680,7 +1779,7 @@ function buildArchTree() {
 
     if (aeType === 'simulator') return [
       _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
-      _l('', true, 'simulator_orchestrator', 'ROOT', 'badge-agent', true, 'gemini-3-flash-preview'),
+      _l('', true, 'simulator_orchestrator', 'ROOT', 'badge-agent', true, 'gemini-2.5-flash'),
       _l('    ', false, 'compare_endcap_strategies', 'TOOL', 'badge-tool', false, 'A/B Test'),
       _l('    ', false, 'list_endcap_strategies', 'TOOL', 'badge-tool', false, '9 strategies'),
       _l('    ', false, 'generate_simulation_report', 'TOOL', 'badge-tool', false, 'Chart.js HTML'),
@@ -1698,20 +1797,20 @@ function buildArchTree() {
     if (aeType === 'a2a') return [
       _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
       _l('', true, 'A2A Protocol', 'A2A', 'badge-svc', false, 'Cloud Run'),
-      _l('    ', true, 'sop_agent', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
+      _l('    ', true, 'sop_agent', 'ROOT', 'badge-agent', true, 'gemini-2.5-pro'),
       _l('        ', false, 'DiscoveryEngineSearchTool', 'TOOL', 'badge-tool', false, 'SOPs + Brand'),
-      _l('        ', true, 'image_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash'),
+      _l('        ', true, 'image_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-2.5-flash'),
       _l('            ', true, 'generate_product_image', 'TOOL', 'badge-tool', false, 'Gemini Image'),
     ].join('');
 
     // Default: ADK agent
     return [
       _n('Agent Engine <span class="dim">us-central1</span>', 'VERTEX AI', 'badge-svc'),
-      _l('', true, 'sop_agent', 'ROOT', 'badge-agent', true, 'gemini-3-pro-preview'),
+      _l('', true, 'sop_agent', 'ROOT', 'badge-agent', true, 'gemini-2.5-pro'),
       _l('    ', false, 'DiscoveryEngineSearchTool', 'TOOL', 'badge-tool', false, 'SOPs + Brand Guidelines'),
       _l('    ', false, 'PreloadMemoryTool', 'TOOL', 'badge-tool', false, 'Memory Bank'),
       _l('    ', false, 'delegate_to_simulator', 'TOOL', 'badge-tool', false, 'Simulator Agent Engine'),
-      _l('    ', true, 'image_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-3-flash-preview'),
+      _l('    ', true, 'image_agent', 'SUB-AGENT', 'badge-sub', false, 'gemini-2.5-flash'),
       _l('        ', true, 'generate_product_image', 'TOOL', 'badge-tool', false, 'Gemini Image'),
     ].join('');
   }
@@ -1946,6 +2045,111 @@ window.A2UI = {
         case 'Icon': {
           el.className = 'a2ui-icon';
           el.textContent = props.name || props.icon || '';
+          break;
+        }
+        case 'Video': {
+          el.className = 'a2ui-video';
+          const video = document.createElement('video');
+          video.src = props.url || props.src || '';
+          video.controls = true;
+          if (props.poster) video.poster = props.poster;
+          el.appendChild(video);
+          break;
+        }
+        case 'AudioPlayer': {
+          el.className = 'a2ui-audio';
+          const audio = document.createElement('audio');
+          audio.src = props.url || props.src || '';
+          audio.controls = true;
+          el.appendChild(audio);
+          break;
+        }
+        case 'Modal': {
+          el.className = 'a2ui-modal';
+          if (props.title) {
+            const mt = document.createElement('div');
+            mt.className = 'a2ui-modal-title';
+            mt.textContent = props.title;
+            el.appendChild(mt);
+          }
+          this._renderChildren(props, el, componentsMap);
+          break;
+        }
+        case 'CheckBox': {
+          el.className = 'a2ui-checkbox';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = !!props.checked;
+          cb.disabled = true;
+          el.appendChild(cb);
+          const cbl = document.createElement('span');
+          cbl.textContent = props.label || '';
+          el.appendChild(cbl);
+          break;
+        }
+        case 'TextField': {
+          el.className = 'a2ui-textfield';
+          if (props.label) {
+            const tfl = document.createElement('label');
+            tfl.textContent = props.label;
+            el.appendChild(tfl);
+          }
+          const tfi = document.createElement('input');
+          tfi.type = 'text';
+          tfi.placeholder = props.placeholder || '';
+          tfi.value = props.value || '';
+          tfi.readOnly = true;
+          el.appendChild(tfi);
+          break;
+        }
+        case 'DateTimeInput': {
+          el.className = 'a2ui-datetime';
+          if (props.label) {
+            const dtl = document.createElement('label');
+            dtl.textContent = props.label;
+            dtl.style.cssText = 'display:block;font-size:12px;font-weight:600;color:var(--vf-gray-500);margin-bottom:4px';
+            el.appendChild(dtl);
+          }
+          const dti = document.createElement('input');
+          dti.type = props.type === 'date' ? 'date' : 'datetime-local';
+          if (props.value) dti.value = props.value;
+          dti.readOnly = true;
+          el.appendChild(dti);
+          break;
+        }
+        case 'MultipleChoice': {
+          el.className = 'a2ui-multiplechoice';
+          const mcName = 'mc-' + Math.random().toString(36).slice(2, 8);
+          (props.options || []).forEach((opt, i) => {
+            const lbl = document.createElement('label');
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = mcName;
+            radio.disabled = true;
+            if (opt === props.selected || i === 0) radio.checked = true;
+            lbl.appendChild(radio);
+            const span = document.createElement('span');
+            span.textContent = typeof opt === 'string' ? opt : (opt.label || opt.text || '');
+            lbl.appendChild(span);
+            el.appendChild(lbl);
+          });
+          break;
+        }
+        case 'Slider': {
+          el.className = 'a2ui-slider';
+          if (props.label) {
+            const sl = document.createElement('div');
+            sl.className = 'a2ui-slider-label';
+            sl.textContent = props.label;
+            el.appendChild(sl);
+          }
+          const si = document.createElement('input');
+          si.type = 'range';
+          si.min = props.min || '0';
+          si.max = props.max || '100';
+          si.value = props.value || '50';
+          si.disabled = true;
+          el.appendChild(si);
           break;
         }
         default: {

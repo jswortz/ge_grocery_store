@@ -53,7 +53,7 @@ def _load_config():
 
     # Defaults for models if not set
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3-flash-preview")
+    config["models"].setdefault("adk", "gemini-3.5-flash")
 
     return config
 
