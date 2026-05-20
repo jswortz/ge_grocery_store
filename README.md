@@ -145,28 +145,51 @@ The proxy server routes requests:
 
 ### A2UI Rich Visual Output
 
-The agent supports **A2UI (Agent-to-User Interface)** — an open protocol that lets agents emit declarative UI components rendered as interactive cards, dashboards, and layouts directly in the chat. When the LLM returns A2UI JSON alongside natural language, the frontend renders rich visual surfaces using Lit-based web components.
+The agent supports **A2UI (Agent-to-User Interface)** — an open protocol that lets agents emit declarative UI components rendered as interactive cards, dashboards, and layouts directly in the chat. When the LLM returns A2UI JSON alongside natural language, the frontend renders rich visual surfaces with interactive form controls.
 
-Components used: `Card`, `Text`, `Row`, `Column`, `Tabs`, `List`, `Icon`, `Divider` — composed into product displays, tier breakdowns, store comparison dashboards, and multi-day A/B test results.
+Components used: `Card`, `Text`, `Row`, `Column`, `Tabs`, `List`, `Icon`, `Divider`, `Button`, `MultipleChoice`, `Slider`, `CheckBox`, `TextField`, `BarChart`, `LineChart`, `PieChart` — composed into product displays, tier breakdowns, store dashboards, simulation controls, and A/B test results.
 
-**Top Products — Column Layout**
+**Welcome Screen — Config-Driven Sample Buttons with A2UI Badges**
 
-![A2UI Top Products](docs/img/34_frontend_a2ui_products.png)
-*Top 5 best-selling products rendered as stacked `Card` components inside a `Column`. Each card shows revenue, units sold, average price, margin, and YoY growth. A `Divider` separates the product list from a Key Insight card with an actionable recommendation.*
+![Welcome Screen](docs/img/46_a2ui_welcome_screen.png)
+*Dynamic sample buttons route to specific agents. Gold `A2UI` pill badges indicate queries that produce rich visual output. Each button auto-selects the correct backend (StreamAssist vs Agent Engine) and target agent.*
 
-**Customer Loyalty Tiers — Row Layout**
+**Top Products — Bar Chart + Product Cards (MCP Analyst)**
 
-![A2UI Loyalty Tiers](docs/img/35_frontend_a2ui_loyalty.png)
-*Three loyalty tiers (Gold, Silver, Bronze) displayed side-by-side using a `Row` of `Card` components. Each tier card contains `Text` elements for average spend, visit frequency, and retention rate. An Action Plan card below the divider highlights the Silver-to-Gold conversion opportunity with estimated revenue uplift.*
+| Chart View | Product Cards |
+|:---:|:---:|
+| ![Top Products Chart](docs/img/51_a2ui_top_products_chart.png) | ![Product Cards](docs/img/51_a2ui_top_products_cards.png) |
+| *A2UI `BarChart` rendered via Chart.js showing top 5 products by quantity sold* | *Product `Card` grid with revenue, units, and margin badges* |
 
-**Store Performance Comparison — Row Layout**
+**Store Performance Dashboard (ADK Agent)**
 
-![A2UI Store Comparison](docs/img/36_frontend_a2ui_stores.png)
-*Q1 performance across three store locations in a `Row` layout. Each store `Card` shows revenue, transaction count, average basket size, and quarter-over-quarter growth. A Recommendation card identifies the fastest-growing location and suggests marketing actions.*
+![Store Performance](docs/img/47_a2ui_store_performance_top.png)
+*Three store locations compared side-by-side in `Card` components. Each card shows daily revenue, transactions, average basket, and key characteristics. Color-coded badges highlight store type (Urban, Family, Premium).*
 
-**Endcap A/B Test — 7-Day Multi-Day Simulation**
+**Customer Lifetime Value by Loyalty Tier (MCP Analyst)**
 
-The Shopper Simulator runs a full 7-day A/B test comparing merchandising strategies with day-over-day variance (weekend traffic boost, word-of-mouth ramp-up). Results render as an interactive A2UI dashboard with KPI cards, tabbed daily breakdowns, and a verdict card.
+| Tier Cards | Strategic Insights |
+|:---:|:---:|
+| ![CLTV Tiers](docs/img/48_a2ui_cltv_loyalty.png) | ![CLTV Insights](docs/img/48_a2ui_cltv_insights.png) |
+| *Gold/Silver/Bronze loyalty tiers with CLV, visit frequency, and retention rates* | *Tier-specific optimization recommendations with conversion strategies* |
+
+**Endcap A/B Comparison (Shopper Simulator)**
+
+| Strategy Cards | Key Highlights & Recommendations |
+|:---:|:---:|
+| ![Endcap A/B](docs/img/49_a2ui_endcap_ab.png) | ![Endcap Insights](docs/img/49_a2ui_endcap_insights.png) |
+| *Baseline vs Back-to-School strategies with conversion rates and revenue lift* | *Winner analysis with top-selling products and optimization recommendations* |
+
+**Shopper Traffic Simulation (Simulator)**
+
+| Simulation Results | Persona Breakdown |
+|:---:|:---:|
+| ![Shopper Sim](docs/img/50_a2ui_shopper_sim.png) | ![Shopper Personas](docs/img/50_a2ui_shopper_sim_bottom.png) |
+| *5 simulated shoppers with Baseline vs Seasonal Produce Push comparison* | *Per-persona purchase behavior and endcap conversion analysis* |
+
+**Interactive Simulation Control Center (A2UI Forms)**
+
+A2UI form controls (`MultipleChoice`, `Slider`, `Button`) render as interactive elements. Users select stores, strategies, and shopper counts, then click "Run Simulation" — the button collects all form values and sends them as a structured prompt to the agent.
 
 | KPI Dashboard + Tabs | Daily Side-by-Side Comparison |
 |:---:|:---:|
