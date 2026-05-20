@@ -201,6 +201,12 @@ def _get_a2ui_suffix() -> str:
 ]
 </a2ui-json>
 
+CHART COMPONENTS (render native Chart.js visualizations):
+- BarChart: {"id": "chart1", "component": {"BarChart": {"title": "Revenue by Store", "labels": ["Downtown","Westside","Eastgate"], "datasets": [{"label": "Revenue", "data": [45231,38102,29847], "color": "#2e7d32"}]}}}
+- LineChart: same props as BarChart, renders as line graph (good for time series)
+- PieChart: same props, renders as pie/donut chart (good for category breakdowns)
+When results have categories + numeric values, prefer BarChart/LineChart/PieChart over Text-only Cards.
+
 STRICT RULES:
 - Wrap A2UI JSON in <a2ui-json> and </a2ui-json> tags.
 - Always start with beginRendering, then surfaceUpdate.
@@ -208,7 +214,15 @@ STRICT RULES:
 - Card uses "child" (singular). Text.text uses {"literalString": "..."}.
 - Use Icon, Divider, and at least 4 component types per response.
 '''
-        return base + example
+        result = base + example
+        try:
+            from src.shared.a2ui_skills import load_a2ui_skills
+            skills = load_a2ui_skills()
+            if skills:
+                result += skills
+        except ImportError:
+            pass
+        return result
     except ImportError:
         return ""
 
@@ -235,6 +249,9 @@ Guidelines:
 - For complex analytics questions, break them into steps.
 - When citing data, reference the specific tables and columns used.
 - Be concise and actionable in your responses.
+- When results have categories + numeric values, use BarChart or PieChart A2UI components.
+- For time series data, use LineChart with date labels.
+- Always present KPI summaries as a Row of Cards before any chart.
 - IMPORTANT: Always show the SQL query you executed in a ```sql code block before presenting results. This helps users understand and verify the analysis.
 """
     a2ui_suffix = _get_a2ui_suffix()

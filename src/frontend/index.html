@@ -148,35 +148,63 @@
   border-radius: var(--radius-md);
 }
 .a2ui-list {
-  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 0;
   margin: 0;
 }
-.a2ui-list li {
-  padding: 6px 0;
-  border-bottom: 1px solid var(--vf-gray-100);
-  font-size: 14px;
-  color: var(--vf-gray-700);
+.a2ui-list-item {
+  padding: 0;
 }
 .a2ui-tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   border-bottom: 2px solid var(--vf-gray-200);
-  margin-bottom: 12px;
+  margin-bottom: 0;
+  overflow-x: auto;
 }
 .a2ui-tab {
-  padding: 8px 16px;
+  padding: 10px 18px;
   font-size: 13px;
   font-weight: 600;
   color: var(--vf-gray-500);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+  border-radius: 8px 8px 0 0;
 }
-.a2ui-tab.active, .a2ui-tab:first-child {
+.a2ui-tab:hover {
+  background: rgba(46, 125, 50, 0.06);
+  color: var(--vf-green-800);
+}
+.a2ui-tab.active {
   color: var(--vf-green-700);
   border-bottom-color: var(--vf-green-700);
+  background: rgba(46, 125, 50, 0.08);
+}
+.a2ui-tab-panels {
+  padding: 16px 0;
+}
+.a2ui-tab-panel {
+  animation: a2uiFadeIn 0.2s ease;
+}
+@keyframes a2uiFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.a2ui-text-h2 p {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: var(--vf-green-900) !important;
+  margin-bottom: 4px !important;
+}
+.a2ui-text-h3 p {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: var(--vf-green-800) !important;
 }
 .a2ui-button {
   display: inline-flex;
@@ -194,6 +222,15 @@
 }
 .a2ui-button:hover {
   background: var(--vf-green-800);
+}
+.a2ui-button--loading {
+  opacity: 0.6;
+  cursor: wait;
+  pointer-events: none;
+}
+.a2ui-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .a2ui-video video {
   max-width: 100%;
@@ -293,6 +330,31 @@
   font-weight: 600;
   color: var(--vf-gray-500);
   margin-bottom: 4px;
+}
+.a2ui-slider-value {
+  display: inline-block;
+  min-width: 28px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--vf-green-800);
+  margin-left: 8px;
+}
+.a2ui-chart {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  margin: 4px 0;
+}
+.a2ui-chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1b5e20;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* ================================================================
@@ -1387,62 +1449,7 @@ details[open] .thoughts-toggle::before {
 
       <p style="font-size:12px;color:var(--vf-gray-500);margin-bottom:16px;">Each prompt routes to a specific agent. The badge shows the backend and agent.</p>
 
-      <div class="sample-queries">
-        <button class="sample-btn" onclick="sendSample('What are the closing procedures for frontline associates?', {backend:'stream-assist', agentId:'default_assistant'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-green-700)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Store closing procedures</span>
-            <span class="sq-sub">StreamAssist &rarr; Default Assistant &middot; SOP search</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('What are the top 5 products by revenue?', {backend:'agent-engine', agentId:'5787744546217525248'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Top products by revenue</span>
-            <span class="sq-sub">Agent Engine &rarr; MCP Grocery Analyst &middot; BigQuery</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('Generate a product image for Nano Banana Pro that follows our brand guidelines', {backend:'agent-engine', agentId:'3727910666648944640'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Generate product image</span>
-            <span class="sq-sub">Agent Engine &rarr; Grocery Retail Assistant &middot; Gemini Image</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('Simulate 5 shoppers at Downtown Market with the seasonal produce endcap strategy', {backend:'agent-engine', agentId:'7053256041508634624'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Simulate shopper traffic</span>
-            <span class="sq-sub">Agent Engine &rarr; Shopper Simulator</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('What is the customer lifetime value by loyalty tier?', {backend:'agent-engine', agentId:'5787744546217525248'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Customer lifetime value (CLTV)</span>
-            <span class="sq-sub">Agent Engine &rarr; MCP Grocery Analyst &middot; BigQuery</span>
-          </span>
-        </button>
-        <button class="sample-btn" onclick="sendSample('What are the brand color guidelines and typography standards?', {backend:'stream-assist', agentId:'175588409381140878'})">
-          <span class="sq-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-green-700)" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="17" r="2"/><circle cx="6" cy="12" r="3"/><path d="M12 22s8-4 8-12c0-2.21-1.79-4-4-4a4 4 0 0 0-4 4c0 8-8 12-8 12"/></svg>
-          </span>
-          <span class="sq-text">
-            <span class="sq-label">Brand color guidelines</span>
-            <span class="sq-sub">StreamAssist &rarr; A2A Grocery Agent &middot; SOP search</span>
-          </span>
-        </button>
-      </div>
+      <div class="sample-queries" id="sample-queries"></div>
 
     </div>
   </div>
@@ -1529,6 +1536,79 @@ async function loadConfig() {
   } catch (err) {
     console.error('Failed to load config:', err);
     document.getElementById('brand-name').textContent = 'Grocery Retail';
+  }
+  buildSampleQueries();
+}
+
+function buildSampleQueries() {
+  const $container = document.getElementById('sample-queries');
+  if (!$container) return;
+
+  const aeById = (type) => {
+    const ae = (State.agentEngines || []).find(a => a.type === type);
+    return ae?.id || '';
+  };
+  const adkId = aeById('adk');
+  const mcpId = aeById('mcp');
+  const simId = aeById('simulator');
+
+  const svgDoc = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-green-700)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+  const svgChart = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>';
+  const svgUsers = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+  const svgTrend = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
+  const svgGrid = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vf-gold-500)" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>';
+
+  const samples = [
+    {
+      text: 'What are the closing procedures for frontline associates?',
+      opts: { backend: 'stream-assist', agentId: 'default_assistant' },
+      icon: svgDoc, label: 'Store closing procedures',
+      sub: 'StreamAssist &rarr; Default Assistant &middot; SOP search',
+    },
+    {
+      text: 'What are the top 5 products by revenue? Show each product as a card with revenue, units, and margin.',
+      opts: { backend: 'agent-engine', agentId: mcpId },
+      icon: svgChart, label: 'Top products by revenue',
+      sub: 'Agent Engine &rarr; MCP Analyst &middot; A2UI cards',
+      a2ui: true,
+    },
+    {
+      text: 'Compare baseline vs back-to-school endcap strategies with a side-by-side breakdown',
+      opts: { backend: 'agent-engine', agentId: simId },
+      icon: svgUsers, label: 'Endcap A/B comparison',
+      sub: 'Agent Engine &rarr; Simulator &middot; A2UI dashboard',
+      a2ui: true,
+    },
+    {
+      text: 'Show store performance comparison across all locations with revenue, transactions, and basket size per store',
+      opts: { backend: 'agent-engine', agentId: adkId },
+      icon: svgGrid, label: 'Store performance dashboard',
+      sub: 'Agent Engine &rarr; Grocery Assistant &middot; A2UI cards',
+      a2ui: true,
+    },
+    {
+      text: 'What is the customer lifetime value by loyalty tier? Show Gold, Silver, and Bronze tiers side by side.',
+      opts: { backend: 'agent-engine', agentId: mcpId },
+      icon: svgTrend, label: 'CLTV by loyalty tier',
+      sub: 'Agent Engine &rarr; MCP Analyst &middot; A2UI cards',
+      a2ui: true,
+    },
+    {
+      text: 'Simulate 5 shoppers at Downtown Market with the seasonal produce endcap strategy',
+      opts: { backend: 'agent-engine', agentId: simId },
+      icon: svgUsers, label: 'Simulate shopper traffic',
+      sub: 'Agent Engine &rarr; Shopper Simulator',
+    },
+  ];
+
+  $container.innerHTML = '';
+  for (const s of samples) {
+    const btn = document.createElement('button');
+    btn.className = 'sample-btn';
+    const a2uiPill = s.a2ui ? '<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.5px;padding:1px 6px;border-radius:8px;background:var(--vf-gold-500);color:#fff;margin-left:6px;vertical-align:middle;">A2UI</span>' : '';
+    btn.innerHTML = `<span class="sq-icon">${s.icon}</span><span class="sq-text"><span class="sq-label">${s.label}${a2uiPill}</span><span class="sq-sub">${s.sub}</span></span>`;
+    btn.onclick = () => sendSample(s.text, s.opts);
+    $container.appendChild(btn);
   }
 }
 
@@ -1996,8 +2076,13 @@ window.A2UI = {
         }
         case 'Text': {
           el.className = 'a2ui-text';
+          const hint = props.usageHint;
+          if (hint === 'h2' || hint === 'h3') {
+            el.classList.add('a2ui-text-' + hint);
+          }
           const p = document.createElement('p');
-          p.innerHTML = DOMPurify.sanitize(marked.parse(props.text || ''));
+          const rawText = typeof props.text === 'string' ? props.text : typeof props.body === 'string' ? props.body : props.text?.literalString || props.body?.literalString || '';
+          p.innerHTML = DOMPurify.sanitize(marked.parse(rawText));
           el.appendChild(p);
           break;
         }
@@ -2016,35 +2101,131 @@ window.A2UI = {
           break;
         }
         case 'List': {
-          const ul = document.createElement('ul');
+          const ul = document.createElement('div');
           ul.className = 'a2ui-list';
-          this._renderChildren(props, ul, componentsMap);
+          const listChildIds = props?.children?.explicitList || [];
+          listChildIds.forEach(id => {
+            const child = componentsMap.get(id);
+            if (child) {
+              const li = document.createElement('div');
+              li.className = 'a2ui-list-item';
+              li.appendChild(this.renderComponent(child, componentsMap));
+              ul.appendChild(li);
+            }
+          });
+          if (props?.child) {
+            const child = componentsMap.get(props.child);
+            if (child) ul.appendChild(this.renderComponent(child, componentsMap));
+          }
           el.appendChild(ul);
           break;
         }
         case 'Button': {
           const btn = document.createElement('button');
           btn.className = 'a2ui-button';
-          btn.textContent = props.label || props.text || 'Button';
+          if (props.primary) btn.classList.add('a2ui-button--primary');
+          const label = props.label || props.text || 'Button';
+          btn.textContent = label;
+
+          if (props.child) {
+            const childComp = componentsMap.get(props.child);
+            if (childComp) {
+              btn.textContent = '';
+              btn.appendChild(this.renderComponent(childComp, componentsMap));
+            }
+          }
+
+          const actionName = props.action?.name;
+          btn.onclick = () => {
+            if (btn.disabled) return;
+            btn.disabled = true;
+            btn.classList.add('a2ui-button--loading');
+            const origContent = btn.innerHTML;
+            btn.textContent = 'Sending...';
+
+            const chatInput = document.getElementById('chat-input');
+            if (!chatInput) return;
+
+            if (actionName === 'submit_form' || actionName === 'submit') {
+              const surface = btn.closest('.a2ui-surface');
+              if (surface) {
+                const formData = window.A2UI.collectFormData(surface);
+                const parts = Object.entries(formData).map(([k, v]) => `${k}: ${v}`);
+                chatInput.value = (props.prompt || actionName || label) + '\n' + parts.join('\n');
+              } else {
+                chatInput.value = actionName || label;
+              }
+            } else if (actionName) {
+              let msg = actionName;
+              if (props.action?.context && Array.isArray(props.action.context)) {
+                const ctx = props.action.context.map(c => {
+                  const val = c.value?.literalString || c.value?.literalNumber || (c.value?.literalBoolean != null ? c.value.literalBoolean : c.value);
+                  return `${c.key}: ${val}`;
+                }).join(', ');
+                msg += ` (${ctx})`;
+              }
+              chatInput.value = msg;
+            } else {
+              const surface = btn.closest('.a2ui-surface');
+              if (surface && props.prompt) {
+                const formData = window.A2UI.collectFormData(surface);
+                const parts = Object.entries(formData).map(([k, v]) => `${k}: ${v}`);
+                chatInput.value = props.prompt + '\n' + parts.join('\n');
+              } else {
+                chatInput.value = props.prompt || label;
+              }
+            }
+            sendMessage();
+
+            setTimeout(() => {
+              btn.disabled = false;
+              btn.classList.remove('a2ui-button--loading');
+              btn.innerHTML = origContent;
+            }, 2000);
+          };
           el.appendChild(btn);
           break;
         }
         case 'Tabs': {
-          const tabs = document.createElement('div');
-          tabs.className = 'a2ui-tabs';
-          (props.tabs || []).forEach((tab, i) => {
+          const items = props.tabItems || props.tabs || [];
+          const tabBar = document.createElement('div');
+          tabBar.className = 'a2ui-tabs';
+          const tabPanels = document.createElement('div');
+          tabPanels.className = 'a2ui-tab-panels';
+          items.forEach((tab, i) => {
+            const label = typeof tab.title === 'string' ? tab.title
+              : tab.title?.literalString || tab.label || `Tab ${i + 1}`;
             const t = document.createElement('div');
             t.className = 'a2ui-tab' + (i === 0 ? ' active' : '');
-            t.textContent = tab.label || tab;
-            tabs.appendChild(t);
+            t.textContent = label;
+            const panel = document.createElement('div');
+            panel.className = 'a2ui-tab-panel';
+            panel.style.display = i === 0 ? 'block' : 'none';
+            const childId = tab.child;
+            if (childId) {
+              const childComp = componentsMap.get(childId);
+              if (childComp) panel.appendChild(this.renderComponent(childComp, componentsMap));
+            }
+            t.onclick = () => {
+              tabBar.querySelectorAll('.a2ui-tab').forEach(h => h.classList.remove('active'));
+              t.classList.add('active');
+              tabPanels.querySelectorAll('.a2ui-tab-panel').forEach((p, j) => {
+                p.style.display = j === i ? 'block' : 'none';
+              });
+            };
+            tabBar.appendChild(t);
+            tabPanels.appendChild(panel);
           });
-          el.appendChild(tabs);
-          this._renderChildren(props, el, componentsMap);
+          el.appendChild(tabBar);
+          el.appendChild(tabPanels);
+          if (!items.length) this._renderChildren(props, el, componentsMap);
           break;
         }
         case 'Icon': {
           el.className = 'a2ui-icon';
-          el.textContent = props.name || props.icon || '';
+          const iconName = typeof props.name === 'string' ? props.name : props.name?.literalString || props.icon || '';
+          const iconMap = { shoppingCart: '🛒', star: '⭐', check: '✅', warning: '⚠️', info: 'ℹ️', favorite: '❤️', lock: '🔒' };
+          el.textContent = iconMap[iconName] || iconName;
           break;
         }
         case 'Video': {
@@ -2080,7 +2261,7 @@ window.A2UI = {
           const cb = document.createElement('input');
           cb.type = 'checkbox';
           cb.checked = !!props.checked;
-          cb.disabled = true;
+          if (props.label) cb.dataset.a2uiField = props.label;
           el.appendChild(cb);
           const cbl = document.createElement('span');
           cbl.textContent = props.label || '';
@@ -2098,7 +2279,7 @@ window.A2UI = {
           tfi.type = 'text';
           tfi.placeholder = props.placeholder || '';
           tfi.value = props.value || '';
-          tfi.readOnly = true;
+          if (props.label) tfi.dataset.a2uiField = props.label;
           el.appendChild(tfi);
           break;
         }
@@ -2113,23 +2294,28 @@ window.A2UI = {
           const dti = document.createElement('input');
           dti.type = props.type === 'date' ? 'date' : 'datetime-local';
           if (props.value) dti.value = props.value;
-          dti.readOnly = true;
+          if (props.label) dti.dataset.a2uiField = props.label;
           el.appendChild(dti);
           break;
         }
         case 'MultipleChoice': {
           el.className = 'a2ui-multiplechoice';
           const mcName = 'mc-' + Math.random().toString(36).slice(2, 8);
+          const fieldName = props.fieldName || props.label || props.name || mcName;
+          el.dataset.a2uiField = fieldName;
           (props.options || []).forEach((opt, i) => {
             const lbl = document.createElement('label');
             const radio = document.createElement('input');
             radio.type = 'radio';
             radio.name = mcName;
-            radio.disabled = true;
-            if (opt === props.selected || i === 0) radio.checked = true;
+            const optText = typeof opt === 'string' ? opt : (opt.label || opt.text || '');
+            radio.value = optText;
+            if (props.selected != null) {
+              if (opt === props.selected || optText === props.selected) radio.checked = true;
+            } else if (i === 0) radio.checked = true;
             lbl.appendChild(radio);
             const span = document.createElement('span');
-            span.textContent = typeof opt === 'string' ? opt : (opt.label || opt.text || '');
+            span.textContent = optText;
             lbl.appendChild(span);
             el.appendChild(lbl);
           });
@@ -2137,6 +2323,7 @@ window.A2UI = {
         }
         case 'Slider': {
           el.className = 'a2ui-slider';
+          const fieldLabel = props.label || 'slider';
           if (props.label) {
             const sl = document.createElement('div');
             sl.className = 'a2ui-slider-label';
@@ -2145,11 +2332,66 @@ window.A2UI = {
           }
           const si = document.createElement('input');
           si.type = 'range';
-          si.min = props.min || '0';
-          si.max = props.max || '100';
+          si.min = props.minimum || props.min || '0';
+          si.max = props.maximum || props.max || '100';
+          si.step = props.step || '1';
           si.value = props.value || '50';
-          si.disabled = true;
+          si.dataset.a2uiField = fieldLabel;
+          const sv = document.createElement('span');
+          sv.className = 'a2ui-slider-value';
+          sv.textContent = si.value;
+          si.oninput = () => { sv.textContent = si.value; };
           el.appendChild(si);
+          el.appendChild(sv);
+          break;
+        }
+        case 'BarChart':
+        case 'LineChart':
+        case 'PieChart': {
+          el.className = 'a2ui-chart';
+          const chartType = type === 'BarChart' ? 'bar' : type === 'LineChart' ? 'line' : 'pie';
+          if (props.title) {
+            const ct = document.createElement('div');
+            ct.className = 'a2ui-chart-title';
+            ct.textContent = props.title;
+            el.appendChild(ct);
+          }
+          const cw = document.createElement('div');
+          cw.style.cssText = 'position:relative;height:260px;';
+          const cv = document.createElement('canvas');
+          cw.appendChild(cv);
+          el.appendChild(cw);
+          requestAnimationFrame(() => {
+            const labels = props.labels || [];
+            const pieBg = ['#2e7d32','#f9a825','#1565c0','#e53935','#7b1fa2','#00897b','#ef6c00','#5c6bc0','#c62828','#43a047'];
+            const datasets = (props.datasets || []).map((ds, i) => ({
+              label: ds.label || `Dataset ${i + 1}`,
+              data: ds.data || [],
+              backgroundColor: chartType === 'pie' ? pieBg : (ds.color || ds.backgroundColor || 'rgba(46,125,50,0.6)'),
+              borderColor: chartType === 'pie' ? '#fff' : (ds.borderColor || ds.color || '#2e7d32'),
+              borderWidth: 2,
+              tension: chartType === 'line' ? 0.3 : undefined,
+              fill: chartType === 'line',
+            }));
+            if (typeof Chart !== 'undefined') {
+              new Chart(cv, {
+                type: chartType,
+                data: { labels, datasets },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: datasets.length > 1 || chartType === 'pie', position: 'bottom' },
+                    tooltip: { mode: 'index', intersect: false },
+                  },
+                  scales: chartType === 'pie' ? {} : {
+                    x: { ticks: { maxRotation: 45, font: { size: 10 }, maxTicksLimit: 15 }, grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+                  },
+                },
+              });
+            }
+          });
           break;
         }
         default: {
@@ -2162,11 +2404,37 @@ window.A2UI = {
   },
 
   _renderChildren(props, container, componentsMap) {
+    // Handle singular child reference (A2UI v0.8 Card/Tab pattern)
+    if (props?.child && typeof props.child === 'string') {
+      const child = componentsMap.get(props.child);
+      if (child) container.appendChild(this.renderComponent(child, componentsMap));
+    }
+    // Handle children.explicitList
     const childIds = props?.children?.explicitList || [];
     childIds.forEach(id => {
       const child = componentsMap.get(id);
       if (child) container.appendChild(this.renderComponent(child, componentsMap));
     });
+  },
+
+  collectFormData(surfaceEl) {
+    const data = {};
+    surfaceEl.querySelectorAll('[data-a2ui-field]').forEach(input => {
+      const key = input.dataset.a2uiField;
+      if (input.type === 'checkbox') { data[key] = input.checked; }
+      else if (input.type === 'range') { data[key] = Number(input.value); }
+      else if (input.tagName === 'DIV' || input.tagName === 'FIELDSET') { return; }
+      else { data[key] = input.value; }
+    });
+    surfaceEl.querySelectorAll('.a2ui-multiplechoice[data-a2ui-field]').forEach(mc => {
+      const key = mc.dataset.a2uiField;
+      const checked = mc.querySelector('input[type="radio"]:checked');
+      if (checked) {
+        const span = checked.parentElement?.querySelector('span');
+        data[key] = span ? span.textContent : checked.value;
+      }
+    });
+    return data;
   },
 
   renderSurface(messages) {
@@ -2518,7 +2786,20 @@ function parseStreamAssistResponse(data) {
     }
   }
 
-  const text = texts.join('\n') || 'No response received. Try asking about store operations, brand guidelines, or product information.';
+  let text = texts.join('\n') || 'No response received. Try asking about store operations, brand guidelines, or product information.';
+
+  // Heuristic: detect and strip chain-of-thought reasoning leaked by the model.
+  // Gemini 3.5 sometimes emits "My Thought Process for ..." blocks as visible text.
+  const cotPattern = /(?:^|\n)(My Thought Process[\s\S]*?)(?=\n(?:Here |Form |📋|The |Based on|I\'ve |Below |Let me present|This |Your )|\n<a2ui-json>|$)/gi;
+  let cotMatch;
+  while ((cotMatch = cotPattern.exec(text)) !== null) {
+    const cotBlock = cotMatch[1].trim();
+    if (cotBlock.length > 100) {
+      thoughts.push(cotBlock);
+      text = text.replace(cotBlock, '').trim();
+    }
+  }
+
   // Deduplicate thoughts (remove thoughts that are identical to the final text)
   const uniqueThoughts = thoughts.filter(t => {
     const clean = t.replace(/\*\*(Tool Call|Agent Response):\*\*\s*/, '').trim();
@@ -2739,7 +3020,19 @@ function parseAgentEngineResponse(rawText) {
       // skip non-JSON lines
     }
   }
-  const text = texts.join('\n') || 'No response received.';
+  let text = texts.join('\n') || 'No response received.';
+
+  // Strip leaked chain-of-thought (same heuristic as StreamAssist parser)
+  const cotPattern = /(?:^|\n)(My Thought Process[\s\S]*?)(?=\n(?:Here |Form |📋|The |Based on|I\'ve |Below |Let me present|This |Your )|\n<a2ui-json>|$)/gi;
+  let cotMatch;
+  while ((cotMatch = cotPattern.exec(text)) !== null) {
+    const cotBlock = cotMatch[1].trim();
+    if (cotBlock.length > 100) {
+      thoughts.push(cotBlock);
+      text = text.replace(cotBlock, '').trim();
+    }
+  }
+
   return { text, thoughts };
 }
 
@@ -2768,18 +3061,7 @@ function addMessage(role, text, thoughts) {
   const hasA2UI = role === 'assistant' && window.A2UI && window.A2UI.containsA2UI(text);
   const bubbleContent = hasA2UI ? '' : (role === 'assistant' ? renderMarkdown(text) : escapeHtml(text));
 
-  // Build collapsible thoughts section if thoughts are present
   let thoughtsHtml = '';
-  if (thoughts && thoughts.length > 0) {
-    const thoughtContent = thoughts.map(t => renderMarkdown(t)).join('<hr style="border:none;border-top:1px solid rgba(0,0,0,0.06);margin:6px 0;">');
-    thoughtsHtml = `<details class="thoughts-section">
-      <summary class="thoughts-toggle">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-        Thoughts (${thoughts.length})
-      </summary>
-      <div class="thoughts-content">${thoughtContent}</div>
-    </details>`;
-  }
   const timeStr = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const agentLabel = State.backend === 'stream-assist'
     ? (State.selectedAgent !== 'default_assistant'

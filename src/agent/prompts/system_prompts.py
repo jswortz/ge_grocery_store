@@ -208,7 +208,15 @@ STRICT RULES:
 - Natural language text after the A2UI block should be at most 1-2 brief sentences.
 - Minimum 4 different component types per response.
 '''
-        return base + examples
+        result = base + examples
+        try:
+            from src.shared.a2ui_skills import load_a2ui_skills
+            skills = load_a2ui_skills()
+            if skills:
+                result += skills
+        except ImportError:
+            pass
+        return result
     except ImportError:
         return ""
 

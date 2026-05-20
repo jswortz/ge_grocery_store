@@ -102,7 +102,7 @@ retailer:
 project:
   id: "wortz-project-352116"
   engine_id: "grocery-workshop-engine"
-  agent_engine_id: "3727910666648944640"  # Deployed ADK agent
+  agent_engine_id: "5752190188465946624"  # Deployed ADK agent
 bigquery:
   project: "wortz-project-352116"
   dataset: "ge_grocery_demo"
@@ -147,7 +147,7 @@ The proxy server routes requests:
 
 The agent supports **A2UI (Agent-to-User Interface)** — an open protocol that lets agents emit declarative UI components rendered as interactive cards, dashboards, and layouts directly in the chat. When the LLM returns A2UI JSON alongside natural language, the frontend renders rich visual surfaces using Lit-based web components.
 
-Components used: `Card`, `Text`, `Row`, `Column`, `Divider` — composed into product displays, tier breakdowns, and store comparison dashboards.
+Components used: `Card`, `Text`, `Row`, `Column`, `Tabs`, `List`, `Icon`, `Divider` — composed into product displays, tier breakdowns, store comparison dashboards, and multi-day A/B test results.
 
 **Top Products — Column Layout**
 
@@ -163,6 +163,18 @@ Components used: `Card`, `Text`, `Row`, `Column`, `Divider` — composed into pr
 
 ![A2UI Store Comparison](docs/img/36_frontend_a2ui_stores.png)
 *Q1 performance across three store locations in a `Row` layout. Each store `Card` shows revenue, transaction count, average basket size, and quarter-over-quarter growth. A Recommendation card identifies the fastest-growing location and suggests marketing actions.*
+
+**Endcap A/B Test — 7-Day Multi-Day Simulation**
+
+The Shopper Simulator runs a full 7-day A/B test comparing merchandising strategies with day-over-day variance (weekend traffic boost, word-of-mouth ramp-up). Results render as an interactive A2UI dashboard with KPI cards, tabbed daily breakdowns, and a verdict card.
+
+| KPI Dashboard + Tabs | Daily Side-by-Side Comparison |
+|:---:|:---:|
+| ![A2UI KPIs](docs/img/43_a2ui_simulator_ab_kpis.png) | ![Daily Comparison](docs/img/44_a2ui_simulator_daily_comparison.png) |
+| *4 KPI cards (revenue, lift, conversion, ROI) with 4-tab layout* | *Baseline vs Back-to-School side-by-side for each day of the week* |
+
+![A2UI Verdict](docs/img/45_a2ui_simulator_verdict.png)
+*Trend chart with Unicode bar visualization and winner verdict card showing +44.7% revenue lift, 82.9% conversion, and projected annual incremental revenue across all stores.*
 
 ### E2E Playwright Screenshots
 
@@ -320,9 +332,9 @@ Four agents are deployed across **Vertex AI Agent Engine** and **Cloud Run**:
 
 | Agent | Platform | Resource ID | Purpose |
 |-------|----------|-------------|---------|
-| Grocery Retail Assistant | Agent Engine | `3727910666648944640` | Main multi-agent orchestrator |
-| MCP Grocery Analyst | Agent Engine | `5787744546217525248` | BigQuery analytics via MCP Toolbox |
-| Shopper Simulator | Agent Engine | `7053256041508634624` | Endcap merchandising A/B simulation |
+| Grocery Retail Assistant | Agent Engine | `5752190188465946624` | Main multi-agent orchestrator |
+| MCP Grocery Analyst | Agent Engine | `6529624074140778496` | BigQuery analytics via MCP Toolbox |
+| Shopper Simulator | Agent Engine | `6121485357910327296` | Endcap merchandising A/B simulation |
 | A2A Agent | Cloud Run | `grocery-a2a-agent` | A2A protocol inter-agent communication |
 
 All Agent Engine deployments have OpenTelemetry tracing enabled for Cloud Trace observability.
@@ -360,7 +372,7 @@ credentials.refresh(Request())
 
 url = ("https://us-central1-aiplatform.googleapis.com/v1/"
        "projects/679926387543/locations/us-central1/"
-       "reasoningEngines/3727910666648944640:streamQuery")
+       "reasoningEngines/5752190188465946624:streamQuery")
 
 resp = requests.post(url,
     headers={"Authorization": f"Bearer {credentials.token}",

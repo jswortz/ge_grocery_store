@@ -152,19 +152,20 @@ class TestAgentSelectorForAgentEngine:
 # ================================================================
 class TestSampleQuestionRouting:
 
-    def test_analytics_sample_routes_to_mcp_agent(self, html_content):
-        """Analytics sample should route to MCP Grocery Analyst on Agent Engine."""
-        assert "sendSample('What are the top 5 products by revenue?', {backend:'agent-engine', agentId:'5787744546217525248'})" in html_content
+    def test_sample_queries_are_config_driven(self, html_content):
+        """Sample queries should be built dynamically from config, not hardcoded."""
+        assert "buildSampleQueries()" in html_content
+        assert 'id="sample-queries"' in html_content
 
-    def test_image_sample_routes_to_agent_engine(self, html_content):
-        """Image generation sample should route to agent-engine backend with explicit agent ID."""
-        assert "sendSample('Generate a product image" in html_content
-        assert "agentId:'3727910666648944640'" in html_content
+    def test_sample_query_builder_uses_agent_type_lookup(self, html_content):
+        """Builder should look up agent IDs by type (adk, mcp, simulator) from State."""
+        assert "aeById('mcp')" in html_content or "aeById('adk')" in html_content
 
-    def test_simulator_sample_routes_to_agent_engine(self, html_content):
-        """Simulator sample should route to agent-engine with simulator agent ID."""
-        assert "sendSample('Simulate 5 shoppers" in html_content
-        assert "agentId:'7053256041508634624'" in html_content
+    def test_no_hardcoded_agent_engine_ids_in_samples(self, html_content):
+        """No stale hardcoded agent engine IDs in the sample button markup."""
+        stale_ids = ['3727910666648944640', '5787744546217525248', '7053256041508634624']
+        for sid in stale_ids:
+            assert f"agentId:'{sid}'" not in html_content
 
     def test_simulator_sample_label_not_a2a(self, html_content):
         """Simulator sample button should NOT say 'A2A Simulator' (it's not A2A protocol)."""
@@ -238,12 +239,12 @@ class TestCLTVRouting:
 
     def test_cltv_sample_button_exists(self, html_content):
         """CLTV sample button should exist."""
-        assert "Customer lifetime value" in html_content
+        assert "CLTV by loyalty tier" in html_content
 
-    def test_cltv_routes_to_stream_assist(self, html_content):
-        """CLTV should route to StreamAssist (data insights agent)."""
+    def test_cltv_prompt_text_present(self, html_content):
+        """CLTV prompt text should reference loyalty tiers."""
         assert "customer lifetime value" in html_content.lower()
-        assert "Data Insights Agent" in html_content
+        assert "loyalty tier" in html_content.lower()
 
 
 # ================================================================
@@ -399,3 +400,46 @@ class TestAgentRefactor:
         """Frontend architecture tree should show sop_agent not grocery_assistant."""
         assert "'sop_agent'" in html_content
         assert "'grocery_assistant'" not in html_content
+
+
+# ================================================================
+# 15. A2UI Interactivity — Buttons, Forms, Charts
+# ================================================================
+class TestA2UIInteractivity:
+
+    def test_button_has_onclick_handler(self, html_content):
+        """Button component must wire up onclick for sendMessage."""
+        assert "btn.onclick" in html_content
+        assert "sendMessage" in html_content
+
+    def test_button_loading_state(self, html_content):
+        """Button should show loading feedback on click."""
+        assert "a2ui-button--loading" in html_content
+
+    def test_button_supports_action_name(self, html_content):
+        """Button should read props.action?.name for action routing."""
+        assert "action?.name" in html_content or "action.name" in html_content
+
+    def test_collect_form_data_exists(self, html_content):
+        """collectFormData utility must be defined on A2UI object."""
+        assert "collectFormData" in html_content
+
+    def test_slider_has_value_display(self, html_content):
+        """Slider should show live value via a2ui-slider-value element."""
+        assert "a2ui-slider-value" in html_content
+
+    def test_barchart_component_exists(self, html_content):
+        """A2UI renderer must handle BarChart component type."""
+        assert "'BarChart'" in html_content
+
+    def test_linechart_component_exists(self, html_content):
+        """A2UI renderer must handle LineChart component type."""
+        assert "'LineChart'" in html_content
+
+    def test_piechart_component_exists(self, html_content):
+        """A2UI renderer must handle PieChart component type."""
+        assert "'PieChart'" in html_content
+
+    def test_chart_uses_chartjs(self, html_content):
+        """Chart components must use Chart.js for rendering."""
+        assert "new Chart(cv" in html_content or "new Chart(canvas" in html_content
