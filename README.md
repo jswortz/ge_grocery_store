@@ -164,6 +164,25 @@ Components used: `Card`, `Text`, `Row`, `Column`, `Divider` — composed into pr
 ![A2UI Store Comparison](docs/img/36_frontend_a2ui_stores.png)
 *Q1 performance across three store locations in a `Row` layout. Each store `Card` shows revenue, transaction count, average basket size, and quarter-over-quarter growth. A Recommendation card identifies the fastest-growing location and suggests marketing actions.*
 
+### E2E Playwright Screenshots
+
+Automated high-resolution (3840x2160) captures from the Playwright E2E test suite, validating live agent responses across all backends.
+
+| ADK Agent — KPI Dashboard | Simulator — A/B Endcap Comparison |
+|:---:|:---:|
+| ![ADK KPI Dashboard](docs/img/37_e2e_adk_kpi_dashboard.png) | ![Simulator A/B](docs/img/38_e2e_simulator_ab_comparison.png) |
+| *Top products by revenue with A2UI cards and insights* | *Side-by-side endcap strategy comparison with Tabs* |
+
+| MCP Agent — BigQuery Analytics | A2A Agent — Cross-Agent Response |
+|:---:|:---:|
+| ![MCP Analytics](docs/img/39_e2e_mcp_analytics.png) | ![A2A Response](docs/img/41_e2e_a2a_response.png) |
+| *Revenue by store via MCP Toolbox for Databases* | *A2A protocol agent on Cloud Run* |
+
+| StreamAssist — SOP Response | Full UI Overview |
+|:---:|:---:|
+| ![StreamAssist SOP](docs/img/40_e2e_streamassist_sop.png) | ![UI Overview](docs/img/42_e2e_ui_overview.png) |
+| *Store closing procedures via Discovery Engine* | *Welcome screen with agent selector and branded UI* |
+
 ---
 
 ## ADK Agent Architecture
@@ -414,8 +433,25 @@ python -m pytest tests/test_agent.py::TestBQTool::test_generate_sql_top_products
 | [`test_bigquery.py`](tests/test_bigquery.py) | Integration | 12 | Schema existence, data quality, forbidden name checks |
 | [`test_memory_bank.py`](tests/test_memory_bank.py) | Integration | 9 | Memory Bank service, user-scoped memory persistence |
 | [`test_acceptance.py`](tests/test_acceptance.py) | Integration | 6 | Acceptance criteria via StreamAssist (greeting, SOP, brand) |
+| [`test_e2e_streamassist.py`](tests/test_e2e_streamassist.py) | E2E | 9 | StreamAssist page load, data stores, SOP/brand queries, multi-turn, screenshots |
+| [`test_e2e_adk.py`](tests/test_e2e_adk.py) | E2E | 10 | ADK Agent Engine selection, A2UI rendering (cards, rows), multi-turn, latency/trace metadata |
+| [`test_e2e_simulator.py`](tests/test_e2e_simulator.py) | E2E | 8 | Simulator agent selection, A/B comparison tabs, retail term validation, multi-turn |
+| [`test_e2e_a2a.py`](tests/test_e2e_a2a.py) | E2E | 7 | A2A Cloud Run agent selection, SOP/analytics queries, multi-turn |
+| [`test_e2e_mcp.py`](tests/test_e2e_mcp.py) | E2E | 7 | MCP BigQuery agent schema/revenue queries, A2UI cards, forbidden name check |
+| [`test_e2e_screenshots.py`](tests/test_e2e_screenshots.py) | E2E | 8 | Curated high-res (3840x2160) screenshot capture across all agents |
 
-**Current status: 300 unit + 78 integration = 378 total tests**
+**Current status: 300 unit + 78 integration + 49 E2E = 427 total tests**
+
+```bash
+# Run all E2E tests (requires frontend: python -m src.frontend)
+python -m pytest tests/test_e2e_*.py -v -m e2e
+
+# Screenshot capture only
+python -m pytest tests/test_e2e_screenshots.py -v -m e2e
+
+# Single agent E2E
+python -m pytest tests/test_e2e_adk.py -v -m e2e
+```
 
 ---
 
