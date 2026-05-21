@@ -57,12 +57,12 @@ cd src && adk deploy agent_engine \
 
 This is a **workshop demo repo** demonstrating **Gemini Enterprise** (the product name for Google Cloud's Discovery Engine API) for grocery retail. "Discovery Engine" is the API; "Gemini Enterprise" is the customer-facing product name. Use "Gemini Enterprise (Discovery Engine API)" when both precision and branding matter. Full architecture docs at `docs/architecture.md`.
 
-### Gemini 3 Model Regime
+### Gemini 3.5 Model Regime
 
-All agents use the Gemini 3 model family (`config/settings.yaml` → `models` section):
-- `gemini-3-pro-preview` → Root agent orchestrator, MCP agent (complex reasoning + tool use)
-- `gemini-3-flash-preview` → Sub-agents: analytics_agent, image_agent, simulator (low latency)
-- `gemini-3-pro-image-preview` → Image generation (native Gemini 3 image output)
+All agents use the Gemini 3.5 model family (`config/settings.yaml` → `models` section):
+- `gemini-3.5-flash` → All agents: root orchestrator, sub-agents, MCP, simulator (fast + capable)
+- `gemini-3.1-flash-image-preview` → Image generation (Nano Banana 2, requires `location=global`)
+- `gemini-2.0-flash-live-001` → Voice/Live API only (BIDI streaming, requires `us-east4`)
 
 ### Seven subsystems
 
@@ -91,9 +91,9 @@ Central config loader in `src/agent/agent.py:_load_config()` reads `config/setti
 
 ### Deployed resources
 
-- **Agent Engine (Main)**: `reasoningEngines/3727910666648944640` — Grocery Retail Assistant (OTel enabled)
-- **Agent Engine (MCP)**: `reasoningEngines/5787744546217525248` — MCP Grocery Analyst (OTel enabled)
-- **Agent Engine (Simulator)**: `reasoningEngines/7053256041508634624` — Shopper Simulator w/ endcap A/B testing (OTel enabled)
+- **Agent Engine (Main)**: `reasoningEngines/5752190188465946624` — Grocery Retail Assistant (A2UI + OTel enabled)
+- **Agent Engine (MCP)**: `reasoningEngines/6529624074140778496` — MCP Grocery Analyst (A2UI + OTel enabled)
+- **Agent Engine (Simulator)**: `reasoningEngines/6121485357910327296` — Shopper Simulator w/ endcap A/B testing (A2UI + OTel enabled)
 - **Cloud Run (A2A)**: `https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app` — A2A protocol agent
 - **Discovery Engine**: `grocery-workshop-engine` (global, SEARCH_TIER_ENTERPRISE)
 - **Model Armor**: `grocery-workshop-armor-us` template (us multi-region, applied to Discovery Engine assistant)

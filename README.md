@@ -21,6 +21,8 @@ This workshop integrates Google Cloud AI surfaces across multiple layers. See [d
 |---|---|
 | ![Frontend Chat](docs/img/22_frontend_adk_top_products.png) | ![Simulator](docs/img/24_frontend_simulator_personas.png) |
 | *ADK agent: top products chart* | *Simulator: 12 shopper personas* |
+| ![A2UI Products](docs/img/34_frontend_a2ui_products.png) | ![A2UI Stores](docs/img/36_frontend_a2ui_stores.png) |
+| *A2UI: rich product cards* | *A2UI: store comparison dashboard* |
 | ![Agent Engine](docs/img/10_gcp_agent_engine_list.png) | ![Cloud Trace](docs/img/12_gcp_cloud_trace_flow.png) |
 | *Agent Engine: deployed agents* | *Cloud Trace: agent call flow* |
 
@@ -100,7 +102,7 @@ retailer:
 project:
   id: "wortz-project-352116"
   engine_id: "grocery-workshop-engine"
-  agent_engine_id: "3727910666648944640"  # Deployed ADK agent
+  agent_engine_id: "5752190188465946624"  # Deployed ADK agent
 bigquery:
   project: "wortz-project-352116"
   dataset: "ge_grocery_demo"
@@ -141,6 +143,104 @@ The proxy server routes requests:
 - `GET /api/images/*` → GCS image proxy for generated product images
 - `GET /api/memory/status` → Memory Bank memory count
 
+### A2UI Rich Visual Output
+
+The agent supports **A2UI (Agent-to-User Interface)** — an open protocol that lets agents emit declarative UI components rendered as interactive cards, dashboards, and layouts directly in the chat. When the LLM returns A2UI JSON alongside natural language, the frontend renders rich visual surfaces with interactive form controls.
+
+Components used: `Card`, `Text`, `Row`, `Column`, `Tabs`, `List`, `Icon`, `Divider`, `Button`, `MultipleChoice`, `Slider`, `CheckBox`, `TextField`, `BarChart`, `LineChart`, `PieChart` — composed into product displays, tier breakdowns, store dashboards, simulation controls, and A/B test results.
+
+**Welcome Screen — Config-Driven Sample Buttons with A2UI Badges**
+
+![Welcome Screen](docs/img/46_a2ui_welcome_screen.png)
+*Dynamic sample buttons route to specific agents. Gold `A2UI` pill badges indicate queries that produce rich visual output. Each button auto-selects the correct backend (StreamAssist vs Agent Engine) and target agent.*
+
+**Top Products — Bar Chart + Product Cards (MCP Analyst)**
+
+| Chart View | Product Cards |
+|:---:|:---:|
+| ![Top Products Chart](docs/img/51_a2ui_top_products_chart.png) | ![Product Cards](docs/img/51_a2ui_top_products_cards.png) |
+| *A2UI `BarChart` rendered via Chart.js showing top 5 products by quantity sold* | *Product `Card` grid with revenue, units, and margin badges* |
+
+**Store Performance Dashboard (ADK Agent)**
+
+![Store Performance](docs/img/47_a2ui_store_performance_top.png)
+*Three store locations compared side-by-side in `Card` components. Each card shows daily revenue, transactions, average basket, and key characteristics. Color-coded badges highlight store type (Urban, Family, Premium).*
+
+**Customer Lifetime Value by Loyalty Tier (MCP Analyst)**
+
+| Tier Cards | Strategic Insights |
+|:---:|:---:|
+| ![CLTV Tiers](docs/img/48_a2ui_cltv_loyalty.png) | ![CLTV Insights](docs/img/48_a2ui_cltv_insights.png) |
+| *Gold/Silver/Bronze loyalty tiers with CLV, visit frequency, and retention rates* | *Tier-specific optimization recommendations with conversion strategies* |
+
+**Endcap A/B Comparison (Shopper Simulator)**
+
+| Strategy Cards | Key Highlights & Recommendations |
+|:---:|:---:|
+| ![Endcap A/B](docs/img/49_a2ui_endcap_ab.png) | ![Endcap Insights](docs/img/49_a2ui_endcap_insights.png) |
+| *Baseline vs Back-to-School strategies with conversion rates and revenue lift* | *Winner analysis with top-selling products and optimization recommendations* |
+
+**Shopper Traffic Simulation (Simulator)**
+
+| Simulation Results | Persona Breakdown |
+|:---:|:---:|
+| ![Shopper Sim](docs/img/50_a2ui_shopper_sim.png) | ![Shopper Personas](docs/img/50_a2ui_shopper_sim_bottom.png) |
+| *5 simulated shoppers with Baseline vs Seasonal Produce Push comparison* | *Per-persona purchase behavior and endcap conversion analysis* |
+
+**Interactive Simulation Control Center (A2UI Forms)**
+
+A2UI form controls (`MultipleChoice`, `Slider`, `Button`) render as interactive elements. Users select stores, strategies, and shopper counts, then click "Run Simulation" — the button collects all form values and sends them as a structured prompt to the agent.
+
+| KPI Dashboard + Tabs | Daily Side-by-Side Comparison |
+|:---:|:---:|
+| ![A2UI KPIs](docs/img/43_a2ui_simulator_ab_kpis.png) | ![Daily Comparison](docs/img/44_a2ui_simulator_daily_comparison.png) |
+| *4 KPI cards (revenue, lift, conversion, ROI) with 4-tab layout* | *Baseline vs Back-to-School side-by-side for each day of the week* |
+
+![A2UI Verdict](docs/img/45_a2ui_simulator_verdict.png)
+*Trend chart with Unicode bar visualization and winner verdict card showing +44.7% revenue lift, 82.9% conversion, and projected annual incremental revenue across all stores.*
+
+### Gemini Enterprise (Discovery Engine) — StreamAssist Backend
+
+The StreamAssist tab uses the **Gemini Enterprise (Discovery Engine API)** backend for grounded search over SOPs, brand guidelines, and workspace data stores.
+
+| SOP Search — Closing Procedures | Brand Guidelines — Typography |
+|:---:|:---:|
+| ![StreamAssist SOP](docs/img/52_ge_streamassist_sop.png) | ![StreamAssist Brand](docs/img/53_ge_streamassist_brand.png) |
+| *Store closing procedures retrieved from SOP data store with structured steps* | *Brand color palette and typography table from brand guidelines data store* |
+
+### A2UI in the Gemini Enterprise Console
+
+The A2UI components render natively inside the **Gemini Enterprise** web console — the same interface enterprise users access at `vertexaisearch.cloud.google.com`. Tabs, KPI cards, and recommendation panels display inline alongside the agent's natural language response.
+
+| A2UI Dashboard — Tabs + KPI Cards | Strategy B — Seasonal Produce Metrics |
+|:---:|:---:|
+| ![GE A2UI Dashboard](docs/img/55_ge_simulator_a2ui_recommend.png) | ![GE A2UI Strategy B](docs/img/56_ge_simulator_a2ui_strategyb.png) |
+| *A/B Test Results with interactive tabs, revenue/conversion/spend KPIs, and recommendation card* | *Strategy B tab shows +40pp conversion lift vs baseline with Nano Banana Pro endcap conversions* |
+
+| Data Insights Agent — BigQuery Revenue | MCP Agent Schema Discovery |
+|:---:|:---:|
+| ![GE MCP Revenue](docs/img/57_ge_mcp_revenue.png) | ![GE Data Analysis](docs/img/57_ge_data_analysis.png) |
+| *Revenue by store analysis via MCP Toolbox for Databases* | *Data Insights Agent discovering BigQuery star schema tables* |
+
+### E2E Playwright Screenshots
+
+Automated high-resolution (3840x2160) captures from the Playwright E2E test suite, validating live agent responses across all backends.
+
+| ADK Agent — KPI Dashboard | Simulator — A/B Endcap Comparison |
+|:---:|:---:|
+| ![ADK KPI Dashboard](docs/img/37_e2e_adk_kpi_dashboard.png) | ![Simulator A/B](docs/img/38_e2e_simulator_ab_comparison.png) |
+| *Top products by revenue with A2UI cards and insights* | *Side-by-side endcap strategy comparison with Tabs* |
+
+| MCP Agent — BigQuery Analytics | A2A Agent — Cross-Agent Response |
+|:---:|:---:|
+| ![MCP Analytics](docs/img/39_e2e_mcp_analytics.png) | ![A2A Response](docs/img/41_e2e_a2a_response.png) |
+| *Revenue by store via MCP Toolbox for Databases* | *A2A protocol agent on Cloud Run* |
+
+| StreamAssist — SOP Response | Full UI Overview |
+|:---:|:---:|
+| ![StreamAssist SOP](docs/img/40_e2e_streamassist_sop.png) | ![UI Overview](docs/img/42_e2e_ui_overview.png) |
+| *Store closing procedures via Discovery Engine* | *Welcome screen with agent selector and branded UI* |
+
 ---
 
 ## ADK Agent Architecture
@@ -153,9 +253,9 @@ The agent uses a **multi-agent architecture** with Google's [Agent Development K
 
 | Model | Role | Used By |
 |-------|------|---------|
-| `gemini-3-pro-preview` | Orchestration, complex reasoning | Root agent, MCP agent, Simulator |
-| `gemini-3-flash-preview` | Fast sub-agent tasks | analytics_agent, image_agent |
-| `gemini-3-pro-image-preview` | Native image generation | image_gen_tool |
+| `gemini-2.5-pro` | Orchestration, complex reasoning | Root agent, MCP agent, Simulator |
+| `gemini-2.5-flash` | Fast sub-agent tasks | analytics_agent, image_agent |
+| `gemini-2.0-flash` | Native image generation | image_gen_tool |
 
 ### Agent Capabilities
 
@@ -278,9 +378,9 @@ Four agents are deployed across **Vertex AI Agent Engine** and **Cloud Run**:
 
 | Agent | Platform | Resource ID | Purpose |
 |-------|----------|-------------|---------|
-| Grocery Retail Assistant | Agent Engine | `3727910666648944640` | Main multi-agent orchestrator |
-| MCP Grocery Analyst | Agent Engine | `5787744546217525248` | BigQuery analytics via MCP Toolbox |
-| Shopper Simulator | Agent Engine | `7053256041508634624` | Endcap merchandising A/B simulation |
+| Grocery Retail Assistant | Agent Engine | `5752190188465946624` | Main multi-agent orchestrator |
+| MCP Grocery Analyst | Agent Engine | `6529624074140778496` | BigQuery analytics via MCP Toolbox |
+| Shopper Simulator | Agent Engine | `6121485357910327296` | Endcap merchandising A/B simulation |
 | A2A Agent | Cloud Run | `grocery-a2a-agent` | A2A protocol inter-agent communication |
 
 All Agent Engine deployments have OpenTelemetry tracing enabled for Cloud Trace observability.
@@ -318,7 +418,7 @@ credentials.refresh(Request())
 
 url = ("https://us-central1-aiplatform.googleapis.com/v1/"
        "projects/679926387543/locations/us-central1/"
-       "reasoningEngines/3727910666648944640:streamQuery")
+       "reasoningEngines/5752190188465946624:streamQuery")
 
 resp = requests.post(url,
     headers={"Authorization": f"Bearer {credentials.token}",
@@ -391,8 +491,25 @@ python -m pytest tests/test_agent.py::TestBQTool::test_generate_sql_top_products
 | [`test_bigquery.py`](tests/test_bigquery.py) | Integration | 12 | Schema existence, data quality, forbidden name checks |
 | [`test_memory_bank.py`](tests/test_memory_bank.py) | Integration | 9 | Memory Bank service, user-scoped memory persistence |
 | [`test_acceptance.py`](tests/test_acceptance.py) | Integration | 6 | Acceptance criteria via StreamAssist (greeting, SOP, brand) |
+| [`test_e2e_streamassist.py`](tests/test_e2e_streamassist.py) | E2E | 9 | StreamAssist page load, data stores, SOP/brand queries, multi-turn, screenshots |
+| [`test_e2e_adk.py`](tests/test_e2e_adk.py) | E2E | 10 | ADK Agent Engine selection, A2UI rendering (cards, rows), multi-turn, latency/trace metadata |
+| [`test_e2e_simulator.py`](tests/test_e2e_simulator.py) | E2E | 8 | Simulator agent selection, A/B comparison tabs, retail term validation, multi-turn |
+| [`test_e2e_a2a.py`](tests/test_e2e_a2a.py) | E2E | 7 | A2A Cloud Run agent selection, SOP/analytics queries, multi-turn |
+| [`test_e2e_mcp.py`](tests/test_e2e_mcp.py) | E2E | 7 | MCP BigQuery agent schema/revenue queries, A2UI cards, forbidden name check |
+| [`test_e2e_screenshots.py`](tests/test_e2e_screenshots.py) | E2E | 8 | Curated high-res (3840x2160) screenshot capture across all agents |
 
-**Current status: 300 unit + 78 integration = 378 total tests**
+**Current status: 300 unit + 78 integration + 49 E2E = 427 total tests**
+
+```bash
+# Run all E2E tests (requires frontend: python -m src.frontend)
+python -m pytest tests/test_e2e_*.py -v -m e2e
+
+# Screenshot capture only
+python -m pytest tests/test_e2e_screenshots.py -v -m e2e
+
+# Single agent E2E
+python -m pytest tests/test_e2e_adk.py -v -m e2e
+```
 
 ---
 

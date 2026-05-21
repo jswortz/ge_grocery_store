@@ -22,6 +22,7 @@ ENV PROJECT_ID=wortz-project-352116
 ENV ENGINE_ID=grocery-workshop-engine
 ENV BQ_PROJECT=wortz-project-352116
 ENV BQ_DATASET=ge_grocery_demo
+ENV A2A_AGENT_URL=https://grocery-a2a-agent-679926387543.us-central1.run.app/
 
 EXPOSE 8080
 

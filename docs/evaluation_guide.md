@@ -201,7 +201,7 @@ Run in order of speed and cost:
 
 Configure `user_simulator_config` with:
 - `max_allowed_invocations`: 8-15 turns depending on complexity
-- `model`: Use `gemini-3-flash-preview` for speed, or a thinking model for complex scenarios
+- `model`: Use `gemini-2.5-flash` for speed, or a thinking model for complex scenarios
 - Write `conversation_plan` that tests follow-up questions and edge cases
 
 ### 4. Test across scenarios
@@ -236,7 +236,7 @@ User simulation dynamically generates follow-up queries based on a `conversation
 ```json
 {
   "user_simulator_config": {
-    "model": "gemini-3-flash-preview",
+    "model": "gemini-2.5-flash",
     "max_allowed_invocations": 10
   }
 }

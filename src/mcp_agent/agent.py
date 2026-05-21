@@ -71,7 +71,7 @@ def _load_config() -> dict:
 
     # Defaults for models if not set
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3-pro-preview")
+    config["models"].setdefault("adk", "gemini-3.5-flash")
 
     return config
 
@@ -151,12 +151,88 @@ Key Relationships:
 """
 
 
+def _get_a2ui_suffix() -> str:
+    """Generate A2UI-first schema instructions for analytics output."""
+    try:
+        from a2ui.schema.manager import A2uiSchemaManager
+        from a2ui.basic_catalog.provider import BasicCatalog
+
+        schema_manager = A2uiSchemaManager(
+            version='0.8',
+            catalogs=[BasicCatalog.get_config('0.8')],
+        )
+        base = schema_manager.generate_system_prompt(
+            role_description="UI-first grocery retail data analytics dashboard",
+            ui_description=(
+                "This agent is a VISUAL DASHBOARD that renders all analytics as rich "
+                "UI surfaces. Every response MUST lead with an <a2ui-json> block. "
+                "Use Row of Cards for KPI metrics, List for ranked items, "
+                "Icon for visual badges, Divider between sections, and Text with "
+                "bold metrics and emoji indicators. NEVER use markdown tables or "
+                "plain lists — use Card grids and List components instead."
+            ),
+            include_schema=True,
+            include_examples=True,
+        )
+        example = '''
+
+⚠️ A2UI-FIRST OUTPUT RULES:
+- FIRST output <a2ui-json>, THEN at most 1-2 sentences of context.
+- NEVER use markdown tables or bullet lists — use Row + Card or List + Card.
+- Use Icon for badges, Divider between sections, minimum 4 component types.
+
+<a2ui-json>
+[
+  {"beginRendering": {"surfaceId": "analytics", "root": "root"}},
+  {"surfaceUpdate": {"surfaceId": "analytics", "components": [
+    {"id": "root", "component": {"Column": {"children": {"explicitList": ["hdr", "metrics", "divider", "detail"]}}}},
+    {"id": "hdr", "component": {"Row": {"children": {"explicitList": ["hdr-icon", "hdr-txt"]}, "alignment": "center"}}},
+    {"id": "hdr-icon", "component": {"Icon": {"name": {"literalString": "star"}}}},
+    {"id": "hdr-txt", "component": {"Text": {"text": {"literalString": "**Store Revenue Comparison**"}, "usageHint": "h2"}}},
+    {"id": "metrics", "component": {"Row": {"children": {"explicitList": ["card1", "card2"]}}}},
+    {"id": "card1", "component": {"Card": {"child": "t1"}}},
+    {"id": "t1", "component": {"Text": {"text": {"literalString": "🏪 **Downtown Market**\\n\\n💰 **$45,231** revenue\\n🛒 **1,234** transactions\\n📊 Avg basket **$36.69**"}}}},
+    {"id": "card2", "component": {"Card": {"child": "t2"}}},
+    {"id": "t2", "component": {"Text": {"text": {"literalString": "🏪 **Westside Market**\\n\\n💰 **$38,102** revenue\\n🛒 **987** transactions\\n📊 Avg basket **$38.60**"}}}},
+    {"id": "divider", "component": {"Divider": {"axis": "horizontal"}}},
+    {"id": "detail", "component": {"Card": {"child": "detail-t"}}},
+    {"id": "detail-t", "component": {"Text": {"text": {"literalString": "📈 Downtown leads by **$7,129** (+18.7%) · Higher transaction volume but lower basket size"}}}}
+  ]}}
+]
+</a2ui-json>
+
+CHART COMPONENTS (render native Chart.js visualizations):
+- BarChart: {"id": "chart1", "component": {"BarChart": {"title": "Revenue by Store", "labels": ["Downtown","Westside","Eastgate"], "datasets": [{"label": "Revenue", "data": [45231,38102,29847], "color": "#2e7d32"}]}}}
+- LineChart: same props as BarChart, renders as line graph (good for time series)
+- PieChart: same props, renders as pie/donut chart (good for category breakdowns)
+When results have categories + numeric values, prefer BarChart/LineChart/PieChart over Text-only Cards.
+
+STRICT RULES:
+- Wrap A2UI JSON in <a2ui-json> and </a2ui-json> tags.
+- Always start with beginRendering, then surfaceUpdate.
+- Use flat component arrays with string ID refs in children.explicitList.
+- Card uses "child" (singular). Text.text uses {"literalString": "..."}.
+- Use Icon, Divider, and at least 4 component types per response.
+'''
+        result = base + example
+        try:
+            from src.shared.a2ui_skills import load_a2ui_skills
+            skills = load_a2ui_skills()
+            if skills:
+                result += skills
+        except ImportError:
+            pass
+        return result
+    except ImportError:
+        return ""
+
+
 def _get_agent_instruction(config: dict) -> str:
     """Build the agent instruction with retailer name and schema context."""
     retailer = config["retailer"]["name"]
     schema = _get_schema_context(config)
 
-    return f"""You are a data analytics assistant for {retailer}, a grocery retail company.
+    base = f"""You are a data analytics assistant for {retailer}, a grocery retail company.
 You answer natural language questions about sales, products, stores, customers,
 and employees by querying BigQuery through the MCP tools available to you.
 
@@ -173,8 +249,15 @@ Guidelines:
 - For complex analytics questions, break them into steps.
 - When citing data, reference the specific tables and columns used.
 - Be concise and actionable in your responses.
+- When results have categories + numeric values, use BarChart or PieChart A2UI components.
+- For time series data, use LineChart with date labels.
+- Always present KPI summaries as a Row of Cards before any chart.
 - IMPORTANT: Always show the SQL query you executed in a ```sql code block before presenting results. This helps users understand and verify the analysis.
 """
+    a2ui_suffix = _get_a2ui_suffix()
+    if a2ui_suffix:
+        base += "\n\n" + a2ui_suffix
+    return base
 
 
 def get_mcp_toolset():

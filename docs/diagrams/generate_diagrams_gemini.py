@@ -3,7 +3,7 @@
 Uses Gemini image generation to create professional architecture diagrams
 styled like official Google Cloud Platform documentation.
 
-Model priority: gemini-3-pro-image-preview > gemini-2.5-flash-image
+Model priority: gemini-2.0-flash > gemini-2.5-flash-image
 
 Run: python3 docs/diagrams/generate_diagrams_gemini.py
 """
@@ -12,8 +12,8 @@ import os
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Model priority per gcp-diagram skill: gemini-3-pro-image-preview > gemini-2.5-flash-image
-PRIMARY_MODEL = "gemini-3-pro-image-preview"
+# Model priority per gcp-diagram skill: gemini-2.0-flash > gemini-2.5-flash-image
+PRIMARY_MODEL = "gemini-2.0-flash"
 FALLBACK_MODEL = "gemini-2.5-flash-image"
 IMAGE_MODEL = os.environ.get("DIAGRAM_MODEL", PRIMARY_MODEL)
 
@@ -122,17 +122,17 @@ Show a hierarchical agent architecture:
 TOP: "User Query" (red ellipse #EA4335)
 
 CENTER: "grocery_assistant" (large blue #4285F4 rounded rectangle, labeled "Root Agent / LlmAgent"):
-- Model: gemini-3-pro-preview
+- Model: gemini-2.5-pro
 - Tool: DiscoveryEngineSearchTool (searches sop-store and brand-guidelines-store)
 - Tool: PreloadMemoryTool (loads cross-session memories)
 
 LEFT BRANCH: "analytics_agent" (orange #F9AB00 rounded rectangle, labeled "Sub-Agent"):
-  - Model: gemini-3-flash-preview
+  - Model: gemini-2.5-flash
   - Tool: query_grocery_data (FunctionTool)
   - Connects to: BigQuery (orange #F9AB00 cylinder)
 
 RIGHT BRANCH: "image_agent" (purple #A142F4 rounded rectangle, labeled "Sub-Agent"):
-  - Model: gemini-3-flash-preview
+  - Model: gemini-2.5-flash
   - Tool: generate_product_image (FunctionTool)
   - Connects to: Gemini Image (purple #A142F4 cylinder)
 
@@ -241,7 +241,7 @@ Show a LEFT-TO-RIGHT flow:
 
 LEFT: "ADK Agent" (green #34A853 rounded rectangle):
 - mcp_grocery_analyst
-- gemini-3-pro-preview
+- gemini-2.5-pro
 - "LLM generates arbitrary SQL"
 - Contains: McpToolset with StdioConnectionParams
 
@@ -296,7 +296,7 @@ MIDDLE ROW (deployment targets):
 
 BOTTOM ROW (backend services):
 - BigQuery (orange #F9AB00): ge_grocery_demo
-- Gemini Image (purple #A142F4): gemini-3-pro-image-preview
+- Gemini Image (purple #A142F4): gemini-2.0-flash
 - GCS (yellow #FBBC05): brand guidelines + SOPs
 
 Show connections between all components.

@@ -18,7 +18,7 @@ STAGING_BUCKET = os.environ.get("STAGING_BUCKET", "gs://wortz-project-352116-ge-
 
 # Hardcoded config for deployment (avoids filesystem config dependency)
 _RETAILER_NAME = "ValueFresh Market"
-_ADK_MODEL = "gemini-3-flash-preview"
+_ADK_MODEL = "gemini-3.5-flash"
 
 
 def find_agent_by_display_name(display_name: str) -> str:
@@ -596,11 +596,7 @@ def _build_simulator_agent():
             })
         )
 
-    orchestrator = LlmAgent(
-        name="simulator_orchestrator",
-        model=model,
-        planner=planner,
-        instruction=f"""You are a retail simulation orchestrator for {retailer}.
+    sim_instruction = f"""You are a retail simulation orchestrator for {retailer}.
 You manage a world-model simulation of shoppers to evaluate merchandising
 strategies and endcap placement effectiveness.
 
@@ -635,7 +631,58 @@ When presenting A/B test results, always include:
 - Revenue comparison (total and per-shopper average)
 - Endcap pickup counts and which products converted best
 - A clear winner recommendation with rationale
-- Suggestions for optimizing the winning strategy further""",
+- Suggestions for optimizing the winning strategy further"""
+
+    try:
+        from a2ui.schema.manager import A2uiSchemaManager
+        from a2ui.basic_catalog.provider import BasicCatalog
+
+        schema_manager = A2uiSchemaManager(
+            version='0.8',
+            catalogs=[BasicCatalog.get_config('0.8')],
+        )
+        a2ui_suffix = schema_manager.generate_system_prompt(
+            role_description="retail shopper simulation orchestrator",
+            ui_description=(
+                "Rich visual outputs for simulation results: A/B test comparison cards, "
+                "strategy metrics dashboards, shopper persona summaries. "
+                "Use Card for strategy results, Row for side-by-side comparisons, "
+                "and Text for metrics with markdown."
+            ),
+        )
+        a2ui_suffix += '''
+
+Here is a compact example of A2UI output for A/B test results:
+
+<a2ui-json>
+[
+  {"beginRendering": {"surfaceId": "ab-test", "root": "root"}},
+  {"surfaceUpdate": {"surfaceId": "ab-test", "components": [
+    {"id": "root", "component": {"Row": {"children": {"explicitList": ["a", "b"]}}}},
+    {"id": "a", "component": {"Card": {"title": "Strategy A: Baseline", "subtitle": "42.5% Conversion", "children": {"explicitList": ["ma"]}}}},
+    {"id": "ma", "component": {"Text": {"text": "**$231.50** revenue · **4.2** avg cart"}}},
+    {"id": "b", "component": {"Card": {"title": "Strategy B: Seasonal", "subtitle": "67.8% Conversion", "children": {"explicitList": ["mb"]}}}},
+    {"id": "mb", "component": {"Text": {"text": "**$312.80** revenue · **5.1** avg cart"}}}
+  ]}}
+]
+</a2ui-json>
+
+Rules:
+- Wrap A2UI JSON arrays in <a2ui-json> and </a2ui-json> tags.
+- Always start with a beginRendering message, then surfaceUpdate.
+- Use flat component arrays with string ID references in children.explicitList.
+- For side-by-side strategy comparisons, use a Row with Card children.
+- Include natural language text OUTSIDE the <a2ui-json> tags for context.
+'''
+        sim_instruction += "\n\n" + a2ui_suffix
+    except ImportError:
+        pass
+
+    orchestrator = LlmAgent(
+        name="simulator_orchestrator",
+        model=model,
+        planner=planner,
+        instruction=sim_instruction,
         description=(
             "Orchestrates simulated shopper agents to evaluate store merchandising "
             "strategies and endcap placement effectiveness. Supports A/B testing "
@@ -687,8 +734,9 @@ def deploy():
         agent_engine=app,
         display_name=display_name,
         requirements=[
-            "google-adk>=1.19.0",
+            "google-adk>=1.19.0,<2.0.0",
             "google-cloud-aiplatform",
+            "a2ui-agent-sdk>=0.2.1",
         ],
         env_vars=env_vars,
     )

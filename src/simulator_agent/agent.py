@@ -10,7 +10,7 @@ Architecture:
     ├── shopper_agent_2 (sub-agent: different persona/store)
     └── ...N concurrent shoppers
 
-Uses gemini-3-flash-preview for all agents with thinking enabled. Leverages ADK user simulation
+Uses gemini-3.5-flash for all agents with thinking enabled. Leverages ADK user simulation
 evaluation to validate shopper behavior across merchandising scenarios.
 
 Usage:
@@ -43,7 +43,7 @@ def _load_config() -> dict:
     if os.environ.get("ADK_MODEL"):
         config.setdefault("models", {})["adk"] = os.environ["ADK_MODEL"]
     config.setdefault("models", {})
-    config["models"].setdefault("adk_fast", "gemini-3-flash-preview")
+    config["models"].setdefault("adk_fast", "gemini-3.5-flash")
 
     return config
 
@@ -280,6 +280,177 @@ def _select_personas_by_distribution(num_shoppers: int) -> list[dict]:
     return selected
 
 
+def _get_a2ui_suffix() -> str:
+    """Generate A2UI-first system instructions for simulator output.
+
+    Returns an aggressive UI-first prompt that mandates <a2ui-json> blocks
+    as the PRIMARY output format, with text as brief captions only.
+    """
+    config = _load_config()
+    retailer = config["retailer"]["name"]
+    try:
+        from a2ui.schema.manager import A2uiSchemaManager
+        from a2ui.basic_catalog.provider import BasicCatalog
+
+        schema_manager = A2uiSchemaManager(
+            version='0.8',
+            catalogs=[BasicCatalog.get_config('0.8')],
+        )
+        base = schema_manager.generate_system_prompt(
+            role_description=f"UI-first retail simulation dashboard for {retailer}",
+            ui_description=(
+                "This agent is a VISUAL DASHBOARD that renders all outputs as rich "
+                "interactive UI surfaces. Every response MUST lead with an <a2ui-json> "
+                "block before any text. Available components: Card (wrapped content), "
+                "Row (side-by-side layouts), Column (vertical stacks), List (scrollable "
+                "items), Tabs (multi-section organizer), Text (formatted markdown with "
+                "bold metrics and emoji KPIs), Icon (material icons like shoppingCart, "
+                "star, check, warning, info, favorite), Divider (visual separator), "
+                "Button (interactive actions), MultipleChoice (option chips), "
+                "Slider (numeric ranges), CheckBox (toggles). "
+                "Use Tabs to organize multi-section results. Use Row for A/B comparisons. "
+                "Use Icon for visual badges. Use Card to wrap every data block. "
+                "NEVER output a plain markdown list — use List with Card children instead."
+            ),
+            include_schema=True,
+            include_examples=True,
+        )
+        examples = '''
+
+═══════════════════════════════════════════════════════════════
+              ⚠️  MANDATORY A2UI-FIRST OUTPUT RULES  ⚠️
+═══════════════════════════════════════════════════════════════
+
+You are a VISUAL DASHBOARD agent. Your primary output is A2UI components, NOT text.
+
+OUTPUT ORDER (MANDATORY):
+1. FIRST: Output the <a2ui-json> block with the full visual layout
+2. THEN: One brief sentence of natural language context (max 2 sentences)
+3. NEVER output markdown before the <a2ui-json> block
+
+BANNED PATTERNS — NEVER DO THESE:
+❌ Markdown bullet lists (use List + Card children instead)
+❌ Markdown tables (use Row + Card grid instead)
+❌ Markdown headers as section dividers (use Text with usageHint "h2" inside a Column)
+❌ Inline metrics in paragraphs (use Card with subtitle for every KPI)
+❌ Wall of text without A2UI (EVERY response must have an <a2ui-json> block)
+
+REQUIRED PATTERNS — ALWAYS DO THESE:
+✅ Use Tabs to organize multi-section results (e.g., "Strategy A" | "Strategy B" | "Verdict")
+✅ Use Row to place 2-3 Cards side-by-side for comparisons
+✅ Use Icon components for visual badges (shoppingCart, star, check, warning, favorite)
+✅ Use Card to wrap EVERY block of related data
+✅ Use Divider between major sections
+✅ Use at least 4 different component types per response
+✅ Use emoji indicators in Text (📈 📉 🏆 ⚠️ ✅ 🛒 💰 👤 ⚡ 🎯)
+
+COMPONENT TYPE TARGETS:
+- Every A/B comparison → Tabs + Row + Card + Text + Icon + Divider
+- Every persona breakdown → List + Card + Text + Icon
+- Every strategy listing → Column + Card + Row + Icon + Text
+- Every KPI → Card with child Text showing bold metric + emoji
+
+EXAMPLE 1 — A/B test comparison with Tabs (THE GOLD STANDARD):
+<a2ui-json>
+[
+  {"beginRendering": {"surfaceId": "ab-test", "root": "root"}},
+  {"surfaceUpdate": {"surfaceId": "ab-test", "components": [
+    {"id": "root", "component": {"Column": {"children": {"explicitList": ["header", "tabs", "divider", "verdict"]}}}},
+    {"id": "header", "component": {"Row": {"children": {"explicitList": ["hicon", "htxt"]}, "alignment": "center"}}},
+    {"id": "hicon", "component": {"Icon": {"name": {"literalString": "star"}}}},
+    {"id": "htxt", "component": {"Text": {"text": {"literalString": "**A/B Test: Endcap Strategy Comparison**"}, "usageHint": "h2"}}},
+    {"id": "tabs", "component": {"Tabs": {"tabItems": [
+      {"title": {"literalString": "📊 Strategy A"}, "child": "tab-a"},
+      {"title": {"literalString": "📊 Strategy B"}, "child": "tab-b"},
+      {"title": {"literalString": "👤 Per-Shopper"}, "child": "tab-shoppers"}
+    ]}}},
+    {"id": "tab-a", "component": {"Column": {"children": {"explicitList": ["a-metrics", "a-detail"]}}}},
+    {"id": "a-metrics", "component": {"Row": {"children": {"explicitList": ["a-rev", "a-conv", "a-cart"]}}}},
+    {"id": "a-rev", "component": {"Card": {"child": "a-rev-t"}}},
+    {"id": "a-rev-t", "component": {"Text": {"text": {"literalString": "💰 **Revenue**\\n\\n**$231.50**\\n\\n📉 Baseline"}}}},
+    {"id": "a-conv", "component": {"Card": {"child": "a-conv-t"}}},
+    {"id": "a-conv-t", "component": {"Text": {"text": {"literalString": "🎯 **Conversion**\\n\\n**42.5%**\\n\\n3 of 5 shoppers"}}}},
+    {"id": "a-cart", "component": {"Card": {"child": "a-cart-t"}}},
+    {"id": "a-cart-t", "component": {"Text": {"text": {"literalString": "🛒 **Avg Cart**\\n\\n**4.2 items**\\n\\n$46.30 avg spend"}}}},
+    {"id": "a-detail", "component": {"Text": {"text": {"literalString": "📦 **3** endcap pickups across **5** shoppers tested"}}}},
+    {"id": "tab-b", "component": {"Column": {"children": {"explicitList": ["b-metrics", "b-detail"]}}}},
+    {"id": "b-metrics", "component": {"Row": {"children": {"explicitList": ["b-rev", "b-conv", "b-cart"]}}}},
+    {"id": "b-rev", "component": {"Card": {"child": "b-rev-t"}}},
+    {"id": "b-rev-t", "component": {"Text": {"text": {"literalString": "💰 **Revenue**\\n\\n**$312.80**\\n\\n📈 +35.1% vs A"}}}},
+    {"id": "b-conv", "component": {"Card": {"child": "b-conv-t"}}},
+    {"id": "b-conv-t", "component": {"Text": {"text": {"literalString": "🎯 **Conversion**\\n\\n**67.8%**\\n\\n📈 +25.3pp vs A"}}}},
+    {"id": "b-cart", "component": {"Card": {"child": "b-cart-t"}}},
+    {"id": "b-cart-t", "component": {"Text": {"text": {"literalString": "🛒 **Avg Cart**\\n\\n**5.1 items**\\n\\n$62.56 avg spend"}}}},
+    {"id": "b-detail", "component": {"Text": {"text": {"literalString": "📦 **7** endcap pickups across **5** shoppers tested — 🏆 **Winner**"}}}},
+    {"id": "tab-shoppers", "component": {"List": {"children": {"explicitList": ["s1", "s2", "s3"]}}}},
+    {"id": "s1", "component": {"Card": {"child": "s1-t"}}},
+    {"id": "s1-t", "component": {"Text": {"text": {"literalString": "🛒 **Budget-Conscious Family** · $45.67 spent\\n✅ Picked up: Nano Banana Pro, Fresh Mango Slices\\n💰 Budget: $120 · Impulse: 30% · Loyalty: Silver"}}}},
+    {"id": "s2", "component": {"Card": {"child": "s2-t"}}},
+    {"id": "s2-t", "component": {"Text": {"text": {"literalString": "🥗 **Health-Conscious Pro** · $62.30 spent\\n✅ Picked up: Organic Kombucha\\n💰 Budget: $80 · Impulse: 50% · Loyalty: Gold"}}}},
+    {"id": "s3", "component": {"Card": {"child": "s3-t"}}},
+    {"id": "s3-t", "component": {"Text": {"text": {"literalString": "⚡ **Quick-Stop Shopper** · $18.90 spent\\n✅ Picked up: Energy Bar, Sparkling Water\\n💰 Budget: $30 · Impulse: 70% · Loyalty: Bronze"}}}},
+    {"id": "divider", "component": {"Divider": {"axis": "horizontal"}}},
+    {"id": "verdict", "component": {"Card": {"child": "verdict-content"}}},
+    {"id": "verdict-content", "component": {"Column": {"children": {"explicitList": ["verdict-row", "verdict-rec"]}}}},
+    {"id": "verdict-row", "component": {"Row": {"children": {"explicitList": ["verdict-icon", "verdict-title"]}, "alignment": "center"}}},
+    {"id": "verdict-icon", "component": {"Icon": {"name": {"literalString": "star"}}}},
+    {"id": "verdict-title", "component": {"Text": {"text": {"literalString": "🏆 **Winner: Seasonal Produce** — +$81.30 revenue lift (+35.1%)"}, "usageHint": "h3"}}},
+    {"id": "verdict-rec", "component": {"Text": {"text": {"literalString": "📈 **+25.3pp** conversion lift · **+59.3%** more endcap pickups\\n\\n**Recommendation:** Deploy seasonal produce endcaps across all 3 stores for Q3."}}}}
+  ]}}
+]
+</a2ui-json>
+
+EXAMPLE 2 — Strategy listing with Icon badges:
+<a2ui-json>
+[
+  {"beginRendering": {"surfaceId": "strategies", "root": "root"}},
+  {"surfaceUpdate": {"surfaceId": "strategies", "components": [
+    {"id": "root", "component": {"Column": {"children": {"explicitList": ["hdr", "list"]}}}},
+    {"id": "hdr", "component": {"Row": {"children": {"explicitList": ["hdr-icon", "hdr-txt"]}, "alignment": "center"}}},
+    {"id": "hdr-icon", "component": {"Icon": {"name": {"literalString": "shoppingCart"}}}},
+    {"id": "hdr-txt", "component": {"Text": {"text": {"literalString": "**Available Endcap Strategies**"}, "usageHint": "h2"}}},
+    {"id": "list", "component": {"List": {"children": {"explicitList": ["s1", "s2", "s3"]}}}},
+    {"id": "s1", "component": {"Card": {"child": "s1c"}}},
+    {"id": "s1c", "component": {"Row": {"children": {"explicitList": ["s1i", "s1t"]}, "alignment": "center"}}},
+    {"id": "s1i", "component": {"Icon": {"name": {"literalString": "info"}}}},
+    {"id": "s1t", "component": {"Text": {"text": {"literalString": "**Baseline** — Standard layout, no promotional endcaps\\n📦 0 endcaps · Control group for A/B tests"}}}},
+    {"id": "s2", "component": {"Card": {"child": "s2c"}}},
+    {"id": "s2c", "component": {"Row": {"children": {"explicitList": ["s2i", "s2t"]}, "alignment": "center"}}},
+    {"id": "s2i", "component": {"Icon": {"name": {"literalString": "favorite"}}}},
+    {"id": "s2t", "component": {"Text": {"text": {"literalString": "**Seasonal Produce Push** — Endcaps at produce exits with 20% off seasonal fruits\\n📦 2 endcaps · 🎯 Targets: produce & bakery aisles"}}}},
+    {"id": "s3", "component": {"Card": {"child": "s3c"}}},
+    {"id": "s3c", "component": {"Row": {"children": {"explicitList": ["s3i", "s3t"]}, "alignment": "center"}}},
+    {"id": "s3i", "component": {"Icon": {"name": {"literalString": "star"}}}},
+    {"id": "s3t", "component": {"Text": {"text": {"literalString": "**Snack Impulse Zone** — High-margin snack displays at checkout & beverage aisles\\n📦 3 endcaps · 🎯 Targets: snacks, beverages, frozen"}}}}
+  ]}}
+]
+</a2ui-json>
+
+STRICT RULES:
+- Wrap A2UI JSON in <a2ui-json> and </a2ui-json> tags.
+- Always start with beginRendering, then surfaceUpdate.
+- The <a2ui-json> block MUST appear BEFORE any natural language text.
+- Use flat component arrays with string ID refs in children.explicitList.
+- For A/B comparisons, ALWAYS use Tabs with one tab per strategy + a verdict tab.
+- Use Icon components for visual badges (shoppingCart, star, check, warning, favorite, info).
+- Use Divider between major sections.
+- Use Card with child for EVERY data block — never bare Text at the top level.
+- Natural language text after the A2UI block should be at most 1-2 brief sentences.
+- Minimum 4 different component types per response.
+'''
+        result = base + examples
+        try:
+            from src.shared.a2ui_skills import load_a2ui_skills
+            skills = load_a2ui_skills()
+            if skills:
+                result += skills
+        except ImportError:
+            pass
+        return result
+    except ImportError:
+        return ""
+
+
 def _create_planner():
     """Create a BuiltInPlanner with thinking enabled for reasoning."""
     from google.adk.planners import BuiltInPlanner
@@ -311,7 +482,7 @@ def create_shopper_agent(
     from google.adk.agents import LlmAgent
 
     config = _load_config()
-    adk_model = config["models"].get("adk_fast", config["models"].get("adk", "gemini-3-flash-preview"))
+    adk_model = config["models"].get("adk_fast", config["models"].get("adk", "gemini-3.5-flash"))
 
     return LlmAgent(
         name=f"shopper_{persona['id']}",
@@ -343,7 +514,7 @@ def create_agent(
 
     config = _load_config()
     retailer = config["retailer"]["name"]
-    adk_model = config["models"].get("adk_fast", config["models"].get("adk", "gemini-3-flash-preview"))
+    adk_model = config["models"].get("adk_fast", config["models"].get("adk", "gemini-3.5-flash"))
     strategies = _load_strategies()
     scenario = strategies.get(scenario_key, strategies.get("baseline", {"name": "Baseline", "description": ""}))
 
@@ -514,48 +685,44 @@ def create_agent(
     except ImportError:
         pass
 
-    orchestrator = LlmAgent(
-        name="simulator_orchestrator",
-        model=adk_model,
-        planner=_create_planner(),
-        instruction=f"""You are a retail simulation orchestrator for {retailer}.
-You manage a world-model simulation of shoppers in {store_name}.
+    a2ui_suffix = _get_a2ui_suffix()
 
-Current Scenario: {scenario['name']}
-{scenario.get('description', '')}
+    sim_instruction = f"""You are a VISUAL DASHBOARD simulation orchestrator for {retailer}.
+You render ALL outputs as rich A2UI visual surfaces — never plain text.
+
+{'═' * 60}
+A2UI VISUAL OUTPUT IS YOUR PRIMARY FUNCTION.
+Every response MUST begin with an <a2ui-json> block.
+{'═' * 60}
+
+{a2ui_suffix}
+
+SIMULATION CONTEXT:
+- Store: {store_name}
+- Current Scenario: {scenario['name']} — {scenario.get('description', '')}
+- Available Stores: Downtown Market, Westside Market, Lakefront Market
+- Shopper agents: {len(shopper_agents)} concurrent personas
 
 Available Strategies:
 {strategy_list}
 
-Available Stores: Downtown Market, Westside Market, Lakefront Market
+TOOLS:
+1. compare_endcap_strategies — A/B test two merchandising strategies. ALWAYS render results as a Tabs layout with side-by-side KPI Cards.
+2. list_endcap_strategies — List available endcap configurations. ALWAYS render as a List of Cards with Icon badges.
+3. generate_simulation_report — Create visual HTML report with charts.
+4. Shopper sub-agents — Delegate shopping trips to persona agents.
 
-You have {len(shopper_agents)} shopper agents available. Each represents a
-different customer persona walking the store aisles concurrently.
+When presenting ANY results, render them visually:
+- A/B tests → Tabs (one per strategy + verdict tab) with Row of KPI Cards
+- Strategy lists → List of Cards with Icon badges
+- Persona breakdowns → List of Cards with spend/impulse/loyalty metrics
+- Winner → Card with Icon star badge and bold recommendation"""
 
-CAPABILITIES:
-1. **Run Single Simulation** — Delegate to shopper agents to simulate their
-   shopping trips under the current endcap scenario. Collect results and produce
-   an aggregate report (revenue, conversion rate, cart size, ROI).
-
-2. **A/B Test Endcap Strategies** — Use the compare_endcap_strategies tool to
-   pit two merchandising strategies against each other. This runs the same
-   shopper personas through both configurations and produces side-by-side
-   metrics. Use this when users ask to "test", "compare", or "A/B test"
-   different endcap placements or marketing strategies.
-
-3. **List Available Strategies** — Use the list_endcap_strategies tool to show
-   users all available endcap configurations they can test.
-
-4. **Generate Report** — Use generate_simulation_report to create a visual
-   HTML report with BCG/McKinsey-style charts.
-
-When presenting A/B test results, always include:
-- Side-by-side conversion rates
-- Revenue comparison (total and per-shopper average)
-- Endcap pickup counts and which products converted best
-- A clear winner recommendation with rationale
-
-Compare results across scenarios when asked to evaluate merchandising strategies.""",
+    orchestrator = LlmAgent(
+        name="simulator_orchestrator",
+        model=adk_model,
+        planner=_create_planner(),
+        instruction=sim_instruction,
         description=(
             "Orchestrates simulated shopper agents to evaluate store merchandising "
             "strategies and endcap placement effectiveness. Supports A/B testing "

@@ -45,13 +45,13 @@ class TestConfigLoading:
     def test_config_has_model_defaults(self):
         from src.mcp_agent.agent import _load_config
         config = _load_config()
-        assert config["models"]["adk"] == "gemini-3-pro-preview"
+        assert config["models"]["adk"] == "gemini-3.5-flash"
 
     def test_config_model_env_override(self):
         from src.mcp_agent.agent import _load_config
-        with patch.dict(os.environ, {"ADK_MODEL": "gemini-3-pro-preview"}):
+        with patch.dict(os.environ, {"ADK_MODEL": "gemini-3.5-flash"}):
             config = _load_config()
-            assert config["models"]["adk"] == "gemini-3-pro-preview"
+            assert config["models"]["adk"] == "gemini-3.5-flash"
 
 
 # ---------------------------------------------------------------------------
@@ -296,7 +296,7 @@ class TestAgentCreation:
         try:
             from src.mcp_agent.agent import create_agent
             agent = create_agent()
-            assert agent.model == "gemini-3-pro-preview"
+            assert agent.model == "gemini-3.5-flash"
         except ImportError:
             pytest.skip("google-adk not installed")
 

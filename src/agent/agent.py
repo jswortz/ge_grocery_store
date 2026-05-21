@@ -54,11 +54,17 @@ def _load_config():
     if os.environ.get("IMAGEN_MODEL"):
         config.setdefault("models", {})["imagen"] = os.environ["IMAGEN_MODEL"]
 
-    # Defaults for models if not set
+    # Defaults so Agent Engine deployment works without settings.yaml
+    config.setdefault("retailer", {}).setdefault("name", "ValueFresh Market")
+    config.setdefault("project", {}).setdefault("id", "wortz-project-352116")
+    config["project"].setdefault("engine_id", "grocery-workshop-engine")
+    config.setdefault("bigquery", {}).setdefault("project", "wortz-project-352116")
+    config["bigquery"].setdefault("dataset", "ge_grocery_demo")
+    config.setdefault("gcs", {}).setdefault("bucket", "wortz-project-352116-ge-workshop")
     config.setdefault("models", {})
-    config["models"].setdefault("adk", "gemini-3-pro-preview")
-    config["models"].setdefault("adk_fast", "gemini-3-flash-preview")
-    config["models"].setdefault("imagen", "gemini-3-pro-image-preview")
+    config["models"].setdefault("adk", "gemini-3.5-flash")
+    config["models"].setdefault("adk_fast", "gemini-3.5-flash")
+    config["models"].setdefault("imagen", "gemini-3.1-flash-image-preview")
 
     return config
 

@@ -1,0 +1,8 @@
+google-adk[a2a]>=1.19.0,<2.0.0
+a2a-sdk[http-server]>=0.3.4,<0.4
+a2ui-agent-sdk>=0.2.1
+google-cloud-aiplatform>=1.100.0
+google-genai>=1.0.0
+pyyaml>=6.0
+pydantic>=2.0.0
+uvicorn>=0.30.0

@@ -31,9 +31,9 @@ retailer:
       open_date: "2019-11-15"
 
 models:
-  adk: "gemini-3-pro-preview"                # Orchestrator / root agent (complex reasoning + tool use)
-  adk_fast: "gemini-3-flash-preview"         # Sub-agents, analytics, streaming (lower latency)
-  imagen: "gemini-3-pro-image-preview"       # Gemini 3 Pro Image (key kept as 'imagen' for backward compat)
+  adk: "gemini-3.5-flash"                    # Orchestrator / root agent (complex reasoning + tool use)
+  adk_fast: "gemini-3.5-flash"              # Sub-agents, analytics, streaming (lower latency)
+  imagen: "gemini-3.1-flash-image-preview"   # Image generation — Nano Banana 2 (requires global)
   live: "gemini-2.0-flash-live-001"          # Live API (BIDI voice streaming, requires us-east4)
 
 project:
@@ -41,14 +41,16 @@ project:
   number: "679926387543"
   location: "global"
   engine_id: "grocery-workshop-engine"
-  agent_id: "562383858098480813"  # ADK agent registered on Discovery Engine (adkAgentDefinition)
-  agent_engine_id: "3727910666648944640"  # ADK agent deployed to Agent Engine (with OTel)
-  mcp_agent_engine_id: "5787744546217525248"  # MCP BigQuery analyst on Agent Engine (with OTel)
-  mcp_agent_id: "70344624842197063"  # MCP agent registered on Discovery Engine (adkAgentDefinition)
-  simulator_agent_engine_id: "7053256041508634624"  # Shopper simulator on Agent Engine (with OTel)
-  simulator_agent_id: "4018331187859476873"  # Shopper simulator registered on Discovery Engine (adkAgentDefinition)
-  a2a_cloud_run_url: "https://grocery-a2a-agent-in2bk2mdwa-uc.a.run.app"  # A2A agent on Cloud Run
-  a2a_agent_id: "175588409381140878"  # A2A agent registered on Discovery Engine (a2aAgentDefinition)
+  agent_id: "17243023720609589156"  # ADK agent registered on Discovery Engine (adkAgentDefinition)
+  agent_engine_id: "5752190188465946624"  # ADK agent deployed to Agent Engine (with A2UI + OTel)
+  mcp_agent_engine_id: "6529624074140778496"  # MCP BigQuery analyst on Agent Engine (with A2UI + OTel)
+  mcp_agent_id: "14712399455883730663"  # MCP agent registered on Discovery Engine (adkAgentDefinition)
+  simulator_agent_engine_id: "6121485357910327296"  # Shopper simulator on Agent Engine (with A2UI + OTel)
+  simulator_agent_id: "9024298725869758384"  # Shopper simulator registered on Discovery Engine (adkAgentDefinition)
+  a2a_cloud_run_url: "https://grocery-a2a-agent-679926387543.us-central1.run.app"  # A2A agent on Cloud Run
+  a2a_agent_id: "7469500119372284321"  # A2A agent registered on Discovery Engine (a2aAgentDefinition)
+  simulator_a2a_cloud_run_url: "https://simulator-a2a-agent-679926387543.us-central1.run.app"  # Simulator A2A on Cloud Run
+  simulator_a2a_agent_id: "17111513458812321441"  # Simulator A2A registered on Discovery Engine
   data_agent_id: "14793816534468506603"  # Data Insights Agent for BQ analytics
   authorization_id: "grocery-data-agent-auth"  # OAuth auth resource for data agent
 
